@@ -2,13 +2,18 @@
 
 eth_prefix = "eth"
 max_wait_time = 15 * 60   # wait for 15 minutes, max
-current_wait_time = 0
 wait_between_iter = 15    # wait 15 seconds between iterations
+@start_time = Time.now.to_i
+
+def current_wait_time
+  puts @start_time
+  Time.now.to_i - @start_time
+end
 
 # Set a couple of flags that will be used later on
 is_first_iter = true
-is_eth_up = false;
-ip_is_valid = false;
+is_eth_up = false
+ip_is_valid = false
 
 # Start loop that will run until the network is available (or until the timeout
 # value is exceeded)
@@ -17,7 +22,6 @@ begin
     # skip this step, the first time through the loop
     # puts "Network is not up yet, sleeping #{wait_between_iter} seconds..."
     sleep wait_between_iter
-    current_wait_time += wait_between_iter
   else
     # it's the first time through the loop, so set the flag
     # to false (won't be the first time after this iteration)
@@ -61,4 +65,4 @@ end
 
 # add services to start once the network is up here...these services will
 # only run once the network is available
-# t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib mcollectived --config /usr/local/etc/mcollective/server.cfg --pidfile /var/run/mcollective.pid]
+t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib mcollectived --config /usr/local/etc/mcollective/server.cfg --pidfile /var/run/mcollective.pid]
