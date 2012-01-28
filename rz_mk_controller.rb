@@ -6,7 +6,6 @@ wait_between_iter = 15    # wait 15 seconds between iterations
 @start_time = Time.now.to_i
 
 def current_wait_time
-  puts @start_time
   Time.now.to_i - @start_time
 end
 
@@ -65,4 +64,6 @@ end
 
 # add services to start once the network is up here...these services will
 # only run once the network is available
-t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib mcollectived --config /usr/local/etc/mcollective/server.cfg --pidfile /var/run/mcollective.pid]
+t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib \
+  mcollectived --config /usr/local/etc/mcollective/server.cfg \
+  --pidfile /var/run/mcollective.pid]
