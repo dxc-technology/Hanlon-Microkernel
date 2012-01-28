@@ -33,8 +33,9 @@ build the new microcore.gz file, place it in the appropriate location in the new
 directory, and then build the new ISO from the contents of that directory. When the
 script finishes, a new ISO will be built that can be used to boot machines.
 
-The current Microkernel (rz_mk_dev-image.0.0.0.1.iso) includes the following extensions
-to the "stock" Micro Core Linux distro:
+The current Microkernel (available elsewhere, the filename to look for is
+"rz_mk_dev-image.0.0.0.1.iso") includes the following extensions to the "stock"
+Micro Core Linux distro:
 
         1. Ruby (v1.8.7)
         2. Bash
