@@ -2,14 +2,12 @@
 
 class RzNetworkUtils
 
-  private
   # used internally
   MAX_WAIT_TIME = 15 * 60   # wait for 15 minutes, max
   WAIT_BETWEEN_ITER = 15    # wait 15 seconds between iterations
   DEF_ETH_PREFIX = "eth"
   SUCCESS = 0
 
-  public
   # meant for external use
   TIMEOUT_EXCEEDED = -1
   INVALID_IP_ADDRESS = -2
