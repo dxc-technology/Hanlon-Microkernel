@@ -1,0 +1,10 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    facter (1.6.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  facter
