@@ -13,15 +13,25 @@ unless Kernel.respond_to?(:require_relative)
 end
 
 require_relative 'rz_network_utils'
+require_relative 'rz_mk_bundle_controller'
+
+# First, install the bundles we'll need later on (this call should install
+# stomp, facter, and bluepill using bundler).  Note: we are taking advantage
+# of the two default values defined in the RzMkBundleController constructor
+# here (that the bundle list file will be called "bundle.list" and that the
+# gemfile for all of these bundles will be called "Gemfile")
+bc = RzMkBundleController.new("/opt/bundles")
+bc.installAllBundles
+
+# Then, wait for the network to start
 
 nw_is_avail = false
-
 rz_nw_util = RzNetworkUtils.new
 error_cond = rz_nw_util.wait_until_nw_avail
 nw_is_avail = true if error_cond == 0
 
-# add services to start once the network is up here...these services will
-# only run once the network is available
+# if the network is available (there's an ethernet adapter that is up and
+# has a valid IP address), then start up the MCollective agent
 
 if nw_is_avail then
 

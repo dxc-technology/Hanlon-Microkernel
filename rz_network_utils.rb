@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#
+# This class defines the set of network utilities that are used by the
+# Razor Microkernel Controller script
 
 class RzNetworkUtils
 

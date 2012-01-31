@@ -42,10 +42,8 @@ distro:
         1. Ruby (v1.8.7)
         2. Bash
         3. OpenSSH (v5.8p1)
-        4. Facter (v1.6.4)
-        5. MCollective (v1.2.1)
-        6. RubyGems (v1.8.15)
-        7. Stomp RubyGem (v1.2.0)
+        4. MCollective (v1.2.1)
+        5. RubyGems (v1.8.15)
 
 When this ISO is used as the boot image for a node, scripts will automatically
 be run to start an SSH daemon and an MCollective agent post-boot.  Once the
@@ -64,18 +62,26 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Micro Core Linux distro in building out
-the current version of the Razor Microkernel (v0.0.0.1):
+the current version of the Razor Microkernel (v0.0.0.2):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
            approximately 10 seconds (the original value was 30 seconds)
+
         2. We have modified the /opt/bootlocal.sh script that is include
            in the microcore.gz file used by the Microkernel (which can be
-           found in the ISO's /boot directory) so that it automatically
-           starts the SSH daemon on boot and so that it starts the
-           MCollective agent automatically after the network is available
-           (so that the MCollective agent can establish a connection to
-           the MCollective Control Node).
+           found in the ISO's /boot directory) so that when the Microkernel
+           is booted it will automatically:
+
+                a. Starts the SSH daemon
+                b. Installs the Bundler RubyGem
+                c. Use the Bundler RubyGem to install the Stomp, Facter,
+                   and BluePill bunndles
+
+           Once the Stomp bundle is installed, that same script starts the
+           MCollective agent (but only after the network is available; this
+           ensures that the MCollective agent will be able to establish a
+           connection to the MCollective Control Node).
 
 All of these changes (and the procedure that was followed to make them) can be
 found in the following pages:
