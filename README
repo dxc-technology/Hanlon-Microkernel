@@ -76,7 +76,7 @@ the current version of the Razor Microkernel (v0.0.0.2):
                 a. Starts the SSH daemon
                 b. Installs the Bundler RubyGem
                 c. Use the Bundler RubyGem to install the Stomp, Facter,
-                   and BluePill bunndles
+                   and BluePill bundles
 
            Once the Stomp bundle is installed, that same script starts the
            MCollective agent (but only after the network is available; this
