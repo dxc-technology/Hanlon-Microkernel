@@ -23,6 +23,20 @@ require_relative 'rz_mk_bundle_controller'
 bc = RzMkBundleController.new("/opt/bundles")
 bc.installAllBundles
 
+# Now that we've installed the facter bundle, need do do a bit more work
+# if the facter command that it contains isn't already available in the
+# /usr/local/bin directory (will construct a link to the executable in the
+# /usr/local/lib/ruby/gems subdirectory...there should only be one matching
+# executable in that subdirectory)
+if !File.exists?("/usr/local/bin/facter") then
+  file_list = %x[sudo find /usr/local/lib -follow | grep facter$]
+  facter_exec_pattern = /\/usr\/local\/lib\/ruby\/gems\/(\d+\.)+\d\/bin\/facter/
+  file_list.split.each { |filename|
+    %x[sudo ln -s #{filename} /usr/local/bin/facter] if filename =~ facter_exec_pattern
+  }
+end
+
+
 # Then, wait for the network to start
 
 nw_is_avail = false
@@ -35,8 +49,8 @@ nw_is_avail = true if error_cond == 0
 
 if nw_is_avail then
 
-  # sleep 15 more seconds, just in case
-  sleep 15
+  # sleep 5 more seconds, just in case
+  sleep 5
 
   # and proceed with startup of the network-dependent tasks
   puts "Network is available, proceeding..."
