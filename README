@@ -1,4 +1,4 @@
-There are four types of files contained in this project at this time. The first
+There are five types of files contained in this project at this time. The first
 file type (iso-build-files.tar.gz) contains all of the files that are needed to
 build a new Microkernel ISO (i.e. a Microkernel ISO corresponding to the one
 that we are using in the Razor project). Unpacking this file will result in a
@@ -38,9 +38,33 @@ place it in the appropriate location in the newiso directory, and then build
 the new ISO from the contents of that directory. When the script finishes,
 a new ISO will be built that can be used to boot machines.
 
-The current Microkernel (available in the Image-Files subdirectory of this
-project) includes the following extensions to the "stock" Micro Core Linux
-distro:
+The second type of file are the gems that appear under the "gems"
+subdirectory in the repository.   Currently, there is only one gem
+included in this folder (v1.0.21 of the Bundler gem), and this will
+likely continue to be the case.  A copy of this folder appears as the
+/opt/gems directory in our ISO image, and the gems that appear in this
+folder in the ISO are meant to be installed when the ISO used to boot
+a node.
+
+The third type of file are the bundles that appear in the "bundles"
+subdirectory.  These files are copies of the bundles that appear in the
+current ISO (in the /opt/bundles subdirectory) and are meant to be used
+(with the bundler gem, see above) to install additional functionality into
+the OS image when it is booted.
+
+The fourth type of file are the Ruby scripts/classes that are used to
+control the Microkernel image boot process.  These files all appear at
+the root of this project, and copies of these meant to be installed in
+scripts/classes appear in the /usr/local/bin directory of the Microkernel
+image.
+
+The list file type is the Microkernel image itself (which can be found
+under the Image-Files subdirectory of this project).  There are two versions
+of Tiny Core Linux that have been used to build these image files, and the
+image files in the repository are broken out into two separate subdirectories
+accordingly (based on the Tiny Core Linux distribution that they were built
+from).  Each image in this subdirectory includes the following extensions to
+the "stock" Tiny Core Linux distro that it was built from:
 
         1. Ruby (v1.8.7)
         2. Bash
@@ -48,24 +72,26 @@ distro:
         4. MCollective (v1.2.1)
         5. RubyGems (v1.8.15)
 
-When this ISO is used as the boot image for a node, scripts will automatically
-be run to start an SSH daemon and an MCollective agent post-boot.  Once the
-MCollective agent is started, the node will be controllable from the
-MCollective Control Node.  At this time, the MCollective agent's configuration
-(which appears in /usr/local/etc/mcollective in the Microkernel's filesystem)
-is "hard-coded" into the ISO, as is the public/private host key pair that is
-used by the SSH daemon.  Eventually, the MCollective agent configuration will
-be obtained from a Node.js instance, but that instance doesn't exist yet, so
-for testing purposes we'll continue to use the "fixed" MCollective
-configuration (at least for now).  The "fixed" public/private host key pair
+When these ISOs are used as the boot image for a node, scripts will
+automatically be run after the node boots that will start an SSH daemon
+and the MCollective daemon post-boot.  Once the MCollective daemon is started,
+the node will be controllable from the MCollective Control Node.
+
+At this time, the MCollective daemon's configuration (which appears in the
+/usr/local/etc/mcollective directory of the Microkernel's filesystem)
+is "hard-coded" into the ISO, as is the public/private host key pair that
+is used by the SSH daemon.  Eventually, the MCollective daemon configuration
+will be obtained from a Node.js instance, but that instance doesn't exist yet
+(so for testing purposes we'll continue to use the "fixed" MCollective
+configuration, at least for now).  The "fixed" public/private host key pair
 (which is the same for all Microkernel instances in the current ISO) is less
 of an issue, because this service will be pulled out of any ISO that is rolled
 out into a production environment (to prevent command-line access to the nodes
 when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
-the following changes to the "stock" Micro Core Linux distro in building out
-the current version of the Razor Microkernel (v0.0.0.2):
+the following changes to the "stock" Tiny Core Linux distro when building out
+the current version of the Razor Microkernel (v0.0.0.5):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -86,6 +112,13 @@ the current version of the Razor Microkernel (v0.0.0.2):
            ensures that the MCollective agent will be able to establish a
            connection to the MCollective Control Node).
 
+         3. We have added a pair of MCollective agents to the
+            /usr/local/mcollective/plugins/mcollective/agent subdirectory.
+            One agent is a test agent that simply echos back the message
+            sent to it, along with the time that message was receive. The
+            second agent (facter.rb) provides access to the "facter" command
+            on each instance of the Microkernel from the Control Node.
+
 All of these changes (and the procedure that was followed to make them) can be
 found in the following pages:
 
@@ -97,3 +130,7 @@ found in the following pages:
            described above:
 
         http://dcade.lss.emc.com/confluence/display/ASI/Microkernel+Configuration
+
+        3. Configuring an MCollective Agent
+
+        http://dcade.lss.emc.com/confluence/display/ASI/Configuring+an+MCollective+Agent
