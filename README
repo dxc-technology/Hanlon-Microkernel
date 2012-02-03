@@ -1,11 +1,14 @@
-There are three files contained in this project at this time. The first file
-(iso-build-files.tar.gz) contains all of the files that are needed to build a
-new Microkernel ISO (i.e. a Microkernel ISO corresponding to the one that we
-are using in the Razor project). Unpacking this file will result in a directory
-structure that looks something like the following being created in the current
-working directory:
+There are four types of files contained in this project at this time. The first
+file type (iso-build-files.tar.gz) contains all of the files that are needed to
+build a new Microkernel ISO (i.e. a Microkernel ISO corresponding to the one
+that we are using in the Razor project). Unpacking this file will result in a
+directory structure that looks something like the following being created in
+the current working directory:
 
                           microcore-current-files
+                                   |
+                                   |
+                             tcl-4.2.1-files
                                    |
                                    |
                      -----------------------------
@@ -14,23 +17,23 @@ working directory:
                    newiso       extract         tmp
 
 In this directory structure, the "extract" subdirectory contains all of the
-files that were extracted from the microcore.gz file that is contained in the
-original microcore-current.iso file from the Tiny Core Linux distribution.
+files that were extracted from the core.gz file that is contained in the
+original Core-current.iso file from the Tiny Core Linux (v4.2.1) distribution.
 The "tmp" directory, on the other hand, contains all of the files that were
-used to create the customized version of this same microcore.gz file (the
+used to create the customized version of this same core.gz file (the
 customized version that appears in the Microkernel ISO that we are using in
-Razor). This microcore.gz file was then used to replace the file that appears
+Razor). The new core.gz file was then used to replace the file that appears
 in the boot subdirectory of "newiso" subdirectory (which originally contained
-a copy of the contents of the microcore-current.iso file).  As such, the
-"newiso" subdirectory contains all of the contents of the ISO file that we
-are using in the Razor project.
+a copy of the contents of the Core-current.iso file).  As such, the "newiso"
+subdirectory contains all of the contents of the ISO file that we are using
+in the Razor project.
 
 If the iso-build-files.tar.gz tarfile is extracted, the microcore-current-files
 subdirectory contains an another file (in addition to the three directories
 mentioned above).  That file is a shell script (rebuild_iso.sh) that can be
 used to build a new ISO after changes are made to the contents of the "tmp"
 or "newiso" directories.  The shell script will run all of the appropriate
-commands (there are about 8 of them) to build the new microcore.gz file,
+commands (there are about 8 of them) to build the new core.gz file,
 place it in the appropriate location in the newiso directory, and then build
 the new ISO from the contents of that directory. When the script finishes,
 a new ISO will be built that can be used to boot machines.
@@ -75,7 +78,7 @@ the current version of the Razor Microkernel (v0.0.0.2):
 
                 a. Starts the SSH daemon
                 b. Installs the Bundler RubyGem
-                c. Use the Bundler RubyGem to install the Stomp, Facter,
+                c. Uses the Bundler RubyGem to install the Stomp, Facter,
                    and BluePill bundles
 
            Once the Stomp bundle is installed, that same script starts the
