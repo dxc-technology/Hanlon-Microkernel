@@ -32,13 +32,18 @@ if !File.exists?("/usr/local/bin/facter") then
   file_list = %x[sudo find /usr/local/lib -follow | grep facter$]
   facter_exec_pattern = /\/usr\/local\/lib\/ruby\/gems\/(\d+\.)+\d\/bin\/facter/
   file_list.split.each { |filename|
-    %x[sudo ln -s #{filename} /usr/local/bin/facter] if filename =~ facter_exec_pattern
+    if filename =~ facter_exec_pattern then
+      %x[sudo ln -s #{filename} /usr/local/bin/facter]
+      break
+    end
   }
 end
 
+# now that the bundles are installed, can require the RzHostUtils class
+# (which depends on the 'facter' gem)
+require_relative 'rz_host_utils'
 
 # Then, wait for the network to start
-
 nw_is_avail = false
 rz_nw_util = RzNetworkUtils.new
 error_cond = rz_nw_util.wait_until_nw_avail
@@ -46,7 +51,6 @@ nw_is_avail = true if error_cond == 0
 
 # if the network is available (there's an ethernet adapter that is up and
 # has a valid IP address), then start up the MCollective agent
-
 if nw_is_avail then
 
   # sleep 5 more seconds, just in case
@@ -54,6 +58,14 @@ if nw_is_avail then
 
   # and proceed with startup of the network-dependent tasks
   puts "Network is available, proceeding..."
+
+  # first, set the hostname for this host to something unique
+  # (waited until now because didn't want to have eth0 not
+  # available at this point)
+  rz_host_util = RzHostUtils.new
+  rz_host_util.set_host_name
+
+  # and start up the MCollective daemon
   t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib \
     mcollectived --config /usr/local/etc/mcollective/server.cfg \
     --pidfile /var/run/mcollective.pid]
