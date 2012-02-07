@@ -91,7 +91,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.0.5):
+the current version of the Razor Microkernel (v0.0.0.6):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -107,10 +107,14 @@ the current version of the Razor Microkernel (v0.0.0.5):
                 c. Uses the Bundler RubyGem to install the Stomp, Facter,
                    and BluePill bundles
 
-           Once the Stomp bundle is installed, that same script starts the
-           MCollective agent (but only after the network is available; this
-           ensures that the MCollective agent will be able to establish a
-           connection to the MCollective Control Node).
+           Once the Stomp bundle is installed, that same script changes the
+           hostname (in the /etc/hosts and /etc/hostname files using the 'sed'
+           command and also logically using the 'hostname' command) and then
+           starts the MCollective agent (but it only performs these two tasks
+           after the network is available; this ensures that MAC address for
+           the 'eth0' adapter is available through Facter and the that
+           the MCollective agent will be able to establish a connection to
+           the MCollective Control Node).
 
          3. We have added a pair of MCollective agents to the
             /usr/local/mcollective/plugins/mcollective/agent subdirectory.
