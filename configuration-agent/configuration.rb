@@ -11,7 +11,7 @@ module MCollective
 
       action "set_registration_url" do
         validate :URL, String
-        validate :URL, /^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(([0-9]{1,5})?\/.*)?$/ix
+        validate :URL, /^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.([a-z]{2,5}|[0-9]{1,3})(:[0-9]{1,5})?(\/.*)?$/ix
         # Grab the URL and store it locally (will use it twice)
         registrationURL = request[:URL]
         # Output the URL to a local file

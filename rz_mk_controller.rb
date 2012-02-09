@@ -6,6 +6,8 @@ require 'rubygems'
 require 'facter'
 require 'json'
 
+registrationURLFile = '/var/run/registrationURL.txt'
+
 mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
 # mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 'daily')
 mylog.level = Logger::DEBUG
@@ -24,7 +26,19 @@ loop do
   Facter.each { |name, value|
     factMap[name.to_sym] = value
   }
-  mylog.debug(JSON.generate(factMap))
+  registrationURL = nil
+  begin
+    File.open(registrationURLFile, 'r') { |file|
+      registrationURL = file.gets.chomp
+    }
+    if registrationURL then
+      mylog.debug("POST to '" + registrationURL + "' => " + JSON.generate(factMap))
+    else
+      mylog.debug("shouldn't be here; is file #{registrationURLFile} empty?")
+    end
+  rescue
+    mylog.debug("file #{registrationURLFile} does not exist yet")
+  end
   mylog.info "sleeping for 60 seconds..."
   sleep(60)
 end

@@ -91,7 +91,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.0.7):
+the current version of the Razor Microkernel (v0.0.0.8):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -152,6 +152,23 @@ the current version of the Razor Microkernel (v0.0.0.7):
 
             As you can see, options are provided to start, stop, restart, reload,
             and check the status of the underlying rz_mk_controller process.
+
+         5. We added an MCollective agent (the Configuration) agent to the
+            Microkernel.  Currently, this agent has one action defined
+            (set_registration_url) but additional actions can be added in the
+            future.  The "set_registration_url" action takes one argument
+            (which MUST be a URL) and saves the string in that argument to
+            the "/var/run/registrationURL.txt" file in the Microkernel's
+            filesystem.
+
+         6. We added code to the Microkernel Controller that opens the
+            '/var/run/registrationURL.txt' file (if it exists) and reads the
+            first line (which is assumed to be the registration URL).  In the
+            next release of this controller, this will be used as the target
+            for a post of the configuration of the node that has been booted
+            using the Microkernel (as is determined using Facter), but for now
+            the URL and the content that will be posted to that URL are just
+            output to the Microkernel log file
 
 All of these changes (and the procedure that was followed to make them) can be
 found in the following pages:

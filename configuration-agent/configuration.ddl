@@ -15,7 +15,7 @@ action "set_registration_url",
           :prompt      => "URL",
           :description => "The URL to use for Registration",
           :type        => :string,
-          :validation  => '/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(([0-9]{1,5})?\/.*)?$/ix',
+          :validation  => '/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.([a-z]{2,5}|[0-9]{1,3})(:[0-9]{1,5})?(\/.*)?$/ix',
           :optional    => false,
 
     output :URL,

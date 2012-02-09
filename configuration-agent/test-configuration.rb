@@ -4,6 +4,10 @@ require 'mcollective'
 
 include MCollective::RPC
 
+if !ARGV || ARGV.length != 1 then
+  puts "Usage: test-configuration.rb URL"
+  exit(-1)
+end
 url = ARGV[0]
 
 configClient = rpcclient("configuration")
