@@ -1,0 +1,16 @@
+metadata  :name         => "Facter Agent",
+          :description  => "Preliminary Facter Agent",
+          :author       => "Tom McSweeney",
+          :license      => "Apache v2",
+          :version      => "1.0",
+          :url          => "http://www.emc.com",
+          :timeout      => 60
+
+action "getall", :description => "Get facts from node using Facter" do
+    display :always  # supported in 0.4.7 and newer only
+ 
+    output :facts,
+          :description => "YAML representation of Facter Hash Map",
+          :display_as  => "Facts"
+
+end

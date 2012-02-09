@@ -91,7 +91,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.0.6):
+the current version of the Razor Microkernel (v0.0.0.7):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -104,10 +104,10 @@ the current version of the Razor Microkernel (v0.0.0.6):
 
                 a. Starts the SSH daemon
                 b. Installs the Bundler RubyGem
-                c. Uses the Bundler RubyGem to install the Stomp, Facter,
-                   and BluePill bundles
+                c. Uses the Bundler RubyGem to install the stomp, facter,
+                   daemons, json_pure, and bluepill bundles
 
-           Once the Stomp bundle is installed, that same script changes the
+           Once the stomp bundle is installed, that same script changes the
            hostname (in the /etc/hosts and /etc/hostname files using the 'sed'
            command and also logically using the 'hostname' command) and then
            starts the MCollective agent (but it only performs these two tasks
@@ -120,8 +120,38 @@ the current version of the Razor Microkernel (v0.0.0.6):
             /usr/local/mcollective/plugins/mcollective/agent subdirectory.
             One agent is a test agent that simply echos back the message
             sent to it, along with the time that message was receive. The
-            second agent (facter.rb) provides access to the "facter" command
-            on each instance of the Microkernel from the Control Node.
+            second agent (facteragent.rb) provides access to "Facter" on
+            each instance of the Microkernel through the MCollective.
+
+         4. We have constructed a wrapper (rz_mk_controller_control.rb)
+            around the rz_mk_controller.rb script that daemonizes the
+            latter script and allows us to easily control it from the
+            command line using the former.  The usage for the "control"
+            script is as follows:
+
+            Usage: rz_mk_controller_control.rb <command> <options> -- <application options>
+
+            * where <command> is one of:
+              start         start an instance of the application
+              stop          stop all instances of the application
+              restart       stop all instances and restart them afterwards
+              reload        send a SIGHUP to all instances of the application
+              run           start the application and stay on top
+              zap           set the application to a stopped state
+              status        show status (PID) of application instances
+
+            * and where <options> may contain several of the following:
+
+                -t, --ontop                      Stay on top (does not daemonize)
+                -f, --force                      Force operation
+                -n, --no_wait                    Do not wait for processes to stop
+
+            Common options:
+                -h, --help                       Show this message
+                    --version                    Show version
+
+            As you can see, options are provided to start, stop, restart, reload,
+            and check the status of the underlying rz_mk_controller process.
 
 All of these changes (and the procedure that was followed to make them) can be
 found in the following pages:
