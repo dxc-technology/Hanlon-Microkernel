@@ -5,9 +5,12 @@ require 'logger'
 require 'rubygems'
 require 'facter'
 require 'yaml'
+require 'net/http'
 require 'json'
 
-registrationURLFile = '/var/run/registrationURL.txt'
+registrationURLFile = '/tmp/registrationURL.txt'
+previousFactsFile = '/tmp/facterOut.yaml'
+excludeFactsPattern = /^uptime.*$/
 
 mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
 # mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 'daily')
@@ -27,32 +30,37 @@ loop do
   if File.exists?(registrationURLFile) then
     # open the registrationURL file and read it's contents (should be a URL)
     File.open(registrationURLFile, 'r') { |file|
-          registrationURL = file.gets.chomp
+      registrationURL = file.gets.chomp
     }
-    # construct a hash map of the facts gathered by Facter
+    # construct a hash map of the facts gathered by Facter (note call to
+    # Facter.flush, which flushes the cache of Facter "facts")
     factMap = Hash.new
+    Facter.flush
     Facter.each { |name, value|
-        factMap[name.to_sym] = value
+      factMap[name.to_sym] = value if !(name =~ excludeFactsPattern)
     }
     # compare the existing facts with those previously sent to the
     # registration URL
     factMapChanged = false
-    if File.exists?('/var/run/facterOut.yaml') then
+    if File.exists?(previousFactsFile) then
       oldFactMap = nil
-      File.open('/var/run/facterOut.yaml', 'r') { |file|
+      File.open(previousFactsFile, 'r') { |file|
         oldFactMap = YAML::load(file)
       }
-      factMapChanged = !(factMap == oldFactMap)
+      factMapChanged = (factMap != oldFactMap)
     else
       # file does not exist yet, so will have to create it
       factMapChanged = true
     end
     if factMapChanged then
-      File.open('/var/run/facterOut.yaml', 'w') { |file|
+      File.open(previousFactsFile, 'w') { |file|
         YAML::dump(factMap, file)
       }
-      mylog.debug("factMap changed, send new factMap to '" + registrationURL + "' => " +
-                      JSON.generate(factMap))
+      jsonString = JSON.generate(factMap)
+      uri = URI "#{registrationURL}/#{factMap[:hostname]}/#{state}"
+      mylog.debug("factMap changed, send new factMap to '" + uri.to_s +
+                      "' => " + jsonString)
+      #res = Net::HTTP.post_form(uri, 'json_hash' => jsonString)
     else
       mylog.debug("factMap unchanged, no update required")
     end

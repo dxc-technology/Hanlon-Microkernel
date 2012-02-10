@@ -15,7 +15,7 @@ module MCollective
         # Grab the URL and store it locally (will use it twice)
         registrationURL = request[:URL]
         # Output the URL to a local file
-        File.open('/var/run/registrationURL.txt', 'w') { |file|
+        File.open('/tmp/registrationURL.txt', 'w') { |file|
           file.puts(registrationURL)
         }
         # and echo back the URL and the time it was received to the sender
