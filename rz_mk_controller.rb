@@ -11,6 +11,7 @@ require 'json'
 registrationURLFile = '/tmp/registrationURL.txt'
 previousFactsFile = '/tmp/facterOut.yaml'
 excludeFactsPattern = /^uptime.*$/
+state = "idle"
 
 mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
 # mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 'daily')
