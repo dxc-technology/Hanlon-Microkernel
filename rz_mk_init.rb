@@ -48,10 +48,10 @@ end
 require_relative 'rz_host_utils'
 
 # and start the rz_mk_controller.rb script (using the
-# rz_mk_controller_control.rb script, which wraps it up
+# rz_mk_controllerd.rb script, which wraps it up
 # as a daemon process)
 
-%x[sudo /usr/local/bin/rz_mk_controller_control.rb start]
+%x[sudo /usr/local/bin/rz_mk_controllerd.rb start]
 
 # Then, wait for the network to start
 nw_is_avail = false

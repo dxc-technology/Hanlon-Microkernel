@@ -4,6 +4,7 @@
 require 'logger'
 require 'rubygems'
 require 'facter'
+require 'yaml'
 require 'json'
 
 registrationURLFile = '/var/run/registrationURL.txt'
@@ -22,21 +23,40 @@ mylog.formatter = proc do |severity, datetime, progname, msg|
 end
 
 loop do
-  factMap = Hash.new
-  Facter.each { |name, value|
-    factMap[name.to_sym] = value
-  }
   registrationURL = nil
-  begin
+  if File.exists?(registrationURLFile) then
+    # open the registrationURL file and read it's contents (should be a URL)
     File.open(registrationURLFile, 'r') { |file|
-      registrationURL = file.gets.chomp
+          registrationURL = file.gets.chomp
     }
-    if registrationURL then
-      mylog.debug("POST to '" + registrationURL + "' => " + JSON.generate(factMap))
+    # construct a hash map of the facts gathered by Facter
+    factMap = Hash.new
+    Facter.each { |name, value|
+        factMap[name.to_sym] = value
+    }
+    # compare the existing facts with those previously sent to the
+    # registration URL
+    factMapChanged = false
+    if File.exists?('/var/run/facterOut.yaml') then
+      oldFactMap = nil
+      File.open('/var/run/facterOut.yaml', 'r') { |file|
+        oldFactMap = YAML::load(file)
+      }
+      factMapChanged = !(factMap == oldFactMap)
     else
-      mylog.debug("shouldn't be here; is file #{registrationURLFile} empty?")
+      # file does not exist yet, so will have to create it
+      factMapChanged = true
     end
-  rescue
+    if factMapChanged then
+      File.open('/var/run/facterOut.yaml', 'w') { |file|
+        YAML::dump(factMap, file)
+      }
+      mylog.debug("factMap changed, send new factMap to '" + registrationURL + "' => " +
+                      JSON.generate(factMap))
+    else
+      mylog.debug("factMap unchanged, no update required")
+    end
+  else
     mylog.debug("file #{registrationURLFile} does not exist yet")
   end
   mylog.info "sleeping for 60 seconds..."
