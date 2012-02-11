@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+$LOAD_PATH << "/usr/share/mcollective/lib"
 require 'mcollective'
 
 include MCollective::RPC
