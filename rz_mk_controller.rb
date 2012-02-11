@@ -10,7 +10,7 @@ require 'json'
 
 registrationURLFile = '/tmp/registrationURL.txt'
 previousFactsFile = '/tmp/facterOut.yaml'
-excludeFactsPattern = /^uptime.*$/
+excludeFactsPattern = /(^uptime.*$)|(^memory.*$)/
 state = "idle"
 
 mylog = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
@@ -57,7 +57,9 @@ loop do
       File.open(previousFactsFile, 'w') { |file|
         YAML::dump(factMap, file)
       }
-      jsonString = JSON.generate(factMap)
+      json_hash = {}
+      json_hash["@attributes_hash"] = factMap
+      jsonString = JSON.generate(json_hash)
       uri = URI "#{registrationURL}/#{factMap[:hostname]}/#{state}"
       mylog.debug("factMap changed, send new factMap to '" + uri.to_s +
                       "' => " + jsonString)
