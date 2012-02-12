@@ -91,7 +91,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.0.8):
+the current version of the Razor Microkernel (v0.0.0.9):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -163,12 +163,35 @@ the current version of the Razor Microkernel (v0.0.0.8):
 
          6. We added code to the Microkernel Controller that opens the
             '/var/run/registrationURL.txt' file (if it exists) and reads the
-            first line (which is assumed to be the registration URL).  In the
-            next release of this controller, this will be used as the target
-            for a post of the configuration of the node that has been booted
-            using the Microkernel (as is determined using Facter), but for now
-            the URL and the content that will be posted to that URL are just
-            output to the Microkernel log file
+            first line (which is assumed to be the registration URL).
+
+         7. We modified the Microkernel Controller so that a pattern can be
+            defined within the Controller for Facter "facts" that should be
+            excluded from the registration details that are passed to the
+            Razor server.  Currently, only "facts" with names that start
+            with the string "uptime" or "memory" are excluded, but this
+            could be changed later.
+
+         8. We added code to the Microkernel Controller that actually POSTs
+            a JSON-formatted string representation of the facts discovered
+            using Facter to the registration URL received by the MCollective
+            agent (see #5, above).  Eventually this functionality will be
+            triggered by a service in the Razor server that periodically sends
+            out the registration URL (perhaps even a different URL to different
+            types of nodes), but for now, this functionality can be triggered
+            directly from the MCollective Control Node using the
+            'test-configuration.rb' script (which can be found in the
+            'configuration-agent' subdirectory).  An example of using this
+            script from the command line is something like the following:
+
+            # test-configuration.rb http://192.168.5.2:8026/razor/slice/node/register
+
+            This command tells all of the configuration-agents that the
+            registration URL is http://192.168.5.2:8026/razor/slice/node/register.
+            The Microkernel Controller will add the node's UUID and a state to
+            the end of this URL to complete the URL for the POST operation that
+            is used to pass the details gathered from Facter for that node
+            to the Razor server.
 
 All of these changes (and the procedure that was followed to make them) can be
 found in the following pages:
