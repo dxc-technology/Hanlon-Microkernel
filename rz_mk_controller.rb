@@ -63,13 +63,14 @@ loop do
       uri = URI "#{registrationURL}/#{factMap[:hostname]}/#{state}"
       mylog.debug("factMap changed, send new factMap to '" + uri.to_s +
                       "' => " + jsonString)
-      #res = Net::HTTP.post_form(uri, 'json_hash' => jsonString)
+      res = Net::HTTP.post_form(uri, 'json_hash' => jsonString)
+      mylog.debug(res.body)
     else
       mylog.debug("factMap unchanged, no update required")
     end
   else
     mylog.debug("file #{registrationURLFile} does not exist yet")
   end
-  mylog.info "sleeping for 60 seconds..."
+  mylog.debug "sleeping for 60 seconds..."
   sleep(60)
 end
