@@ -186,10 +186,11 @@ the current version of the Razor Microkernel (v0.0.0.9):
 
             # test-configuration.rb http://192.168.5.2:8026/razor/slice/node/register
 
-            This command tells all of the configuration-agents that the
-            registration URL is http://192.168.5.2:8026/razor/slice/node/register.
-            The Microkernel Controller will add the node's UUID and a state to
-            the end of this URL to complete the URL for the POST operation that
+            This command tells all of the configuration-agents to use the
+            URI "http://192.168.5.2:8026/razor/slice/node/register" for
+            registration of any new facts that they might detect.  The
+            Microkernel Controller will add the node's UUID and a state to
+            the end of this URI to complete the URL for the POST operation that
             is used to pass the details gathered from Facter for that node
             to the Razor server.
 
