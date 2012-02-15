@@ -47,11 +47,9 @@ end
 # (which depends on the 'facter' gem)
 require_relative 'rz_host_utils'
 
-# and start the rz_mk_controller.rb script (using the
-# rz_mk_controllerd.rb script, which wraps it up
-# as a daemon process)
+# and start the rz_mk_controller.rb script
 
-%x[sudo /usr/local/bin/rz_mk_controllerd.rb start]
+%x[sudo /usr/local/bin/rz_mk_controller.rb 2>&1 > /var/log/webrick-server.log]
 
 # Then, wait for the network to start
 nw_is_avail = false
