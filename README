@@ -210,3 +210,14 @@ found in the following pages:
         3. Configuring an MCollective Agent
 
         http://dcade.lss.emc.com/confluence/display/ASI/Configuring+an+MCollective+Agent
+
+TO DO Items:
+
+        1. Add action for "keep-alive" (will have to deal with responses from the
+           keep-alive server that tell the Microkernel what to do next; "nil" is a
+           valid command option)
+
+        2. Add ability to deal with multiple registration servers
+
+        3. Add additional "Configuration" options to the Configuration Agent
+           (and similar actions in the Microkernel Controller as new Servlets)
