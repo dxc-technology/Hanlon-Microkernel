@@ -49,13 +49,30 @@ class RegistrationServlet < HTTPServlet::AbstractServlet
     @logger = logger
     # define a few parameter we'll use later
     @prev_facts_file = '/tmp/facterOut.yaml'
+    @prev_registration_file = '/tmp/prevRegistrationURI.yaml'
     @default_state = "idle"
+
     exclude_pattern = /(^uptime.*$)|(^memory.*$)/
 
     # and create a new instance of the FactManager class (will use this
     # later to interact with the Facter class and retrieve system facts)
     @fact_manager = FactManager.new(@prev_facts_file, exclude_pattern)
 
+  end
+
+  def registration_uri_changed?(registration_uri)
+    return true if !File.exists?(@prev_registration_file)
+    prev_registration_uri = ""
+    File.open(@prev_registration_file, 'r') { |file|
+      prev_registration_uri = YAML::load(file)
+    }
+    return (registration_uri != prev_registration_uri)
+  end
+
+  def save_uri_as_previous(registration_uri)
+    File.open(@prev_registration_file, 'w') { |file|
+      YAML::dump(registration_uri, file)
+    }
   end
 
   def do_POST(req, res)
@@ -69,6 +86,9 @@ class RegistrationServlet < HTTPServlet::AbstractServlet
     registration_uri = CGI::unescape(req.body.split("=")[1])
     @logger.debug("received URI '#{registration_uri}' from registration agent")
     fact_map_changed = @fact_manager.facts_have_changed?
+    # if the registration_uri has changed, then we need to report new facts regardless
+    # of whether or not our current state has been reported already
+    fact_map_changed = true if registration_uri_changed?(registration_uri)
     if fact_map_changed
       @fact_manager.save_facts_as_prev
       fact_map = @fact_manager.fact_map
@@ -90,6 +110,7 @@ class RegistrationServlet < HTTPServlet::AbstractServlet
       res.body = "factMap unchanged, no update required"
       @logger.debug("factMap unchanged, no update required")
     end
+    save_uri_as_previous(registration_uri)
   end
   
 end
@@ -98,7 +119,7 @@ end
 
 s = HTTPServer.new(:Port => 2156, :ServerType => WEBrick::Daemon)
 
-# mount our servlets as directories under our HTTP server's URL
+# mount our servlets as directories under our HTTP server's URI
 
 s.mount("/registration", RegistrationServlet, mylog)
 

@@ -91,7 +91,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.0.9):
+the current version of the Razor Microkernel (v0.0.1.0):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
@@ -155,15 +155,15 @@ the current version of the Razor Microkernel (v0.0.0.9):
 
          5. We added an MCollective agent (the Configuration) agent to the
             Microkernel.  Currently, this agent has one action defined
-            (set_registration_url) but additional actions can be added in the
-            future.  The "set_registration_url" action takes one argument
-            (which MUST be a URL) and saves the string in that argument to
-            the "/var/run/registrationURL.txt" file in the Microkernel's
-            filesystem.
+            (set_registration_uri) but additional actions can be added in the
+            future.  The "set_registration_uri" action takes one argument
+            (which MUST be a URI) and passes that string to the Microkernel
+            Controller using a POST operation.
 
-         6. We added code to the Microkernel Controller that opens the
-            '/var/run/registrationURL.txt' file (if it exists) and reads the
-            first line (which is assumed to be the registration URL).
+         6. We added an action to the Microkernel Controller (a WEBrick instance)
+            that is invoked by the Configuration Agent in order to pass the
+            Registration URI that should be used by the Microkernel instance
+            to the Microkernel Controller.
 
          7. We modified the Microkernel Controller so that a pattern can be
             defined within the Controller for Facter "facts" that should be
@@ -172,12 +172,13 @@ the current version of the Razor Microkernel (v0.0.0.9):
             with the string "uptime" or "memory" are excluded, but this
             could be changed later.
 
-         8. We added code to the Microkernel Controller that actually POSTs
-            a JSON-formatted string representation of the facts discovered
-            using Facter to the registration URL received by the MCollective
-            agent (see #5, above).  Eventually this functionality will be
+         8. We added code to the Microkernel Controller (code that is invoked
+            by the servlet that handles the action defined in #6, above) that
+            actually POSTs a JSON-formatted string representation of the facts
+            discovered using Facter to the registration URI received from the
+            Configuration agent.  Eventually this functionality will be
             triggered by a service in the Razor server that periodically sends
-            out the registration URL (perhaps even a different URL to different
+            out the registration URI (perhaps even a different URI to different
             types of nodes), but for now, this functionality can be triggered
             directly from the MCollective Control Node using the
             'test-configuration.rb' script (which can be found in the
@@ -190,7 +191,7 @@ the current version of the Razor Microkernel (v0.0.0.9):
             URI "http://192.168.5.2:8026/razor/slice/node/register" for
             registration of any new facts that they might detect.  The
             Microkernel Controller will add the node's UUID and a state to
-            the end of this URI to complete the URL for the POST operation that
+            the end of this URI to complete the URI for the POST operation that
             is used to pass the details gathered from Facter for that node
             to the Razor server.
 

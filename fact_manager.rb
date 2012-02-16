@@ -20,7 +20,7 @@ class FactManager
       @fact_map[name.to_sym] = value if !(name =~ @exclude_pattern)
     }
     # compare the existing facts with those previously sent to the
-    # registration URL
+    # registration URI
     fact_map_changed = false
     if File.exists?(@prev_facts_file)
       old_fact_map = nil

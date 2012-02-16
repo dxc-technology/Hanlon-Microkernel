@@ -6,8 +6,8 @@ metadata  :name         => "Configuration Agent",
           :url          => "http://www.emc.com",
           :timeout      => 30
 
-action "set_registration_url",
-      :description => "Set the URL that will be used for Registration" do
+action "set_registration_uri",
+      :description => "Set the URI that will be used for Registration" do
 
     display :always  # supported in 0.4.7 and newer only
  

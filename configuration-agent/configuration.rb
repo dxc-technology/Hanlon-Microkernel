@@ -11,7 +11,7 @@ module MCollective
                 :url          => "http://www.emc.com",
                 :timeout      => 30
 
-      action "set_registration_url" do
+      action "set_registration_uri" do
         validate :URI, String
         validate :URI, /^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.([a-z]{2,5}|[0-9]{1,3})(:[0-9]{1,5})?(\/.*)?$/ix
         # post URI to a local WEBrick instance (should be running at port 2156)
