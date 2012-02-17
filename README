@@ -71,6 +71,7 @@ the "stock" Tiny Core Linux distro that it was built from:
         3. OpenSSH (v5.8p1)
         4. MCollective (v1.2.1)
         5. RubyGems (v1.8.15)
+        6. dmidecode (v2.11)  <- (Added in v0.0.2.0)
 
 When these ISOs are used as the boot image for a node, scripts will
 automatically be run after the node boots that will start an SSH daemon
@@ -91,7 +92,7 @@ when they are being managed by the Microkernel).
 
 In addition to the extensions that were mentioned previously, we have also made
 the following changes to the "stock" Tiny Core Linux distro when building out
-the current version of the Razor Microkernel (v0.0.1.0):
+the current version of the Razor Microkernel (v0.0.2.0):
 
         1. We have reduced the boot prompt timeout (defined in the
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
