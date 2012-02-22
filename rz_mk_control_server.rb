@@ -21,7 +21,15 @@ require 'net/http'
 require 'cgi'
 require 'json'
 require 'yaml'
+require 'logger'
 require_relative 'rz_mk_registration_manager'
+
+# setup a logger for our "Keep-Alive" server...
+logger = Logger.new('/tmp/rz_mk_controller.log', 5, 1024*1024)
+logger.level = Logger::DEBUG
+logger.formatter = proc do |severity, datetime, progname, msg|
+  "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
+end
 
 # load the Microkernel Configuration, use the parameters in that configuration
 # to control the
@@ -52,7 +60,8 @@ if (File.exist?(mk_config_file)) then
   # this parameter defines which facts (by name) should be excluded from the
   # map that is reported during node registration
   exclude_pattern = mk_conf[:facts][:exclude_pattern]
-  registration_manager = RzMkRegistrationManager.new(registration_uri, exclude_pattern)
+  registration_manager = RzMkRegistrationManager.new(registration_uri, exclude_pattern,
+                                                     logger)
 
 else
 
@@ -68,7 +77,7 @@ msecs_offset = checkin_offset * 1000;
 # generate a random number between zero and msecs_offset and sleep for that
 # amount of time
 rand_secs = rand(msecs_offset) / 1000.0
-puts "Sleeping for #{rand_secs} seconds"
+logger.debug "Sleeping for #{rand_secs} seconds"
 sleep(rand_secs)
 
 # and enter the main event-handling loop
@@ -86,7 +95,7 @@ loop do
   msecs_elapsed = (t2 - t1) * 1000
   if (msecs_elapsed < msecs_sleep) then
     secs_sleep = (msecs_sleep - msecs_elapsed)/1000.0
-    puts "Sleeping for #{secs_sleep} seconds..."
+    logger.debug "Sleeping for #{secs_sleep} seconds..."
     sleep(secs_sleep)
   end
 end

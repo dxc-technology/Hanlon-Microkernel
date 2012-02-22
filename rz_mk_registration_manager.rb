@@ -6,9 +6,10 @@ class RzMkRegistrationManager
 
   attr_accessor :registration_uri
 
-  def initialize(registration_uri, exclude_pattern)
+  def initialize(registration_uri, exclude_pattern, logger)
     @registration_uri = registration_uri
     @exclude_pattern = exclude_pattern
+    @logger = logger
   end
 
   def register_node
@@ -35,7 +36,7 @@ class RzMkRegistrationManager
     response.body = response.body
     # finally, if are debugging the server, output the body (as a string) to stdout
     # (which will typically be captured in a log file)
-    puts response.body
+    logger.debug response.body
     # and return the response from the server to the caller
     response
   end

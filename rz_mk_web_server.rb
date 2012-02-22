@@ -27,7 +27,7 @@ include WEBrick
 
 # setup a logger for our HTTP server...
 
-logger = Logger.new('/var/log/mk_web_server.log', 5, 1024*1024)
+logger = Logger.new('/var/log/rz_mk_web_server.log', 5, 1024*1024)
 logger.level = Logger::DEBUG
 logger.formatter = proc do |severity, datetime, progname, msg|
   "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
