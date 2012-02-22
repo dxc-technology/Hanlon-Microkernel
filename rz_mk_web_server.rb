@@ -33,6 +33,10 @@ logger.formatter = proc do |severity, datetime, progname, msg|
   "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
 end
 
+# define YAML file to use for serialization of the Microkernel configuration
+
+mk_config_file = '/tmp/mk_conf.yaml'
+
 # next, define our actions (as servlets)...for now we have one (used to
 # save the Microkernel Configuration that is received from the MCollective
 # Configuration Agent)
@@ -74,7 +78,6 @@ s = HTTPServer.new(:Port => 2156, :ServerType => WEBrick::Daemon)
 
 # mount our servlets as directories under our HTTP server's URI
 
-mk_config_file = '/tmp/mk_conf.yaml'
 s.mount("/setMkConfig", MKConfigServlet, logger, mk_config_file)
 
 # setup the server to shut down if the process is shut down
