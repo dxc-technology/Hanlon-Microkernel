@@ -28,13 +28,14 @@ class RzMkRegistrationManager
     # and send that string to the service listening at the "Registration URI"
     # (this will register the node with the server at that URI)
     uri = URI @registration_uri
-    @logger.debug("Sending new factMap to '" + uri.to_s + "' => " + json_string)
+    puts "Sending new factMap to '" + uri.to_s + "' => " + json_string
     response = Net::HTTP.post_form(uri, 'json_hash' => json_string)
     # and construct the response back to the registration agent
     response['Content-Type'] = response['Content-Type']
     response.body = response.body
-    # finally, if are debugging the server, output the body (as a string) into the log file
-    @logger.debug(response.body)
+    # finally, if are debugging the server, output the body (as a string) to stdout
+    # (which will typically be captured in a log file)
+    puts response.body
     # and return the response from the server to the caller
     response
   end
