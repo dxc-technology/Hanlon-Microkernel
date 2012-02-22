@@ -47,10 +47,6 @@ end
 # (which depends on the 'facter' gem)
 require_relative 'rz_host_utils'
 
-# and start the rz_mk_control_server.rb script
-
-%x[sudo /usr/local/bin/rz_mk_control_server.rb 2>&1 > /var/log/webrick-server.log]
-
 # Then, wait for the network to start
 nw_is_avail = false
 rz_nw_util = RzNetworkUtils.new
@@ -72,6 +68,11 @@ if nw_is_avail then
   # available at this point)
   rz_host_util = RzHostUtils.new
   rz_host_util.set_host_name
+
+  # next, start the rz_mk_web_server and rz_mk_controller scripts
+
+  %x[sudo /usr/local/bin/rz_mk_web_server.rb 2>&1 > /var/log/mk_web_server.log]
+  %x[sudo /usr/local/bin/rz_mk_control_server.rb start]
 
   # and start up the MCollective daemon
   t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib:#{facter_lib} \

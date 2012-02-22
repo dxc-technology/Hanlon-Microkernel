@@ -11,7 +11,12 @@ if !ARGV || ARGV.length != 1 then
   puts "Usage: test-configuration.rb mk_conf_filename"
   exit(-1)
 end
+
 mk_conf_filename = ARGV[0]
+if !File.exist?(mk_conf_filename) then
+  puts "File '#{mk_conf_filename}' does not exist"
+  exit(-1)
+end
 
 # load the Microkernel Configuration from the input (YAML) file;
 # contents of this file should look something like the following:
@@ -38,11 +43,11 @@ configClient.progress = false
 
 # and invoke the action on our agents that will set the Microkernel Config
 # using the json_string generated (above)
-configClient.set_mk_config(:configuration => json_string).each do |resp|
+configClient.send_mk_config(:config_params => json_string).each do |resp|
   respData = resp[:data]
   if respData then
     printf("Registration Response: '%s' [from '%s' at %s]\n",
-      respData[:Response], resp[:sender], respData[:Time])
+      respData[:response], resp[:sender], respData[:time])
   else
     printf("[%s] %s\n", resp[:sender], resp[:statusmsg])
   end

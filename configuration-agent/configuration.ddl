@@ -6,23 +6,23 @@ metadata  :name         => "Configuration Agent",
           :url          => "http://www.emc.com",
           :timeout      => 30
 
-action "set_registration_uri",
-      :description => "Set the URI that will be used for Registration" do
+action "send_mk_config",
+      :description => "Send a new set of configuration parameters to the Microkernel agent" do
 
     display :always  # supported in 0.4.7 and newer only
  
-    input :URI,
-          :prompt      => "URI",
-          :description => "The URI to use for Registration",
+    input :config_params,
+          :prompt      => "Configuration",
+          :description => "The configuration parameters (as a JSON-formatted Hash Map)",
           :type        => :string,
           :validation  => '/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.([a-z]{2,5}|[0-9]{1,3})(:[0-9]{1,5})?(\/.*)?$/ix',
           :optional    => false,
 
-    output :Response,
+    output :response,
           :description => "The response from the Registration Servlet",
           :display_as  => "Response"
 
-    output :Time,
+    output :time,
           :description => "The time that the response was sent back at",
           :display_as  => "Time"
 
