@@ -21,6 +21,7 @@ require 'net/http'
 require 'cgi'
 require 'json'
 require 'yaml'
+require_relative 'rz_mk_registration_manager'
 
 # load the Microkernel Configuration, use the parameters in that configuration
 # to control the
@@ -28,7 +29,7 @@ mk_config_file = '/tmp/mk_conf.yaml'
 registration_manager = nil
 
 if (File.exist?(mk_config_file)) then
-  mk_conf = YAML::load(File.open(mk_conf_file))
+  mk_conf = YAML::load(File.open(mk_config_file))
 
   # now, load a few items from that mk_conf map, first the URI for
   # the server
