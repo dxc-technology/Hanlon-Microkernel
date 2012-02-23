@@ -65,8 +65,8 @@ if (File.exist?(mk_config_file)) then
   # this parameter defines which facts (by name) should be excluded from the
   # map that is reported during node registration
   exclude_pattern = mk_conf[:facts][:exclude_pattern]
-  registration_manager = RzMkRegistrationManager.new(registration_uri, exclude_pattern,
-                                                     fact_manager, logger)
+  registration_manager = RzMkRegistrationManager.new(registration_uri,
+                                    exclude_pattern, fact_manager, logger)
 
 else
 
@@ -98,15 +98,19 @@ loop do
   # end
 
   if (t1 > fact_manager.last_saved_timestamp) then
-    # haven't saved the facts since we started this iteration, so re-register
-    # the node (but only if we need to do so)
+    # haven't saved the facts since we started this iteration, so need to check
+    # to see if the facts have changed since our last registration and, if so
+    # re-register this node
     registration_manager.register_node_if_changed
   end
+
+  # check to see how much time has elapsed, sleep for the time remaining
+  # in the msecs_sleep time window
   t2 = Time.now
   msecs_elapsed = (t2 - t1) * 1000
   if (msecs_elapsed < msecs_sleep) then
     secs_sleep = (msecs_sleep - msecs_elapsed)/1000.0
-    logger.debug "Sleeping for #{secs_sleep} seconds..."
-    sleep(secs_sleep)
+    logger.debug "Time remaining: #{secs_sleep} seconds..."
+    sleep(secs_sleep) if secs_sleep >= 0.0
   end
 end

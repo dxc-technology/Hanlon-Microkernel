@@ -26,19 +26,19 @@ class RzMkRegistrationManager
     @logger = logger
   end
 
-  def register_node
+  def register_node(last_state)
     # register facts with the server, regardless of whether or not they've
     # changed since the last registration
-    register_with_server
+    register_with_server(last_state)
   end
 
-  def register_node_if_changed
+  def register_node_if_changed(last_state)
     # register facts with the server, but only if they've changed since the
     # last registration
-    register_with_server(true)
+    register_with_server(last_state, true)
   end
 
-  def register_with_server(only_if_changed = false)
+  def register_with_server(last_state, only_if_changed = false)
     # load the current facts
     fact_map = Hash.new
     Facter.flush
@@ -50,11 +50,11 @@ class RzMkRegistrationManager
     # this node
     if !only_if_changed || fact_manager.facts_have_changed?(fact_map) then
       # build a JSON string from a Hash map containing the hostname, facts, and
-      # the default_state
+      # the last_state
       json_hash = { }
       json_hash["@uuid"] = fact_map[:hostname]
       json_hash["@attributes_hash"] = fact_map
-      json_hash["@last_state"] = @default_state
+      json_hash["@last_state"] = last_state
       json_string = JSON.generate(json_hash)
       # and send that string to the service listening at the "Registration URI"
       # (this will register the node with the server at that URI)
