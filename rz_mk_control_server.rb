@@ -47,9 +47,15 @@ if (File.exist?(mk_config_file)) then
   # now, load a few items from that mk_conf map, first the URI for
   # the server
   razor_uri = mk_conf[:mk][:razor_uri]
-  # add the "node register" entry from the same configuration map to
+
+  # add the "node register" entry from that configuration map to
   # get the registration URI
   registration_uri = razor_uri + mk_conf[:node][:register]
+
+  # and add the 'node checkin' entry from that configuration map to
+  # get the checkin URI
+  checkin_uri = razor_uri + mk_conf[:node][:checkin]
+
 
   # next, the time (in secs) to sleep between iterations of the main
   # loop (below)
@@ -71,6 +77,7 @@ if (File.exist?(mk_config_file)) then
 else
 
   registration_uri = ''
+  checkin_uri = ''
   checkin_sleep = 30
   checkin_offset = 5
 
@@ -88,14 +95,21 @@ sleep(rand_secs)
 # and enter the main event-handling loop
 loop do
   t1 = Time.now
-  # send a "keep-alive" message to the server; handle the reply
-  # if reply[:action] == "ack" then
-  #   noop()
-  # else if reply[:action] == "register" && registration_manager != nil then
-  #   registration_manager.register_node
-  # else if reply[:action] == "reboot" then
-  #   trigger_node_reboot()
-  # end
+  # send a "checkin" message to the server
+  #checkin_uri_string = checkin_uri + "?uuid=#{@uuid}&last_state=idle_error"
+  #uri = URI checkin_uri + "?uuid=#{@uuid}&last_state=idle_error"
+  # then,handle the reply (could include a command that must be handled)
+  #response = Net::HTTP.get(uri)
+  #response_hash = JSON.parse(response)
+  #response_hash['errcode'].should == 0
+  #command = response_hash['response']['command_name']
+  #if command == "acknowledge" then
+  #  logger.debug "Received #{command} from #{checkin_uri_string}"
+  #else if registration_manager != nil && command == "register" then
+  #  registration_manager.register_node
+  #else if command == "reboot" then
+  #  trigger_node_reboot()
+  #end
 
   if (t1 > fact_manager.last_saved_timestamp) then
     # haven't saved the facts since we started this iteration, so need to check
