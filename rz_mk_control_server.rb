@@ -23,6 +23,7 @@ require 'json'
 require 'yaml'
 require 'logger'
 require_relative 'rz_mk_registration_manager'
+require_relative 'fact_manager'
 
 # setup a logger for our "Keep-Alive" server...
 logger = Logger.new('/tmp/rz_mk_controller.log', 5, 1024*1024)
@@ -30,6 +31,10 @@ logger.level = Logger::DEBUG
 logger.formatter = proc do |severity, datetime, progname, msg|
   "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
 end
+
+# setup the FactManager instance (we'll use this later, in our
+# RzMkRegistrationManager constructor)
+fact_manager = FactManager.new('/tmp/prev_facts.yaml')
 
 # load the Microkernel Configuration, use the parameters in that configuration
 # to control the
@@ -61,7 +66,7 @@ if (File.exist?(mk_config_file)) then
   # map that is reported during node registration
   exclude_pattern = mk_conf[:facts][:exclude_pattern]
   registration_manager = RzMkRegistrationManager.new(registration_uri, exclude_pattern,
-                                                     logger)
+                                                     fact_manager, logger)
 
 else
 
@@ -83,14 +88,20 @@ sleep(rand_secs)
 # and enter the main event-handling loop
 loop do
   t1 = Time.now
-  # send a "keep-alive" message to the server
+  # send a "keep-alive" message to the server; handle the reply
   # if reply[:action] == "ack" then
   #   noop()
   # else if reply[:action] == "register" && registration_manager != nil then
-  #   registration_manager.register_node()
+  #   registration_manager.register_node
   # else if reply[:action] == "reboot" then
   #   trigger_node_reboot()
   # end
+
+  if (t1 > fact_manager.last_saved_timestamp) then
+    # haven't saved the facts since we started this iteration, so re-register
+    # the node (but only if we need to do so)
+    registration_manager.register_node_if_changed
+  end
   t2 = Time.now
   msecs_elapsed = (t2 - t1) * 1000
   if (msecs_elapsed < msecs_sleep) then
