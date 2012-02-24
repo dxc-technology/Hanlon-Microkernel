@@ -43,7 +43,7 @@ fact_manager = FactManager.new('/tmp/prev_facts.yaml')
 mk_config_file = '/tmp/mk_conf.yaml'
 registration_manager = nil
 
-if (File.exist?(mk_config_file)) then
+if File.exist?(mk_config_file) then
   mk_conf = YAML::load(File.open(mk_config_file))
 
   # now, load a few items from that mk_conf map, first the URI for
@@ -94,39 +94,52 @@ rand_secs = rand(msecs_offset) / 1000.0
 logger.debug "Sleeping for #{rand_secs} seconds"
 sleep(rand_secs)
 
+idle = 'idle'
+
 # and enter the main event-handling loop
 loop do
-  t1 = Time.now
-  # send a "checkin" message to the server
-  #checkin_uri_string = checkin_uri + "?uuid=#{@uuid}&last_state=idle_error"
-  #uri = URI checkin_uri_string
-  # then,handle the reply (could include a command that must be handled)
-  #response = Net::HTTP.get(uri)
-  #response_hash = JSON.parse(response)
-  #response_hash['errcode'].should == 0
-  #command = response_hash['response']['command_name']
-  #if command == "acknowledge" then
-  #  logger.debug "Received #{command} from #{checkin_uri_string}"
-  #else if registration_manager != nil && command == "register" then
-  #  registration_manager.register_node
-  #else if command == "reboot" then
-  #  trigger_node_reboot()
-  #end
 
-  if (t1 > fact_manager.last_saved_timestamp) then
-    # haven't saved the facts since we started this iteration, so need to check
-    # to see if the facts have changed since our last registration and, if so
-    # re-register this node
-    registration_manager.register_node_if_changed
+  # grab the current time (used for calculation of the wait time and for
+  # determining whether or not to register the node if the facts have changed
+  # later in the event-handling loop)
+  t1 = Time.now
+
+  # send a "checkin" message to the server
+  uuid = Facter['hostname']
+  checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
+  uri = URI checkin_uri_string
+
+  # then,handle the reply (could include a command that must be handled)
+  response = Net::HTTP.get(uri)
+  response_hash = JSON.parse(response)
+  response_hash['errcode'].should == 0
+  command = response_hash['response']['command_name']
+  if command == "acknowledge" then
+    logger.debug "Received #{command} from #{checkin_uri_string}"
+  elsif registration_manager != nil && command == "register" then
+    registration_manager.register_node(idle)
+  elsif command == "reboot" then
+    trigger_node_reboot()
+  end
+
+  # if we haven't saved the facts since we started this iteration, then we
+  # need to check to see whether or not the facts have changed since our last
+  # registration; if so, then we need to re-register this node
+  if t1 > fact_manager.last_saved_timestamp then
+    registration_manager.register_node_if_changed(idle)
   end
 
   # check to see how much time has elapsed, sleep for the time remaining
   # in the msecs_sleep time window
   t2 = Time.now
   msecs_elapsed = (t2 - t1) * 1000
-  if (msecs_elapsed < msecs_sleep) then
+  if msecs_elapsed < msecs_sleep then
     secs_sleep = (msecs_sleep - msecs_elapsed)/1000.0
     logger.debug "Time remaining: #{secs_sleep} seconds..."
     sleep(secs_sleep) if secs_sleep >= 0.0
   end
+end
+
+def trigger_node_reboot()
+  logger.debug "Should be rebooting now...currently stubbed out"
 end
