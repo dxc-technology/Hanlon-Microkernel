@@ -28,15 +28,15 @@ end
 # load the Microkernel Configuration from the input (YAML) file;
 # contents of this file should look something like the following:
 #   ---
-#   :mk:
-#     :razor_uri: http://192.168.5.2:8026
-#     :checkin_sleep: 60
-#     :checkin_offset: 5
-#   :facts:
-#     :exclude_pattern: /(^uptime.*$)|(^memory.*$)/
-#   :node:
-#     :register: /razor/api/node/register
-#     :checkin: /razor/api/node/checkin
+#   mk:
+#     razor_uri: http://192.168.5.2:8026
+#     checkin_sleep: 60
+#     checkin_offset: 5
+#   facts:
+#     exclude_pattern: /(^uptime.*$)|(^memory.*$)/
+#   node:
+#     register: /razor/api/node/register
+#     checkin: /razor/api/node/checkin
 
 mk_conf = YAML::load(File.open(mk_conf_filename, 'r'))
 

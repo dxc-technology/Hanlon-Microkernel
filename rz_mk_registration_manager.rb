@@ -48,12 +48,12 @@ class RzMkRegistrationManager
     fact_map = Hash.new
     Facter.flush
     Facter.each { |name, value|
-      fact_map[name.to_sym] = value if !(name =~ @exclude_pattern)
+      fact_map[name.to_sym] = value if !@exclude_pattern || !(name =~ @exclude_pattern)
     }
     # if "only_if_changed" input argument (above) is false or current facts
     # are different from the last set of facts that were saved, then register
     # this node
-    if !only_if_changed || fact_manager.facts_have_changed?(fact_map) then
+    if !only_if_changed || @fact_manager.facts_have_changed?(fact_map) then
       # build a JSON string from a Hash map containing the hostname, facts, and
       # the last_state
       json_hash = { }
@@ -72,12 +72,9 @@ class RzMkRegistrationManager
       when Net::HTTPSuccess then
         @fact_manager.save_facts_as_prev(fact_map)
       end
-      # and construct the response back to the registration agent
-      response['Content-Type'] = response['Content-Type']
-      response.body = response.body
       # finally, if are debugging the server, output the body (as a string) to stdout
       # (which will typically be captured in a log file)
-      logger.debug response.body
+      @logger.debug response.body
       # and return the response from the server to the caller
       response
     end

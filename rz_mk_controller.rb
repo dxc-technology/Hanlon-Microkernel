@@ -16,4 +16,4 @@ options = {
   :log_output => true
 }
 
-Daemons.run('rz_mk_control_server.rb', options)
+Daemons.run('/usr/local/bin/rz_mk_control_server.rb', options)

@@ -47,7 +47,6 @@ if !File.exists?("/usr/local/bin/facter") then
   %x[sudo ln -s #{facter_exec} /usr/local/bin/facter]
 end
 
-
 # now that the bundles are installed, can require the RzHostUtils class
 # (which depends on the 'facter' gem)
 require_relative 'rz_host_utils'
@@ -76,8 +75,8 @@ if nw_is_avail then
 
   # next, start the rz_mk_web_server and rz_mk_controller scripts
 
-  %x[sudo /usr/local/bin/rz_mk_web_server.rb 2>&1 > /var/log/mk_web_server.log]
-  %x[sudo /usr/local/bin/rz_mk_control_server.rb start]
+  %x[sudo usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
+  %x[sudo /usr/local/bin/rz_mk_controller.rb start]
 
   # and start up the MCollective daemon
   t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib:#{facter_lib} \

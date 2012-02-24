@@ -19,11 +19,13 @@ unless Kernel.respond_to?(:require_relative)
   end
 end
 
+require 'rubygems'
+require 'logger'
 require 'net/http'
 require 'cgi'
 require 'json'
 require 'yaml'
-require 'logger'
+require 'facter'
 require_relative 'rz_mk_registration_manager'
 require_relative 'fact_manager'
 
@@ -48,38 +50,42 @@ if File.exist?(mk_config_file) then
 
   # now, load a few items from that mk_conf map, first the URI for
   # the server
-  razor_uri = mk_conf[:mk][:razor_uri]
+  razor_uri = mk_conf['mk']['razor_uri']
 
   # add the "node register" entry from that configuration map to
   # get the registration URI
-  registration_uri = razor_uri + mk_conf[:node][:register]
+  registration_uri = razor_uri + mk_conf['node']['register']
 
   # and add the 'node checkin' entry from that configuration map to
   # get the checkin URI
-  checkin_uri = razor_uri + mk_conf[:node][:checkin]
+  checkin_uri = razor_uri + mk_conf['node']['checkin']
 
 
   # next, the time (in secs) to sleep between iterations of the main
   # loop (below)
-  checkin_sleep = mk_conf[:mk][:checkin_sleep]
+  checkin_sleep = mk_conf['mk']['checkin_sleep']
 
   # next, the maximum amount of time to wait (in secs) the before starting
   # the main loop (below); a random number between zero and that amount of
   # time will be determined and used to ensure microkernel instances are
   # offset from each other when it comes to tasks like reporting facts to
   # the Razor server
-  checkin_offset = mk_conf[:mk][:checkin_offset]
+  checkin_offset = mk_conf['mk']['checkin_offset']
 
   # this parameter defines which facts (by name) should be excluded from the
   # map that is reported during node registration
-  exclude_pattern = mk_conf[:facts][:exclude_pattern]
+  exclude_pattern_str = mk_conf['facts']['exclude_pattern']
+  exclude_pattern = nil
+  if exclude_pattern_str && exclude_pattern_str.length > 2 then
+    len = exclude_pattern_str.length
+    exclude_pattern = Regexp.new(exclude_pattern_str[1,len-2])
+  end
   registration_manager = RzMkRegistrationManager.new(registration_uri,
                                     exclude_pattern, fact_manager, logger)
 
 else
 
-  registration_uri = ''
-  checkin_uri = ''
+  checkin_uri = nil
   checkin_sleep = 30
   checkin_offset = 5
 
@@ -104,28 +110,31 @@ loop do
   # later in the event-handling loop)
   t1 = Time.now
 
-  # send a "checkin" message to the server
-  uuid = Facter['hostname']
-  checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
-  uri = URI checkin_uri_string
+  # if the checkin_uri was defined, then send a "checkin" message to the server
+  if (checkin_uri) then
+    uuid = Facter.hostname
+    checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
+    uri = URI checkin_uri_string
 
-  # then,handle the reply (could include a command that must be handled)
-  response = Net::HTTP.get(uri)
-  response_hash = JSON.parse(response)
-  response_hash['errcode'].should == 0
-  command = response_hash['response']['command_name']
-  if command == "acknowledge" then
-    logger.debug "Received #{command} from #{checkin_uri_string}"
-  elsif registration_manager != nil && command == "register" then
-    registration_manager.register_node(idle)
-  elsif command == "reboot" then
-    trigger_node_reboot()
+    # then,handle the reply (could include a command that must be handled)
+    response = Net::HTTP.get(uri)
+    response_hash = JSON.parse(response)
+    if response_hash['errcode'] == 0 then
+      command = response_hash['response']['command_name']
+      if command == "acknowledge" then
+        logger.debug "Received #{command} from #{checkin_uri_string}"
+      elsif registration_manager && command == "register" then
+        registration_manager.register_node(idle)
+      elsif command == "reboot" then
+        trigger_node_reboot()
+      end
+    end
   end
 
   # if we haven't saved the facts since we started this iteration, then we
   # need to check to see whether or not the facts have changed since our last
   # registration; if so, then we need to re-register this node
-  if t1 > fact_manager.last_saved_timestamp then
+  if registration_manager && t1 > fact_manager.last_saved_timestamp then
     registration_manager.register_node_if_changed(idle)
   end
 

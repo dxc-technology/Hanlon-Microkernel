@@ -23,7 +23,7 @@ module MCollective
         # (which should be running at port 2156)
         uri = URI "http://localhost:2156/setMkConfig"
         json_string = request[:config_params]
-        res = Net::HTTP.post(uri, json_string)
+        res = Net::HTTP.post_form(uri, json_string)
         reply[:response] = res.message
         reply[:time] = Time.now.strftime("%Y-%m-%d %H:%M:%S")
       end

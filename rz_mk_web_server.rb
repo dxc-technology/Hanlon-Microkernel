@@ -19,6 +19,7 @@ unless Kernel.respond_to?(:require_relative)
   end
 end
 
+require 'rubygems'
 require 'logger'
 require 'net/http'
 require 'cgi'
@@ -66,10 +67,12 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     # where the razor_uri_val is a CGI-escaped version of the URI used by the
     # Razor server.  The "Registration Path" (from the uri_map, above) is added
     # to this Razor URI value in order to form the "registration_uri"
-    json_string = req
-    config_map = JSON.parse(json_string)
-    @logger.debug("Received #{config_map} from configuration agent")
+    json_string = CGI.unescape(req.body)
+    len = json_string.length
+    @logger.debug("CGI.unescapedHTML = #{json_string[0,len-1]}")
+    config_map = JSON.parse(json_string[0,len-1])
     save_mk_config(config_map)
+    %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
   end
 
 end
