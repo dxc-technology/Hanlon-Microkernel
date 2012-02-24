@@ -1,3 +1,7 @@
+# Used to manage the facts gathered (using Facter) in the Microkernel
+#
+# @author Tom McSweeney
+
 require 'rubygems'
 require 'facter'
 require 'yaml'

@@ -1,3 +1,8 @@
+# The facter agent (hosted on the managed nodes, can be used to gather facts
+# remotely using MCollective)
+#
+# @author Tom McSweeney
+
 require 'rubygems'
 require 'facter'
 require 'yaml'

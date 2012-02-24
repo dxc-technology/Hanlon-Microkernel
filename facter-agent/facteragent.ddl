@@ -1,3 +1,8 @@
+# DDL file for the facter agent (defines the actions, inputs and outputs
+# for this agent for the control node)
+#
+# @author Tom McSweeney
+
 metadata  :name         => "Facter Agent",
           :description  => "Preliminary Facter Agent",
           :author       => "Tom McSweeney",

@@ -1,4 +1,9 @@
 #!/usr/bin/env ruby
+#
+# Used during the boot process to initialize the Microkernel (install gems,
+# bundles, and start up the critical services, like MCollective)
+#
+# @author Tom McSweeney
 
 # adds a "require_relative" function to the Ruby Kernel if it
 # doesn't already exist (used to deal with the fact that

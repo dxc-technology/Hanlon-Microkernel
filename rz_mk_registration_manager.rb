@@ -1,3 +1,8 @@
+# Manages the registration process (used by the rz_mk_control_server to
+# register node with the Razor server on request or when facts change)
+#
+# @author Tom McSweeney
+
 # adds a "require_relative" function to the Ruby Kernel if it
 # doesn't already exist (used to deal with the fact that
 # "require" is used instead of "require_relative" prior

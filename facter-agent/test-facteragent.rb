@@ -1,4 +1,9 @@
 #!/usr/bin/env ruby
+#
+# A demo SimpleRPC client that interacts with the facter agent to gather
+# facts through the MCollective
+#
+# @author Tom McSweeney
 
 $LOAD_PATH << "/usr/share/mcollective/lib"
 require 'mcollective'

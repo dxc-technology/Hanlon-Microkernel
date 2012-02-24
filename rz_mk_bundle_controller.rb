@@ -2,6 +2,8 @@
 
 # This class makes call to the "bundle" CLI (provided by the bundler RubyGem) to install
 # bundles in the stated directory.
+#
+# @author Tom McSweeney
 
 class RzMkBundleController
 

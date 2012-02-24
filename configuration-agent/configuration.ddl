@@ -1,3 +1,8 @@
+# DDL file for the configuration agent (defines the actions, inputs and outputs
+# for this agent for the control node)
+#
+# @author Tom McSweeney
+
 metadata  :name         => "Configuration Agent",
           :description  => "Razor Microkernel Configuration Agent",
           :author       => "Tom McSweeney",

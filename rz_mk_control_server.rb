@@ -4,6 +4,8 @@
 # it starts up a WEBrick server that can be used to control the Microkernel
 # (commands to the Microkernel are invoked using Servlets running in the
 # WEBrick instance)
+#
+# @author Tom McSweeney
 
 # adds a "require_relative" function to the Ruby Kernel if it
 # doesn't already exist (used to deal with the fact that
@@ -97,7 +99,7 @@ loop do
   t1 = Time.now
   # send a "checkin" message to the server
   #checkin_uri_string = checkin_uri + "?uuid=#{@uuid}&last_state=idle_error"
-  #uri = URI checkin_uri + "?uuid=#{@uuid}&last_state=idle_error"
+  #uri = URI checkin_uri_string
   # then,handle the reply (could include a command that must be handled)
   #response = Net::HTTP.get(uri)
   #response_hash = JSON.parse(response)

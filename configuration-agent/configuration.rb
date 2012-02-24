@@ -1,3 +1,9 @@
+# The configuration agent (hosted on the managed nodes, works with the
+# rz_web_server to save the new configuration to the filesystem on the
+# Microkernel and restart the rz_mk_contoller)
+#
+# @author Tom McSweeney
+
 require 'net/http'
 
 module MCollective

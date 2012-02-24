@@ -4,6 +4,8 @@
 # it starts up a WEBrick server that can be used to control the Microkernel
 # (commands to the Microkernel are invoked using Servlets running in the
 # WEBrick instance)
+#
+# @author Tom McSweeney
 
 # adds a "require_relative" function to the Ruby Kernel if it
 # doesn't already exist (used to deal with the fact that

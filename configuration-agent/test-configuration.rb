@@ -1,4 +1,11 @@
 #!/usr/bin/env ruby
+#
+# A demo SimpleRPC client that interacts with the configuration agent to set
+# the configuration of the services running in the Microkernel through the
+# MCollective (will probably construct a Razor server-side daemon that does
+# something like what's here, but that remains to be seen)
+#
+# @author Tom McSweeney
 
 $LOAD_PATH << "/usr/lib/ruby/1.8"
 require 'mcollective'
