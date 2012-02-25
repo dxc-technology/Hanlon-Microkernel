@@ -150,5 +150,7 @@ loop do
 end
 
 def trigger_node_reboot()
-  logger.debug "Should be rebooting now...currently stubbed out"
+  # reboots the node, NOW...no sense in logging this since the "filesystem"
+  # is all in memory and will disappear when the reboot happens
+  %x[sudo reboot now]
 end
