@@ -1,8 +1,9 @@
 This project contains the Ruby scripts/classes that are used to
 control the Razor Microkernel (and that interact with the Razor server).
-There are three primary services that are included in this project which
-are started up during the boot process when the Microkernel is booted on
-a node.  Those services include:
+The files contained in this project are bundled into the current version
+of the Razor Microkernel (v0.1.2.0).  There are three primary services that
+are included in this project that are started up during the Microkernel boot
+process.  Those services include:
 
       1. The Configuration Agent, which can be found in the
          configuration-agent directory
@@ -17,35 +18,35 @@ a node.  Those services include:
          Configuration Agent) to push configuration changes from the
          Razor Server to the Razor Microkernel instances.
 
-In addition, there are associated ruby files that are used by these services,
-a set of gems and bundles that are installed dynamically when the Microkernel
+In addition, this project also includes a number of additional ruby files
+and configuration files that are used by these services, a set of gems and
+bundles that are installed dynamically each time that the Microkernel
 boots (under the opt/gems and opt/bundles directories, respectively), a copy
 of the 'bootlocal.sh' script (which is, again, under the opt directory in this
-project, and the 'rz_mk_init.rb' script itself, which is used by that
+project), and the 'rz_mk_init.rb' script itself (which is used by that
 bootlocal.sh script to start the appropriate Ruby-based services during the
-Microkernel boot process
+Microkernel boot process).
 
 Copies of the files that appear at the top-level of this project's directory
-structure are typically meant meant to be installed in the /usr/local/bin
-directory of the Microkernel.  The files contained in this project are not
-meant to represent the complete set of files that are needed to build
-an instance of the Microkernel ISO.  Instructions for building a new ISO
+structure can be found in the /usr/local/bin directory of the Microkernel.
+This project does not include all of the files that are needed to build a new
+instance of the Microkernel ISO.  Instructions for building a new ISO
 instance and the files needed to do so maintained elsewhere.  There are
 also a number of extensions to the standard Tiny Core Linux ISO that are
 bundled into the Razor Microkernel which are not included in this project.
 Again, instructions for where to obtain these extensions and how to use them
-to build your own Microkernel ISO are available but they are not maintained
-as a part of this project.  We are in the process of determining how best to
-keep copies of these files so that they are easily accessible from this
-project, but there currently is no simple way to do so (since they typically
-take the form of large binary objects, and Git doesn't deal too well with
-large binary objects.
+to build your own Microkernel ISO are available elsewhere, and those files are
+not included in this project.  We are in the process of determining how best to
+keep copies of these additional files so that they are easily accessible from
+this project, but there currently is no simple way to do so (since they
+typically take the form of large binary objects, and Git doesn't deal too well
+with large binary objects).
 
 TO DO Items:
 
         1. Add ability to deal with multiple registration servers
 
-        2. Add additional Actions to the Microkernel Controller; may take
+        2. Add additional actions to the Microkernel Controller; may take
            the form of pluggable extensions that can be downloaded and
            dynamically loaded upon the receipt of an (authorized) command
            in the "checkin" reply...more to come on this
