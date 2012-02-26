@@ -1,0 +1,196 @@
+There are two types of files that are not maintained under revision control
+in this project at this time (Git does a pretty bad job when it comes to maintaining
+multiple versions of large binary files. The first file (iso-build-files.tar.gz) is
+built for each revision of the Microkernel and contains all of the files that are
+needed to rebuild a new Microkernel ISO (i.e. a Microkernel ISO corresponding to
+the one that we are using in the Razor project). Unpacking this file will result
+in a directory structure that looks something like the following being created in
+the current working directory:
+
+                          microcore-current-files
+                                   |
+                                   |
+                             tcl-4.2.1-files
+                                   |
+                                   |
+                     -----------------------------
+                     |             |             |
+                     |             |             |
+                   newiso       extract         tmp
+
+In this directory structure, the "extract" subdirectory contains all of the
+files that were extracted from the core.gz file that is contained in the
+original Core-current.iso file from the Tiny Core Linux (v4.2.1) distribution.
+The "tmp" directory, on the other hand, contains all of the files that were
+used to create the customized version of this same core.gz file (the
+customized version that appears in the Microkernel ISO that we are using in
+Razor). The new core.gz file was then used to replace the file that appears
+in the boot subdirectory of "newiso" subdirectory (which originally contained
+a copy of the contents of the Core-current.iso file).  As such, the "newiso"
+subdirectory contains all of the contents of the ISO file that we are using
+in the Razor project.
+
+If the iso-build-files.tar.gz tarfile is extracted, the microcore-current-files
+subdirectory contains an another file (in addition to the three directories
+mentioned above).  That file is a shell script (rebuild_iso.sh) that can be
+used to build a new ISO after changes are made to the contents of the "tmp"
+or "newiso" directories.  The shell script will run all of the appropriate
+commands (there are about 8 of them) to build the new core.gz file,
+place it in the appropriate location in the newiso directory, and then build
+the new ISO from the contents of that directory. When the script finishes,
+a new ISO will be built that can be used to boot machines.
+
+The second file is the Microkernel image itself (which is distributed in the
+form of an ISO).  There are two versions of Tiny Core Linux that have been
+used to build this image file, the current release is based on TCL v4.2.1
+In addition to the Ruby scripts that are maintained in this project, each
+Microkernel image in this includes the following extensions to the "stock"
+Tiny Core Linux distro that it was built from:
+
+        1. Ruby (v1.8.7)
+        2. Bash
+        3. OpenSSH (v5.8p1)
+        4. MCollective (v1.2.1)
+        5. RubyGems (v1.8.15)
+        6. dmidecode (v2.11)  <- (Added in v0.0.2.0)
+
+When these ISOs are used as the boot image for a node, scripts will
+automatically be run after the node boots that will start an SSH daemon
+and the MCollective daemon, a WEBrick instance, and the Microkernel
+Controller daemon.  Once the MCollective daemon is started, the node
+can be controllable from the MCollective Control Node.
+
+At this time, the MCollective daemon's configuration (which appears in the
+/usr/local/etc/mcollective directory of the Microkernel's filesystem) is
+"hard-coded" into the ISO, as is the public/private host key pair that
+is used by the SSH daemon.  The "fixed" public/private host key pair
+(which is the same for all Microkernel instances based on the current ISO)
+isn't really an issue, because this service will be pulled out of any
+Microkernel ISO that is rolled out into a production environment (to
+prevent command-line access to the nodes when they are being managed by
+the Microkernel).
+
+In addition to the extensions that were mentioned previously, we have also made
+the following changes to the "stock" Tiny Core Linux distro when building out
+the current version of the Razor Microkernel (v0.0.2.0):
+
+        1. We have reduced the boot prompt timeout (defined in the
+           /boot/isolinux/isolinux.cfg file in the ISO itself) to
+           approximately 10 seconds (the original value was 30 seconds)
+
+        2. We have modified the /opt/bootlocal.sh script that is include
+           in the microcore.gz file used by the Microkernel (which can be
+           found in the ISO's /boot directory) so that when the Microkernel
+           is booted it will automatically:
+
+                a. Starts the SSH daemon
+                b. Installs the Bundler RubyGem
+                c. Uses the Bundler RubyGem to install the stomp, facter,
+                   daemons, json_pure, and bluepill bundles
+
+           Once the stomp bundle is installed, that same script changes the
+           hostname (in the /etc/hosts and /etc/hostname files using the 'sed'
+           command and also logically using the 'hostname' command) and then
+           starts the MCollective agent (but it only performs these two tasks
+           after the network is available; this ensures that MAC address for
+           the 'eth0' adapter is available through Facter and the that
+           the MCollective agent will be able to establish a connection to
+           the MCollective Control Node).
+
+         3. We have added a pair of MCollective agents to the
+            /usr/local/mcollective/plugins/mcollective/agent subdirectory.
+            One agent is a test agent that simply echos back the message
+            sent to it, along with the time that message was receive. The
+            second agent (facteragent.rb) provides access to "Facter" on
+            each instance of the Microkernel through the MCollective.
+
+         4. We have constructed a wrapper (rz_mk_controller.rb)
+            around the rz_mk_control_server.rb script that daemonizes the
+            latter script and allows us to easily control it from the
+            command line using the former.  The usage for the "control"
+            script is as follows:
+
+            Usage: rz_mk_controller.rb <command> <options> -- <application options>
+
+            * where <command> is one of:
+              start         start an instance of the application
+              stop          stop all instances of the application
+              restart       stop all instances and restart them afterwards
+              reload        send a SIGHUP to all instances of the application
+              run           start the application and stay on top
+              zap           set the application to a stopped state
+              status        show status (PID) of application instances
+
+            * and where <options> may contain several of the following:
+
+                -t, --ontop                      Stay on top (does not daemonize)
+                -f, --force                      Force operation
+                -n, --no_wait                    Do not wait for processes to stop
+
+            Common options:
+                -h, --help                       Show this message
+                    --version                    Show version
+
+            As you can see, options are provided to start, stop, restart, reload,
+            and check the status of the underlying rz_mk_controller process.
+
+         5. We added an MCollective agent (the Configuration agent) to the
+            Microkernel.  Currently, this agent has one action defined
+            (send_mk_config) but additional actions could be added in the
+            future.  The "send_mk_config" action takes one argument
+            (which MUST be a JSON-ized version of the configuration being
+            passed to the managed node) and passes that string to the WEBrick
+            instance running on the node via a POST operation. If the
+            configuration received is different from the current configuration
+            for the controller, then the WEBrick saves the new configuration
+            to a file and restarts the Microkernel Controller.  This forces an
+            update to the Microkernel Controller's configuration.
+
+         6. One of the Microkernel Controller configuration options is a pattern
+            that defines which of the Facter "facts" (if any) should be
+            excluded from the registration details that are passed to the
+            Razor server by the Microkernel Controller.  Currently, only "facts"
+            that have names that start with the string "uptime" or "memory" are
+            excluded, but this could be changed later.
+
+         7. The Microkernel Controller POSTs a JSON-formatted string representation
+            of the facts discovered using Facter to the registration URI received
+            from the Configuration agent.  This "registration" procedure is triggered
+            any time that the Microkernel Controller detects a change in the facts
+            that it has gathered (versus the facts last reported to the Razor server
+            using this same registration procedure).  The node will not register
+            with the Razor server until it has received a configuration that includes
+            the URI that it should register with.  This functionality will be
+            triggered by a service in the Razor server that periodically sends
+            out the registration URI (perhaps even a different URI to different
+            types of nodes), but (for now) this functionality can be triggered
+            directly from the MCollective Control Node using the
+            'test-configuration.rb' script (which can be found in the
+            'configuration-agent' subdirectory).  An example of using this
+            script from the command line is something like the following:
+
+            # test-configuration.rb mk_conf.yaml
+
+            This command tells all of the configuration-agents to use the
+            contents of the mk_conf.yaml file as the new configuration for
+            their Microkernel Controller.  An example of this YAML file is
+            included in this project.  The fields contained in that example
+            file are all REQUIRED fields (and some may need to be changed
+            to reflect the local network that the Razor server has been
+            instantiated in.
+
+All of these changes (and the procedure that was followed to make them) can be
+found in the following pages:
+
+        1. Remastering the Microkernel ISO:
+
+        http://dcade.lss.emc.com/confluence/display/ASI/Remastering+the+Microkernel+ISO
+
+        2. Reconfiguring the Microkernel to include the "extras" that are
+           described above:
+
+        http://dcade.lss.emc.com/confluence/display/ASI/Microkernel+Configuration
+
+        3. Configuring an MCollective Agent
+
+        http://dcade.lss.emc.com/confluence/display/ASI/Configuring+an+MCollective+Agent
