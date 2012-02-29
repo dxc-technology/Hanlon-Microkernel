@@ -3,6 +3,9 @@
 # Used during the boot process to initialize the Microkernel (install gems,
 # bundles, and start up the critical services, like MCollective)
 #
+# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
+# Copyright © 2012 EMC Corporation, All Rights Reserved
+#
 # @author Tom McSweeney
 
 # adds a "require_relative" function to the Ruby Kernel if it

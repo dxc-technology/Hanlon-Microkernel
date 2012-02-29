@@ -1,6 +1,9 @@
 # DDL file for the facter agent (defines the actions, inputs and outputs
 # for this agent for the control node)
 #
+# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
+# Copyright © 2012 EMC Corporation, All Rights Reserved
+#
 # @author Tom McSweeney
 
 metadata  :name         => "Facter Agent",

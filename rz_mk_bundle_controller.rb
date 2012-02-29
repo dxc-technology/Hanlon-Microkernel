@@ -3,6 +3,9 @@
 # This class makes call to the "bundle" CLI (provided by the bundler RubyGem) to install
 # bundles in the stated directory.
 #
+# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
+# Copyright © 2012 EMC Corporation, All Rights Reserved
+#
 # @author Tom McSweeney
 
 class RzMkBundleController

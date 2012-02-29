@@ -5,6 +5,9 @@
 # (commands to the Microkernel are invoked using Servlets running in the
 # WEBrick instance)
 #
+# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
+# Copyright © 2012 EMC Corporation, All Rights Reserved
+#
 # @author Tom McSweeney
 
 # adds a "require_relative" function to the Ruby Kernel if it

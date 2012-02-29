@@ -1,6 +1,9 @@
 # The facter agent (hosted on the managed nodes, can be used to gather facts
 # remotely using MCollective)
 #
+# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
+# Copyright © 2012 EMC Corporation, All Rights Reserved
+#
 # @author Tom McSweeney
 
 require 'rubygems'
