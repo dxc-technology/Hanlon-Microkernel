@@ -1,8 +1,8 @@
 ---
 mk:
-  razor_uri: http://192.168.5.2:8026
-  checkin_sleep: 60
-  checkin_offset: 5
+  razor_uri: http://RAZOR_URI_IP_ADDR:8026
+  checkin_sleep: 10
+  checkin_offset: 2
 facts:
   exclude_pattern: /(^uptime.*$)|(^memory.*$)/
 node:

@@ -57,7 +57,10 @@ class RzMkRegistrationManager
       # build a JSON string from a Hash map containing the hostname, facts, and
       # the last_state
       json_hash = { }
-      json_hash["@uuid"] = fact_map[:hostname]
+      # UUID is constructed from the Microkernel hostname, but is a subset the hostname
+      # value (just remove the 'mk' prefix from the hostname and use the rest as the
+      # UUID value for the node)
+      json_hash["@uuid"] = fact_map[:hostname][2..-1]
       json_hash["@attributes_hash"] = fact_map
       json_hash["@last_state"] = last_state
       json_string = JSON.generate(json_hash)

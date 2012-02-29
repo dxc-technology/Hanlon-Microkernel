@@ -105,37 +105,44 @@ idle = 'idle'
 # and enter the main event-handling loop
 loop do
 
-  # grab the current time (used for calculation of the wait time and for
-  # determining whether or not to register the node if the facts have changed
-  # later in the event-handling loop)
-  t1 = Time.now
+  begin
+    # grab the current time (used for calculation of the wait time and for
+    # determining whether or not to register the node if the facts have changed
+    # later in the event-handling loop)
+    t1 = Time.now
 
-  # if the checkin_uri was defined, then send a "checkin" message to the server
-  if (checkin_uri) then
-    uuid = Facter.hostname
-    checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
-    uri = URI checkin_uri_string
+    # if the checkin_uri was defined, then send a "checkin" message to the server
+    if (checkin_uri) then
+      uuid = Facter.hostname[2..-1]     # subset to remove the 'mk' prefix
+      checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
+      uri = URI checkin_uri_string
 
-    # then,handle the reply (could include a command that must be handled)
-    response = Net::HTTP.get(uri)
-    response_hash = JSON.parse(response)
-    if response_hash['errcode'] == 0 then
-      command = response_hash['response']['command_name']
-      if command == "acknowledge" then
-        logger.debug "Received #{command} from #{checkin_uri_string}"
-      elsif registration_manager && command == "register" then
-        registration_manager.register_node(idle)
-      elsif command == "reboot" then
-        trigger_node_reboot()
+      # then,handle the reply (could include a command that must be handled)
+      response = Net::HTTP.get(uri)
+      response_hash = JSON.parse(response)
+      if response_hash['errcode'] == 0 then
+        command = response_hash['response']['command_name']
+        if command == "acknowledge" then
+          logger.debug "Received #{command} from #{checkin_uri_string}"
+        elsif registration_manager && command == "register" then
+          registration_manager.register_node(idle)
+        elsif command == "reboot" then
+          # reboots the node, NOW...no sense in logging this since the "filesystem"
+          # is all in memory and will disappear when the reboot happens
+          %x[sudo reboot now]
+        end
       end
     end
-  end
 
-  # if we haven't saved the facts since we started this iteration, then we
-  # need to check to see whether or not the facts have changed since our last
-  # registration; if so, then we need to re-register this node
-  if registration_manager && t1 > fact_manager.last_saved_timestamp then
-    registration_manager.register_node_if_changed(idle)
+    # if we haven't saved the facts since we started this iteration, then we
+    # need to check to see whether or not the facts have changed since our last
+    # registration; if so, then we need to re-register this node
+    if registration_manager && t1 > fact_manager.last_saved_timestamp then
+      registration_manager.register_node_if_changed(idle)
+    end
+
+  rescue
+    logger.debug("An exception occurred: #{$!}")
   end
 
   # check to see how much time has elapsed, sleep for the time remaining
@@ -147,10 +154,5 @@ loop do
     logger.debug "Time remaining: #{secs_sleep} seconds..."
     sleep(secs_sleep) if secs_sleep >= 0.0
   end
-end
 
-def trigger_node_reboot()
-  # reboots the node, NOW...no sense in logging this since the "filesystem"
-  # is all in memory and will disappear when the reboot happens
-  %x[sudo reboot now]
 end
