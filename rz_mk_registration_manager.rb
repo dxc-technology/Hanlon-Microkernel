@@ -21,7 +21,7 @@ end
 require 'rubygems'
 require 'facter'
 require 'yaml'
-require_relative 'fact_manager'
+require_relative 'rz_mk_fact_manager'
 
 class RzMkRegistrationManager
 
@@ -57,6 +57,7 @@ class RzMkRegistrationManager
     # are different from the last set of facts that were saved, then register
     # this node
     if !only_if_changed || @fact_manager.facts_have_changed?(fact_map) then
+      @logger.debug "Build registration string"
       # build a JSON string from a Hash map containing the hostname, facts, and
       # the last_state
       json_hash = { }
@@ -70,12 +71,13 @@ class RzMkRegistrationManager
       # and send that string to the service listening at the "Registration URI"
       # (this will register the node with the server at that URI)
       uri = URI @registration_uri
-      puts "Sending new factMap to '" + uri.to_s + "' => " + json_string
+      @logger.debug "Sending new factMap to '" + uri.to_s + "' => " + json_string
       response = Net::HTTP.post_form(uri, 'json_hash' => json_string)
       # if we were successful in registering with the server, save the current
       # facts as the previous facts
       case response
       when Net::HTTPSuccess then
+        @logger.debug "Successfully registered node..."
         @fact_manager.save_facts_as_prev(fact_map)
       end
       # finally, if are debugging the server, output the body (as a string) to stdout

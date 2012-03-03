@@ -27,8 +27,9 @@ require 'logger'
 require 'net/http'
 require 'cgi'
 require 'json'
-require 'yaml'
 require 'webrick'
+require_relative 'rz_mk_configuration_manager'
+
 include WEBrick
 
 # setup a logger for our HTTP server...
@@ -53,21 +54,8 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     super(server)
     @logger = logger
     @mk_config_file = mk_config_file
-  end
-
-  def mk_config_has_changed?(new_mk_config_map)
-    return true if !File.exists?(@mk_config_file)
-    @logger.debug("File exists; check to see if the config has changed")
-    old_mk_config_map = YAML::load(File.open(@mk_config_file, 'r'))
-    return_val = old_mk_config_map != new_mk_config_map
-    @logger.debug("mk_config_has_changed? => #{return_val}")
-    return old_mk_config_map != new_mk_config_map
-  end
-
-  def save_mk_config(mk_config_map)
-    File.open(@mk_config_file, 'w') { |file|
-      YAML::dump(mk_config_map, file)
-    }
+    # get a reference to the Configuration Manager instance (a singleton)
+    @conf_manager = RzMkConfigurationManager.instance
   end
 
   def do_POST(req, res)
@@ -80,25 +68,31 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     # Razor server.  The "Registration Path" (from the uri_map, above) is added
     # to this Razor URI value in order to form the "registration_uri"
     json_string = CGI.unescape(req.body)
-    len = json_string.length
-    @logger.debug("CGI.unescapedHTML = #{json_string[0,len-1]}")
-    config_map = JSON.parse(json_string[0,len-1])
+    @logger.debug("in POST; configuration received...#{json_string}")
+    # Note: have to truncate the CGI escaped body to get rid of the trailing '='
+    # character (have no idea where this comes from, but it's part of the body in
+    # a "post_form" request)
+    config_map = JSON.parse(json_string[0..-2])
     # create a new HTTP Response
     config = WEBrick::Config::HTTP
     resp = WEBrick::HTTPResponse.new(config)
-    if !mk_config_has_changed?(config_map) then
-      resp['Content-Type'] = 'json/application'
-      return_msg = 'Configuration unchanged; no update'
-      resp['message'] = JSON.generate({'json_received' => config_map,
-                                       'message' => return_msg })
-      @logger.debug("#{return_msg}...")
-    else
-      save_mk_config(config_map)
+    # check to see if the configuration has changed
+    if @conf_manager.mk_config_has_changed?(config_map, @mk_config_file, @logger)
+      # if the configuration has changed, then save the new configuration and restart the
+      # Microkernel Controller (forces it to pick up the new configuration)
+      @conf_manager.save_mk_config(config_map, @mk_config_file, @logger)
       @logger.debug("Config changed, restart the controller...")
       %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
       return_msg = 'New configuration saved, Microkernel Controller restarted'
       resp['Content-Type'] = 'text/plain'
       resp['message'] = return_msg
+      @logger.debug("#{return_msg}...")
+    else
+      # otherwise, just log the fact that the configuration has not changed in the response
+      resp['Content-Type'] = 'json/application'
+      return_msg = 'Configuration unchanged; no update'
+      resp['message'] = JSON.generate({'json_received' => config_map,
+                                       'message' => return_msg })
       @logger.debug("#{return_msg}...")
     end
   end

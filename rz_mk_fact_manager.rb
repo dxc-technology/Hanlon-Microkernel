@@ -9,7 +9,7 @@ require 'rubygems'
 require 'facter'
 require 'yaml'
 
-class FactManager
+class RzMkFactManager
 
   attr_accessor :prev_facts_filename
   attr_reader :last_saved_timestamp
