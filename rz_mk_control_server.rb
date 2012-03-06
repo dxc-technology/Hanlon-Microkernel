@@ -33,9 +33,12 @@ require_relative 'rz_mk_registration_manager'
 require_relative 'rz_mk_fact_manager'
 require_relative 'rz_mk_configuration_manager'
 
+# get a reference to the Configuration Manager instance (a singleton)
+config_manager = RzMkConfigurationManager.instance
+
 # setup a logger for our "Keep-Alive" server...
 logger = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
-logger.level = Logger::DEBUG
+logger.level = config_manager.default_mk_log_level
 logger.formatter = proc do |severity, datetime, progname, msg|
   "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
 end
@@ -44,43 +47,47 @@ end
 # RzMkRegistrationManager constructor)
 fact_manager = RzMkFactManager.new('/tmp/prev_facts.yaml')
 
-# load the Microkernel Configuration, use the parameters in that configuration
-# to control the
-mk_config_file = '/tmp/mk_conf.yaml'
+# and set the Registration Manager to nil (will update this, below)
 registration_manager = nil
 
-if File.exist?(mk_config_file) then
-  mk_conf = YAML::load(File.open(mk_config_file))
+# test to see if the configuration file exists
+if config_manager.config_file_exists? then
 
-  # now, load a few items from that mk_conf map, first the URI for
-  # the server
-  razor_uri = mk_conf['mk_uri']
+  # load the Microkernel Configuration, use the parameters in that
+  # configuration to setup the Microkernel Controller
+  config_manager.load_current_config(logger)
 
-  # add the "node register" entry from that configuration map to
-  # get the registration URI
-  registration_uri = razor_uri + mk_conf['mk_register_path']
+  # now, load a few items from the configuration manager, first the log
+  # level that the Microkernel should use
+  logger.level = config_manager.mk_log_level
+
+  # Next, grab the URI for the Razor Server
+  razor_uri = config_manager.mk_uri
+
+  # add the "node register" entry from the configuration map to that URI
+  # to get the registration URI
+  registration_uri = razor_uri + config_manager.mk_register_path
   logger.debug "registration_uri = #{registration_uri}"
 
-  # and add the 'node checkin' entry from that configuration map to
-  # get the checkin URI
-  checkin_uri = razor_uri + mk_conf['mk_checkin_path']
+  # and add the 'node checkin' entry from the configuration map to that URI
+  # to get the checkin URI
+  checkin_uri = razor_uri + config_manager.mk_checkin_path
   logger.debug "checkin_uri = #{checkin_uri}"
-
 
   # next, the time (in secs) to sleep between iterations of the main
   # loop (below)
-  checkin_interval = mk_conf['mk_checkin_interval']
+  checkin_interval = config_manager.mk_checkin_interval
 
   # next, the maximum amount of time to wait (in secs) the before starting
   # the main loop (below); a random number between zero and that amount of
   # time will be determined and used to ensure microkernel instances are
   # offset from each other when it comes to tasks like reporting facts to
   # the Razor server
-  checkin_skew = mk_conf['mk_checkin_skew']
+  checkin_skew = config_manager.mk_checkin_skew
 
   # this parameter defines which facts (by name) should be excluded from the
   # map that is reported during node registration
-  exclude_pattern = Regexp.new(mk_conf['mk_fact_excl_pattern'])
+  exclude_pattern = config_manager.mk_fact_excl_pattern
   logger.debug "exclude_pattern = #{exclude_pattern}"
   registration_manager = RzMkRegistrationManager.new(registration_uri,
                                                      exclude_pattern, fact_manager, logger)
@@ -92,10 +99,6 @@ else
   checkin_skew = 5
 
 end
-
-# get a reference to the Configuration Manager instance (a singleton); will use this
-# to see if the configuration needs to be updated (below)
-conf_manager = RzMkConfigurationManager.instance
 
 # convert the sleep times to milliseconds (for generating random skew value
 # and calculation of time remaining in each iteration; these will be to
@@ -150,7 +153,7 @@ loop do
         if config_map
           # check to see if the configuration from the response is different from the current
           # Microkernel Controller configuration
-          if conf_manager.mk_config_has_changed?(config_map, mk_config_file, logger)
+          if config_manager.mk_config_has_changed?(config_map, logger)
             # If it has changed, then post the new configuration to the WEBrick instance
             # (which will trigger a restart of this Microkernel Controller instance)
             config_map_string = JSON.generate(config_map)

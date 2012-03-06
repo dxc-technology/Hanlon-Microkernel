@@ -32,17 +32,15 @@ require_relative 'rz_mk_configuration_manager'
 
 include WEBrick
 
-# setup a logger for our HTTP server...
+# get a reference to the Configuration Manager instance (a singleton)
+config_manager = RzMkConfigurationManager.instance
 
+# setup a logger for our HTTP server...
 logger = Logger.new('/var/log/rz_mk_web_server.log', 5, 1024*1024)
-logger.level = Logger::DEBUG
+logger.level = config_manager.default_mk_log_level
 logger.formatter = proc do |severity, datetime, progname, msg|
   "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
 end
-
-# define YAML file to use for serialization of the Microkernel configuration
-
-mk_config_file = '/tmp/mk_conf.yaml'
 
 # next, define our actions (as servlets)...for now we have one (used to
 # save the Microkernel Configuration that is received from the MCollective
@@ -50,15 +48,16 @@ mk_config_file = '/tmp/mk_conf.yaml'
 
 class MKConfigServlet < HTTPServlet::AbstractServlet
 
-  def initialize(server, logger, mk_config_file)
+  def initialize(server, logger)
     super(server)
     @logger = logger
-    @mk_config_file = mk_config_file
     # get a reference to the Configuration Manager instance (a singleton)
-    @conf_manager = RzMkConfigurationManager.instance
+    @config_manager = RzMkConfigurationManager.instance
   end
 
   def do_POST(req, res)
+    # get a reference to the Configuration Manager instance (a singleton)
+    config_manager = RzMkConfigurationManager.instance
     # get the Razor URI from the request body; it should be included in
     # the body in the form of a string that looks something like the following:
     #
@@ -77,10 +76,11 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     config = WEBrick::Config::HTTP
     resp = WEBrick::HTTPResponse.new(config)
     # check to see if the configuration has changed
-    if @conf_manager.mk_config_has_changed?(config_map, @mk_config_file, @logger)
+    if @config_manager.mk_config_has_changed?(config_map, @logger)
       # if the configuration has changed, then save the new configuration and restart the
       # Microkernel Controller (forces it to pick up the new configuration)
-      @conf_manager.save_mk_config(config_map, @mk_config_file, @logger)
+      @config_manager.save_mk_config(config_map, @logger)
+      @logger.level = @config_manager.mk_log_level
       @logger.debug("Config changed, restart the controller...")
       %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
       return_msg = 'New configuration saved, Microkernel Controller restarted'
@@ -105,7 +105,7 @@ s = HTTPServer.new(:Port => 2156, :ServerType => WEBrick::Daemon)
 
 # mount our servlets as directories under our HTTP server's URI
 
-s.mount("/setMkConfig", MKConfigServlet, logger, mk_config_file)
+s.mount("/setMkConfig", MKConfigServlet, logger)
 
 # setup the server to shut down if the process is shut down
 

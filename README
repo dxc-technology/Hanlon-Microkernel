@@ -1,7 +1,7 @@
 This project contains the Ruby scripts/classes that are used to
 control the Razor Microkernel (and that interact with the Razor server).
 The files contained in this project are bundled into the current version
-of the Razor Microkernel (v0.1.5.0).  There are three primary services that
+of the Razor Microkernel (v0.1.6.0).  There are three primary services that
 are included in this project that are started up during the Microkernel boot
 process.  Those services include:
 
