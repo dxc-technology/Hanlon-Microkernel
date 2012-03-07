@@ -28,12 +28,27 @@ bootlocal.sh script to start the appropriate Ruby-based services during the
 Microkernel boot process).
 
 Copies of the files that appear at the top-level of this project's directory
-structure can be found in the /usr/local/bin directory of the Microkernel.
-This project does not include all of the files that are needed to build a new
-instance of the Microkernel ISO.  Instructions for building a new ISO
-instance and the files needed to do so maintained elsewhere.  There are
-also a number of extensions to the standard Tiny Core Linux ISO that are
-bundled into the Razor Microkernel which are not included in this project.
+structure can be found in the /usr/local/bin directory of the Microkernel.  In
+addition, the files that appear in the razor_microkernel subdirectory of this
+project are all part of the RazorMicrokernel module, and those files are placed
+in the /usr/local/lib/ruby/1.8 directory in the Microkernel ISO (ideally this
+would be done as part of a "gem install", but we'll leave that work for a later
+refactoring of this project.  Finally, there are two MCollective SimpleRPC
+agents defined in this project (in the facter-agent and configuration-agent
+subdirectories).  The agents from these two folders are place in the
+/usr/local/mcollective/plugin/mcollective/agent directories in the Microkernel
+ISO (where they should be place if they are to be run by the MCollective
+daemon that runs on the Microkernel).  The other two files in those project
+subdirectories represent the DDL for each agent and an associated test
+SimpleRPC client (in the form of a Ruby script).  These files are meant to
+be placed on the Razor Server (or the MCollective Control Node if that is
+on a different machine).
+
+It should be noted that this project does not include all of the files that
+are needed to build a new instance of the Microkernel ISO.  Instructions for
+building a new ISO instance and the files needed to do so maintained elsewhere.
+There are also a number of extensions to the standard Tiny Core Linux ISO that
+are bundled into the Razor Microkernel which are not included in this project.
 Again, instructions for where to obtain these extensions and how to use them
 to build your own Microkernel ISO are available elsewhere, and those files are
 not included in this project.  We are in the process of determining how best to
