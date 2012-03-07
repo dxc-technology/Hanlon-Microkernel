@@ -10,37 +10,16 @@
 #
 # @author Tom McSweeney
 
-# adds a "require_relative" function to the Ruby Kernel if it
-# doesn't already exist (used to deal with the fact that
-# "require" is used instead of "require_relative" prior
-# to Ruby v1.9.2)
-unless Kernel.respond_to?(:require_relative)
-  module Kernel
-    def require_relative(path)
-      require File.join(File.dirname(caller[0]), path.to_str)
-    end
-  end
-end
-
 require 'rubygems'
-require 'logger'
 require 'net/http'
 require 'cgi'
 require 'json'
 require 'webrick'
-require_relative 'rz_mk_configuration_manager'
+require 'razor_microkernel/rz_mk_configuration_manager'
+require 'razor_microkernel/logging'
 
+# include the WEBrick mixin (makes this into a WEBrick server instance)
 include WEBrick
-
-# get a reference to the Configuration Manager instance (a singleton)
-config_manager = RzMkConfigurationManager.instance
-
-# setup a logger for our HTTP server...
-logger = Logger.new('/var/log/rz_mk_web_server.log', 5, 1024*1024)
-logger.level = config_manager.default_mk_log_level
-logger.formatter = proc do |severity, datetime, progname, msg|
-  "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
-end
 
 # next, define our actions (as servlets)...for now we have one (used to
 # save the Microkernel Configuration that is received from the MCollective
@@ -48,16 +27,10 @@ end
 
 class MKConfigServlet < HTTPServlet::AbstractServlet
 
-  def initialize(server, logger)
-    super(server)
-    @logger = logger
-    # get a reference to the Configuration Manager instance (a singleton)
-    @config_manager = RzMkConfigurationManager.instance
-  end
-
   def do_POST(req, res)
     # get a reference to the Configuration Manager instance (a singleton)
-    config_manager = RzMkConfigurationManager.instance
+    config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
+
     # get the Razor URI from the request body; it should be included in
     # the body in the form of a string that looks something like the following:
     #
@@ -67,7 +40,7 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     # Razor server.  The "Registration Path" (from the uri_map, above) is added
     # to this Razor URI value in order to form the "registration_uri"
     json_string = CGI.unescape(req.body)
-    @logger.debug("in POST; configuration received...#{json_string}")
+    logger.debug "in POST; configuration received...#{json_string}"
     # Note: have to truncate the CGI escaped body to get rid of the trailing '='
     # character (have no idea where this comes from, but it's part of the body in
     # a "post_form" request)
@@ -76,36 +49,43 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     config = WEBrick::Config::HTTP
     resp = WEBrick::HTTPResponse.new(config)
     # check to see if the configuration has changed
-    if @config_manager.mk_config_has_changed?(config_map, @logger)
+    if config_manager.mk_config_has_changed?(config_map)
       # if the configuration has changed, then save the new configuration and restart the
       # Microkernel Controller (forces it to pick up the new configuration)
-      @config_manager.save_mk_config(config_map, @logger)
-      @logger.level = @config_manager.mk_log_level
-      @logger.debug("Config changed, restart the controller...")
+      config_manager.save_mk_config(config_map)
+      logger.level = config_manager.mk_log_level
+      logger.info "Config changed, restart the controller..."
       %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
       return_msg = 'New configuration saved, Microkernel Controller restarted'
       resp['Content-Type'] = 'text/plain'
       resp['message'] = return_msg
-      @logger.debug("#{return_msg}...")
+      logger.debug "#{return_msg}..."
     else
       # otherwise, just log the fact that the configuration has not changed in the response
       resp['Content-Type'] = 'json/application'
       return_msg = 'Configuration unchanged; no update'
       resp['message'] = JSON.generate({'json_received' => config_map,
                                        'message' => return_msg })
-      @logger.debug("#{return_msg}...")
+      logger.info "#{return_msg}..."
     end
   end
 
 end
 
+# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# to determine where to place the log messages from this script
+RZ_MK_LOG_PATH = "/var/log/rz_mk_web_server.log"
+
+# include the RazorMicrokernel::Logging mixin (which enables logging)
+include RazorMicrokernel::Logging
+
 # Now, create an HTTP Server instance (and Daemonize it)
 
-s = HTTPServer.new(:Port => 2156, :ServerType => WEBrick::Daemon)
+s = HTTPServer.new(:Port => 2156, :Logger => logger, :ServerType => WEBrick::Daemon)
 
 # mount our servlets as directories under our HTTP server's URI
 
-s.mount("/setMkConfig", MKConfigServlet, logger)
+s.mount("/setMkConfig", MKConfigServlet)
 
 # setup the server to shut down if the process is shut down
 

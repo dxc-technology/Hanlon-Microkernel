@@ -10,42 +10,31 @@
 #
 # @author Tom McSweeney
 
-# adds a "require_relative" function to the Ruby Kernel if it
-# doesn't already exist (used to deal with the fact that
-# "require" is used instead of "require_relative" prior
-# to Ruby v1.9.2)
-unless Kernel.respond_to?(:require_relative)
-  module Kernel
-    def require_relative(path)
-      require File.join(File.dirname(caller[0]), path.to_str)
-    end
-  end
-end
-
 require 'rubygems'
-require 'logger'
+#require 'logger'
 require 'net/http'
 require 'cgi'
 require 'json'
 require 'yaml'
 require 'facter'
-require_relative 'rz_mk_registration_manager'
-require_relative 'rz_mk_fact_manager'
-require_relative 'rz_mk_configuration_manager'
+require 'razor_microkernel/logging'
+require 'razor_microkernel/rz_mk_registration_manager'
+require 'razor_microkernel/rz_mk_fact_manager'
+require 'razor_microkernel/rz_mk_configuration_manager'
+
+# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# to determine where to place the log messages from this script
+RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+
+# include the RazorMicrokernel::Logging mixin (which enables logging)
+include RazorMicrokernel::Logging
 
 # get a reference to the Configuration Manager instance (a singleton)
-config_manager = RzMkConfigurationManager.instance
-
-# setup a logger for our "Keep-Alive" server...
-logger = Logger.new('/var/log/rz_mk_controller.log', 5, 1024*1024)
-logger.level = config_manager.default_mk_log_level
-logger.formatter = proc do |severity, datetime, progname, msg|
-  "(#{severity}) [#{datetime.strftime("%Y-%m-%d %H:%M:%S")}]: #{msg}\n"
-end
+config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
 
 # setup the RzMkFactManager instance (we'll use this later, in our
 # RzMkRegistrationManager constructor)
-fact_manager = RzMkFactManager.new('/tmp/prev_facts.yaml')
+fact_manager = RazorMicrokernel::RzMkFactManager.new('/tmp/prev_facts.yaml')
 
 # and set the Registration Manager to nil (will update this, below)
 registration_manager = nil
@@ -55,7 +44,7 @@ if config_manager.config_file_exists? then
 
   # load the Microkernel Configuration, use the parameters in that
   # configuration to setup the Microkernel Controller
-  config_manager.load_current_config(logger)
+  config_manager.load_current_config
 
   # now, load a few items from the configuration manager, first the log
   # level that the Microkernel should use
@@ -80,7 +69,7 @@ if config_manager.config_file_exists? then
 
   # next, the maximum amount of time to wait (in secs) the before starting
   # the main loop (below); a random number between zero and that amount of
-  # time will be determined and used to ensure microkernel instances are
+  # time will be determined and used to ensure Microkernel instances are
   # offset from each other when it comes to tasks like reporting facts to
   # the Razor server
   checkin_skew = config_manager.mk_checkin_skew
@@ -89,8 +78,8 @@ if config_manager.config_file_exists? then
   # map that is reported during node registration
   exclude_pattern = config_manager.mk_fact_excl_pattern
   logger.debug "exclude_pattern = #{exclude_pattern}"
-  registration_manager = RzMkRegistrationManager.new(registration_uri,
-                                                     exclude_pattern, fact_manager, logger)
+  registration_manager = RazorMicrokernel::RzMkRegistrationManager.new(registration_uri,
+                                                                       exclude_pattern, fact_manager)
 
 else
 
@@ -109,7 +98,7 @@ max_skew_msecs = checkin_skew * 1000;
 # generate a random number between zero and max_skew_msecs (in milliseconds)
 # and sleep for that amount of time (in seconds)
 rand_secs = rand(max_skew_msecs) / 1000.0
-logger.debug "Sleeping for #{rand_secs} seconds"
+logger.info "Sleeping for #{rand_secs} seconds"
 sleep(rand_secs)
 
 idle = 'idle'
@@ -127,7 +116,7 @@ loop do
     if checkin_uri
       uuid = Facter.hostname[2..-1]     # subset to remove the 'mk' prefix
       checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
-      logger.debug "checkin_uri_string = #{checkin_uri_string}"
+      logger.info "checkin_uri_string = #{checkin_uri_string}"
       uri = URI checkin_uri_string
 
       # then,handle the reply (could include a command that must be handled)
@@ -153,7 +142,7 @@ loop do
         if config_map
           # check to see if the configuration from the response is different from the current
           # Microkernel Controller configuration
-          if config_manager.mk_config_has_changed?(config_map, logger)
+          if config_manager.mk_config_has_changed?(config_map)
             # If it has changed, then post the new configuration to the WEBrick instance
             # (which will trigger a restart of this Microkernel Controller instance)
             config_map_string = JSON.generate(config_map)
@@ -176,7 +165,7 @@ loop do
     end
 
   rescue
-    logger.debug("An exception occurred: #{$!}")
+    logger.error("An exception occurred: #{$!}")
   end
 
   # check to see how much time has elapsed, sleep for the time remaining
@@ -185,7 +174,7 @@ loop do
   msecs_elapsed = (t2 - t1) * 1000
   if msecs_elapsed < msecs_sleep then
     secs_sleep = (msecs_sleep - msecs_elapsed)/1000.0
-    logger.debug "Time remaining: #{secs_sleep} seconds..."
+    logger.info "Time remaining: #{secs_sleep} seconds..."
     sleep(secs_sleep) if secs_sleep >= 0.0
   end
 

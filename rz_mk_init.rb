@@ -8,27 +8,15 @@
 #
 # @author Tom McSweeney
 
-# adds a "require_relative" function to the Ruby Kernel if it
-# doesn't already exist (used to deal with the fact that
-# "require" is used instead of "require_relative" prior
-# to Ruby v1.9.2)
-unless Kernel.respond_to?(:require_relative)
-  module Kernel
-    def require_relative(path)
-      require File.join(File.dirname(caller[0]), path.to_str)
-    end
-  end
-end
-
-require_relative 'rz_network_utils'
-require_relative 'rz_mk_bundle_controller'
+require 'razor_microkernel/rz_network_utils'
+require 'razor_microkernel/rz_mk_bundle_controller'
 
 # First, install the bundles we'll need later on (this call should install
 # stomp, facter, and bluepill using bundler).  Note: we are taking advantage
 # of the two default values defined in the RzMkBundleController constructor
 # here (that the bundle list file will be called "bundle.list" and that the
 # gemfile for all of these bundles will be called "Gemfile")
-bc = RzMkBundleController.new("/opt/bundles")
+bc = RazorMicrokernel::RzMkBundleController.new("/opt/bundles")
 bc.installAllBundles
 
 # Now that we've installed the facter bundle, need do do a bit more work
@@ -52,11 +40,11 @@ end
 
 # now that the bundles are installed, can require the RzHostUtils class
 # (which depends on the 'facter' gem)
-require_relative 'rz_host_utils'
+require 'razor_microkernel/rz_host_utils'
 
 # Then, wait for the network to start
 nw_is_avail = false
-rz_nw_util = RzNetworkUtils.new
+rz_nw_util = RazorMicrokernel::RzNetworkUtils.new
 error_cond = rz_nw_util.wait_until_nw_avail
 nw_is_avail = true if error_cond == 0
 
@@ -73,7 +61,7 @@ if nw_is_avail then
   # first, set the hostname for this host to something unique
   # (waited until now because didn't want to have eth0 not
   # available at this point)
-  rz_host_util = RzHostUtils.new
+  rz_host_util = RazorMicrokernel::RzHostUtils.new
   rz_host_util.set_host_name
 
   # next, start the rz_mk_web_server and rz_mk_controller scripts
