@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
-# this is rz_mk_control_server.rb
-# it starts up a WEBrick server that can be used to control the Microkernel
-# (commands to the Microkernel are invoked using Servlets running in the
-# WEBrick instance)
+# this is rz_mk_control_server.rb script
+#
+# it is the Microkernel Controller script, and is started as a daemon process using
+# the associated rz_mk_controller.rb script
 #
 # EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
 # Copyright © 2012 EMC Corporation, All Rights Reserved
