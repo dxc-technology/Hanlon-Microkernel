@@ -26,6 +26,6 @@ advdef -z4 core.gz
 cp -p core.gz newiso/boot/
 # build the YAML file needed for use in Razor, place it into the root of the
 # ISO filesystem
-./build_iso_yaml.rb newiso ${ISO_VERSION}
+./build_iso_yaml.rb newiso ${ISO_VERSION} boot/vmlinuz boot/core.gz
 # finally, build the ISO itself (using the contents of the newiso directory as input
 mkisofs -l -J -R -V TC-custom -no-emul-boot -boot-load-size 4   -boot-info-table -b boot/isolinux/isolinux.bin   -c boot/isolinux/boot.cat -o ${ISO_NAME} newiso
