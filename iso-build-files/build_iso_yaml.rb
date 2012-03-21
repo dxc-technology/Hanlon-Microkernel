@@ -16,7 +16,7 @@ def get_file_sha2_hash(path_to_file)
   if !File.exist?(path_to_file)
     return nil
   end
-  file_h = Digest::SHA2.new
+  file_h = Digest::SHA2.new(256)
   File.open(path_to_file, 'r') do |fh|
     while buffer = fh.read(1024)
       file_h << buffer
@@ -66,9 +66,10 @@ end
 yaml_hash = Hash.new
 yaml_hash['iso_version'] = iso_version
 yaml_hash['kernel'] = kernel_path
-yaml_hash['kernel_sha2'] = kernel_sha2
 yaml_hash['initrd'] = initrd_path
-yaml_hash['initrd_sha2'] = initrd_sha2
+yaml_hash['hash_description'] = { "type" => "Digest::SHA2", "bitlen" => 256 }
+yaml_hash['kernel_hash'] = kernel_sha2
+yaml_hash['initrd_hash'] = initrd_sha2
 yaml_hash['iso_build_time'] = Time.now.utc
 
 # and save it to the iso-metadata.yaml file in the specified directory
