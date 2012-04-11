@@ -25,39 +25,43 @@ module RazorMicrokernel
     include RazorMicrokernel::Logging
 
     def add_facts_to_map!(facts_map)
+      logger.debug("before...#{facts_map.inspect}")
       # add the facts that result from running the "lscpu" command
       lscpu_facts_str = %x[lscpu]
-      lscpu_hash = lscpu_output_to_hash(lscpu_facts_str, ":")
-      lscpu_hash.each { |key, value|
-        new_key = "mk_hw_cpu" + key
-        facts_map[new_key] = value
-      }
+      hash_map = lscpu_output_to_hash(lscpu_facts_str, ":")
+      facts_map[:mk_hw_cpu_info] = hash_map
       # and add the facts that result from running a few "lshw" commands
-      lshw_c_system_str = %x[sudo lshw -c system]
-      lshw_c_system_str.each { |key, value|
-        new_key = "mk_hw_sys" + key
-        facts_map[new_key] = value
-      }
+      # first, the bus information
       lshw_c_bus_str = %x[sudo lshw -c bus]
-      lshw_c_bus_str.each { |key, value|
-        new_key = "mk_hw_bus" + key
-        facts_map[new_key] = value
+      hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
+      hash_map.each {|key, value|
+        facts_map[("mk_hw_bus_" + key).to_sym] = value
       }
+      # next, the memory information (including firmware, system memory, and caches)
       lshw_c_memory_str = %x[sudo lshw -c memory]
-      lshw_c_memory_str.each { |key, value|
-        new_key = "mk_hw_mem" + key
-        facts_map[new_key] = value
+      hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
+      hash_map.each {|key, value|
+        facts_map[("mk_hw_mem_" + key).to_sym] = value
       }
+      # next, the disk information (number of disks, sizes, etc.)
       lshw_c_disk_str = %x[sudo lshw -c disk]
-      lshw_c_disk_str.each { |key, value|
-        new_key = "mk_hw_disk" + key
-        facts_map[new_key] = value
+      hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
+      hash_map.each {|key, value|
+        facts_map[("mk_hw_disk_" + key).to_sym] = value
       }
+      # next, the processor information
       lshw_c_processor_str = %x[sudo lshw -c processor]
-      lshw_c_processor_str.each { |key, value|
-        new_key = "mk_hw_proc" + key
-        facts_map[new_key] = value
+      hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
+      hash_map.each {|key, value|
+        facts_map[("mk_hw_proc_" + key).to_sym] = value
       }
+      # and finally, the network information
+      lshw_c_network_str = %x[sudo lshw -c network]
+      hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
+      hash_map.each {|key, value|
+        facts_map[("mk_hw_nw_" + key).to_sym] = value
+      }
+      logger.debug("after...#{facts_map.inspect}")
     end
 
     private
@@ -137,7 +141,8 @@ module RazorMicrokernel
       indent_level = -1
       array.each { |line|
         name_line = /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)$/.match(line) ||
-            /^(\s+)\*\-([A-Za-z]+)\s+(DISABLED)$/.match(line)
+            /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(DISABLED)$/.match(line) ||
+            /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(UNCLAIMED)$/.match(line)
         if name_line && name_line[1].length > prev_indent
           indent_level += 1
           prev_indent = name_line[1].length
@@ -151,11 +156,14 @@ module RazorMicrokernel
         if name_line
           # if the third element is non-nil, then this represents one element of an array of
           # maps that should be used for this property; else we're just looking at the name
-          # of a map of name/value pairs for this property
-          if name_line[3].length > 0
+          # of a map of name/value pairs for this property (the exception to this is the
+          # "network" output, which is always an array but never includes numbers, so we'll
+          # just force it to be an array)
+          if name_line[3].length > 0 || name_line[2] == "network"
             key = name_line[2] + "_array"
             parse_array << { :indent_level => indent_level, :type => "map_array",
-                             :name => key, :is_enabled => (name_line[3] != "DISABLED") }
+                             :name => key, :is_enabled => (name_line[4] != "DISABLED"),
+                             :unclaimed => (name_line[4] != "UNCLAIMED") }
           else
             key = name_line[2]
             parse_array << { :indent_level => indent_level, :type => "map", :name => key }
@@ -242,20 +250,21 @@ module RazorMicrokernel
     # of the meta-data gathered for any of the other data types, including the data
     # contained within most of the "array values" parsed in the parse_array_value_set
     # method, below)
-    def parse_name_value_set(parse_array, start_idx, is_enabled = true)
+    def parse_name_value_set(parse_array, start_idx, is_enabled = true, unclaimed = true)
       output_hash = {}
       output_hash["DISABLED"] = true unless is_enabled
+      output_hash["UNCLAIMED"] = true unless unclaimed
       current_idx = start_idx
       type = parse_array[current_idx][:type]
-    # as long as we continue to see name-value pairs and don't reach the end of the
-    # parse_array, continue appending name/value pairs to the output hash-map
+      # as long as we continue to see name-value pairs and don't reach the end of the
+      # parse_array, continue appending name/value pairs to the output hash-map
       while type == "name_value" && current_idx < parse_array.length
         output_hash[parse_array[current_idx][:name]] = parse_array[current_idx][:value]
         current_idx += 1
         type = parse_array[current_idx][:type] if current_idx < parse_array.length
       end
-    # and return the output hash-map to the caller
-    # p "at #{current_idx}: #{output_hash}"
+      # and return the output hash-map to the caller
+      # p "at #{current_idx}: #{output_hash}"
       [current_idx, output_hash]
     end
 
@@ -271,17 +280,20 @@ module RazorMicrokernel
       type = parse_array[current_idx][:type]
       curr_name = parse_array[current_idx][:name]
       is_enabled = parse_array[current_idx][:is_enabled]
+      unclaimed = parse_array[current_idx][:unclaimed]
+
       prev_name = curr_name
       # as long as we continue to see name-value pairs and don't reach the end of the
       # parse_array, continue appending name/value pairs to the output hash-map
       while type == "map_array" && curr_name == prev_name && current_idx < parse_array.length
         current_idx += 1
-        current_idx, output_hash = parse_name_value_set(parse_array, current_idx, is_enabled)
+        current_idx, output_hash = parse_name_value_set(parse_array, current_idx, is_enabled, unclaimed)
         output_array << output_hash
         if current_idx < parse_array.length
           type = parse_array[current_idx][:type]
           curr_name = parse_array[current_idx][:name]
           is_enabled = parse_array[current_idx][:is_enabled]
+          unclaimed = parse_array[current_idx][:unclaimed]
         end
       end
       # and return the output hash-map to the caller
