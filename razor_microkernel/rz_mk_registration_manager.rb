@@ -10,6 +10,7 @@ require 'rubygems'
 require 'facter'
 require 'yaml'
 require 'razor_microkernel/rz_mk_fact_manager'
+require 'razor_microkernel/rz_mk_hardware_facter'
 require 'razor_microkernel/logging'
 
 # set up a global variable that will be used in the RazorMicrokernel::Logging mixin
@@ -29,6 +30,7 @@ module RazorMicrokernel
       @registration_uri = registration_uri
       @exclude_pattern = exclude_pattern
       @fact_manager = fact_manager
+      @hardware_facter = RzMkHardwareFacter.instance
     end
 
     def register_node(last_state)
@@ -50,10 +52,11 @@ module RazorMicrokernel
       Facter.each { |name, value|
         fact_map[name.to_sym] = value if !@exclude_pattern || !(name =~ @exclude_pattern)
       }
+      @hardware_facter.add_facts_to_map!(fact_map)
       # if "only_if_changed" input argument (above) is false or current facts
       # are different from the last set of facts that were saved, then register
       # this node
-      if !only_if_changed || @fact_manager.facts_have_changed?(fact_map) then
+      if !only_if_changed || @fact_manager.facts_have_changed?(fact_map)
         logger.debug "Build registration string"
         # build a JSON string from a Hash map containing the hostname, facts, and
         # the last_state
