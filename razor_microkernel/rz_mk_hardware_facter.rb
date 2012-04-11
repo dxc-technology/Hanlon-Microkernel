@@ -33,6 +33,16 @@ module RazorMicrokernel
         facts_map[new_key] = value
       }
       # and add the facts that result from running a few "lshw" commands
+      lshw_c_system_str = %x[sudo lshw -c system]
+      lshw_c_system_str.each { |key, value|
+        new_key = "mk_hw_sys" + key
+        facts_map[new_key] = value
+      }
+      lshw_c_bus_str = %x[sudo lshw -c bus]
+      lshw_c_bus_str.each { |key, value|
+        new_key = "mk_hw_bus" + key
+        facts_map[new_key] = value
+      }
       lshw_c_memory_str = %x[sudo lshw -c memory]
       lshw_c_memory_str.each { |key, value|
         new_key = "mk_hw_mem" + key
