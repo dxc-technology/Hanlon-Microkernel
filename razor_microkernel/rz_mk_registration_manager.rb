@@ -52,7 +52,7 @@ module RazorMicrokernel
       Facter.each { |name, value|
         fact_map[name.to_sym] = value if !@exclude_pattern || !(name =~ @exclude_pattern)
       }
-      @hardware_facter.add_facts_to_map!(fact_map)
+      @hardware_facter.add_facts_to_map!(fact_map, @exclude_pattern)
       # if "only_if_changed" input argument (above) is false or current facts
       # are different from the last set of facts that were saved, then register
       # this node

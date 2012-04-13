@@ -9,6 +9,7 @@
 # @author Tom McSweeney
 
 require 'singleton'
+require 'json'
 require 'razor_microkernel/logging'
 
 # set up a global variable that will be used in the RazorMicrokernel::Logging mixin
@@ -24,47 +25,163 @@ module RazorMicrokernel
     # include the RazorMicrokernel::Logging mixin (which enables logging)
     include RazorMicrokernel::Logging
 
-    def add_facts_to_map!(facts_map)
+    # used by the RzMkRegistrationManager class to add facts extracted from a set of
+    # "lscpu" and "lshw" system calls to the input "facts_map" (which is assumed to
+    # be a hash_map)
+    # @param [Hash] facts_map
+    def add_facts_to_map!(facts_map, mk_fct_excl_pattern)
       logger.debug("before...#{facts_map.inspect}")
-      # add the facts that result from running the "lscpu" command
-      lscpu_facts_str = %x[lscpu]
-      hash_map = lscpu_output_to_hash(lscpu_facts_str, ":")
-      facts_map[:mk_hw_cpu_info] = hash_map
-      # and add the facts that result from running a few "lshw" commands
-      # first, the bus information
-      lshw_c_bus_str = %x[sudo lshw -c bus]
-      hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
-      hash_map.each {|key, value|
-        facts_map[("mk_hw_bus_" + key).to_sym] = value
-      }
-      # next, the memory information (including firmware, system memory, and caches)
-      lshw_c_memory_str = %x[sudo lshw -c memory]
-      hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
-      hash_map.each {|key, value|
-        facts_map[("mk_hw_mem_" + key).to_sym] = value
-      }
-      # next, the disk information (number of disks, sizes, etc.)
-      lshw_c_disk_str = %x[sudo lshw -c disk]
-      hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
-      hash_map.each {|key, value|
-        facts_map[("mk_hw_disk_" + key).to_sym] = value
-      }
-      # next, the processor information
-      lshw_c_processor_str = %x[sudo lshw -c processor]
-      hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
-      hash_map.each {|key, value|
-        facts_map[("mk_hw_proc_" + key).to_sym] = value
-      }
-      # and finally, the network information
-      lshw_c_network_str = %x[sudo lshw -c network]
-      hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
-      hash_map.each {|key, value|
-        facts_map[("mk_hw_nw_" + key).to_sym] = value
-      }
+      begin
+        # add the facts that result from running the "lscpu" command
+        lscpu_facts_str = %x[lscpu]
+        hash_map = lscpu_output_to_hash(lscpu_facts_str, ":")
+        facts_map[:mk_hw_lscpu_hash] = hash_map
+        fields_to_include = ["Architecture", "CPU_op-mode(s)", "Byte_Order",
+                             "CPU_socket(s)", "Vendor_ID", "CPU_family",
+                             "Model", "Stepping", "CPU_MHz", "BogoMIPS",
+                             "Virtualization", "L1d_cache", "L1i_cache",
+                             "L2_cache", "L3_cache"]
+        add_flattened_hash_to_facts!(hash_map, facts_map, "mk_hw_lscpu", fields_to_include)
+
+        # and add the facts that result from running a few "lshw" commands...first,
+        # add the bus information
+        lshw_c_bus_str = %x[sudo lshw -c bus]
+        hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
+        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_bus")
+        # and add a set of facts from this bus information as top-level facts in the
+        # facts_map so that we can use them later to tag nodes
+        fields_to_include = ["description", "product", "vendor", "version", "serial"]
+        add_flattened_hash_to_facts!(hash_map["core"], facts_map, "mk_hw_bus", fields_to_include)
+
+        # next, the memory information (including firmware, system memory, and caches)
+        lshw_c_memory_str = %x[sudo lshw -c memory]
+        hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
+        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_mem", /cache_array/)
+        # and add a set of facts from this memory information as top-level facts in the
+        # facts_map so that we can use them later to tag nodes
+        fields_to_include = ["description", "vendor", "physical_id", "version",
+                             "date", "size", "capabilities"]
+        add_flattened_hash_to_facts!(hash_map["firmware"], facts_map,
+                                     "mk_hw_fw", fields_to_include)
+        fields_to_include = ["description", "physical_id", "slot", "size"]
+        add_flattened_hash_to_facts!(hash_map["memory"], facts_map,
+                                     "mk_hw_mem", fields_to_include)
+
+        # next, the disk information (number of disks, sizes, etc.)
+        lshw_c_disk_str = %x[sudo lshw -c disk]
+        hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
+        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_disk")
+        # and add a set of facts from the array of disk information as top-level facts in the
+        # facts_map so that we can use them later to tag nodes
+        fields_to_include = ["description", "product", "physical_id", "bus_info",
+                             "logical_name", "version", "serial", "size",
+                             "configuration"]
+        add_flattened_array_to_facts!(hash_map["disk_array"], facts_map,
+                                      "mk_hw_disk", fields_to_include)
+
+        # next, the processor information
+        lshw_c_processor_str = %x[sudo lshw -c processor]
+        hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
+        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_proc")
+        # and add a set of facts from the array of processor information as top-level facts in the
+        # facts_map so that we can use them later to tag nodes
+        fields_to_include = ["description", "product", "vendor", "physical_id",
+                             "bus_info", "version", "serial", "slot", "size",
+                             "capacity", "width", "clock", "capabilities",
+                             "configuration"]
+        add_flattened_array_to_facts!(hash_map["cpu_array"], facts_map,
+                                      "mk_hw_cpu", fields_to_include)
+
+        # and finally, the network information
+        lshw_c_network_str = %x[sudo lshw -c network]
+        hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
+        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_nw")
+        # and add a set of facts from the array of network information as top-level facts in the
+        # facts_map so that we can use them later to tag nodes
+        fields_to_include = ["description", "physical_id", "bus_info",
+                             "logical_name", "version", "serial", "size",
+                             "capacity", "width", "clock", "capabilities"]
+        add_flattened_array_to_facts!(hash_map["network_array"], facts_map,
+                                      "mk_hw_nic", fields_to_include)
+      rescue => e
+        logger.error(e.backtrace.join("\n\t"))
+      end
       logger.debug("after...#{facts_map.inspect}")
     end
 
     private
+
+    # used by the "add_facts_to_map!" method (above) to supplement the contents
+    # of the input "facts_map" with top-level name/value pairs contained in the
+    # input "hash_map"
+    # @param [Hash] hash_map  The Hash containing the facts that should be added
+    # @param [Hash] facts_map  The Hash to those facts should be added to
+    # @param [Regexp] mk_fact_excl_pattern  A pattern that, if matched by any key (even
+    # after that key has been modified to indicate that it is a JSON string) will keep that
+    # key/value pair from being added to the facts_map; this key is used to filter out
+    # individual key/value pairs
+    # @param [String] prefix  A prefix that should be added to each (top-level)
+    # key in the hash_map before that name/value pair is added to the facts_map
+    # (used to make the keys for the elements added to the facts_map unique)
+    # @param [Regexp] field_exclude_pattern  A pattern that, if matched by a key, will
+    # result in that key/value pair not being added the facts_map; this field is used
+    # to block entire sets of facts from being added to the facts_map
+    def add_hash_to_facts!(hash_map, facts_map, mk_fact_excl_pattern, prefix,
+        field_exclude_pattern = nil)
+      return unless hash_map
+      hash_map.each {|key, value|
+        key = prefix + '_' + key
+        next if (field_exclude_pattern && field_exclude_pattern.match(key)) ||
+            (mk_fact_excl_pattern && mk_fact_excl_pattern.match(key))
+        unless value.is_a?(String)
+          key << "_json_str"
+          next if mk_fact_excl_pattern && mk_fact_excl_pattern.match(key)
+          facts_map[key.to_sym] = JSON.generate(value)
+          next
+        end
+        facts_map[key.to_sym] = value
+      }
+    end
+
+    # used by the add_facts_to_map! method (above) to flatten out a hash map and add a
+    # selected set of key/value pairs to the facts_map
+    # @param [Array] hash_map  The Hash map that contains the name/value pairs that
+    # should be added to the facts_map
+    # @param [Hash] facts_map  The Hash map to supplement with facts from the hash_map
+    # @param [String] prefix  The prefix to use to ensure that the key/value pairs added
+    # to the facts_map are unique
+    # @param [Array] fields_to_include  An array containing the list of keys for which a
+    # corresponding key/value pair from the hash_map should be added to the facts_map
+    def add_flattened_hash_to_facts!(hash_map, facts_map, prefix, fields_to_include)
+      fields_to_include.each { |key|
+        next unless hash_map
+        if hash_map.key?(key)
+          new_key = prefix + '_' + key
+          facts_map[new_key.to_sym] = hash_map[key]
+        end
+      }
+    end
+
+    # used by the add_facts_to_map! method (above) to flatten out an array of hash map
+    # values (passed in as the hash_array input argument) and add a selected set of
+    # key/value pairs from each of the hash map elements in the array to the facts_map
+    # @param [Array] hash_array  The Array of Hash maps, each of which contains the
+    # name/value pairs that should be added to the facts_map
+    # @param [Hash] facts_map  The Hash map to supplement with facts from the elements
+    # of the hash_array
+    # @param [String] prefix  The prefix to use to ensure that the key/value pairs added
+    # to the facts_map are unique
+    # @param [Array] fields_to_include  An array containing the list of keys for which a
+    # corresponding key/value pair from the hash_map should be added to the facts_map
+    def add_flattened_array_to_facts!(hash_array, facts_map, prefix, fields_to_include)
+      return unless hash_array
+      count = 0
+      hash_array.each { |element|
+        new_prefix = prefix + count.to_s
+        add_flattened_hash_to_facts!(element, facts_map, new_prefix, fields_to_include)
+        count += 1
+      }
+    end
 
     # Takes the output of the lscpu command and converts it to a Hash of name/value
     # pairs (where the names are the properties, as Symbols, and the values are either Strings or arrays of
@@ -288,7 +405,7 @@ module RazorMicrokernel
       while type == "map_array" && curr_name == prev_name && current_idx < parse_array.length
         current_idx += 1
         current_idx, output_hash = parse_name_value_set(parse_array, current_idx, is_enabled, unclaimed)
-        output_array << output_hash
+        output_array << output_hash unless output_hash["DISABLED"]
         if current_idx < parse_array.length
           type = parse_array[current_idx][:type]
           curr_name = parse_array[current_idx][:name]
