@@ -35,7 +35,9 @@ module RazorMicrokernel
         # add the facts that result from running the "lscpu" command
         lscpu_facts_str = %x[lscpu]
         hash_map = lscpu_output_to_hash(lscpu_facts_str, ":")
-        facts_map[:mk_hw_lscpu_hash] = hash_map
+        key = "mk_hw_lscpu_hash_json_str"
+        facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
+            mk_fct_excl_pattern.match(key)
         fields_to_include = ["Architecture", "CPU_op-mode(s)", "Byte_Order",
                              "CPU_socket(s)", "Vendor_ID", "CPU_family",
                              "Model", "Stepping", "CPU_MHz", "BogoMIPS",
@@ -50,7 +52,7 @@ module RazorMicrokernel
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_bus")
         # and add a set of facts from this bus information as top-level facts in the
         # facts_map so that we can use them later to tag nodes
-        fields_to_include = ["description", "product", "vendor", "version", "serial"]
+        fields_to_include = ["description", "product", "vendor", "version", "serial", "physical_id"]
         add_flattened_hash_to_facts!(hash_map["core"], facts_map, "mk_hw_bus", fields_to_include)
 
         # next, the memory information (including firmware, system memory, and caches)
@@ -60,7 +62,7 @@ module RazorMicrokernel
         # and add a set of facts from this memory information as top-level facts in the
         # facts_map so that we can use them later to tag nodes
         fields_to_include = ["description", "vendor", "physical_id", "version",
-                             "date", "size", "capabilities"]
+                             "date", "size", "capabilities", "capacity"]
         add_flattened_hash_to_facts!(hash_map["firmware"], facts_map,
                                      "mk_hw_fw", fields_to_include)
         fields_to_include = ["description", "physical_id", "slot", "size"]
@@ -86,8 +88,8 @@ module RazorMicrokernel
         # and add a set of facts from the array of processor information as top-level facts in the
         # facts_map so that we can use them later to tag nodes
         fields_to_include = ["description", "product", "vendor", "physical_id",
-                             "bus_info", "version", "serial", "slot", "size",
-                             "capacity", "width", "clock", "capabilities",
+                             "bus_info", "version", "resources", "serial", "slot",
+                             "size", "capacity", "width", "clock", "capabilities",
                              "configuration"]
         add_flattened_array_to_facts!(hash_map["cpu_array"], facts_map,
                                       "mk_hw_cpu", fields_to_include)
@@ -100,7 +102,8 @@ module RazorMicrokernel
         # facts_map so that we can use them later to tag nodes
         fields_to_include = ["description", "physical_id", "bus_info",
                              "logical_name", "version", "serial", "size",
-                             "capacity", "width", "clock", "capabilities"]
+                             "capacity", "width", "clock", "capabilities",
+                             "configuration"]
         add_flattened_array_to_facts!(hash_map["network_array"], facts_map,
                                       "mk_hw_nic", fields_to_include)
       rescue => e
@@ -176,6 +179,9 @@ module RazorMicrokernel
     def add_flattened_array_to_facts!(hash_array, facts_map, prefix, fields_to_include)
       return unless hash_array
       count = 0
+      array_len_str = hash_array.size.to_s
+      count_key = prefix + "_count"
+      facts_map[count_key.to_sym] = array_len_str
       hash_array.each { |element|
         new_prefix = prefix + count.to_s
         add_flattened_hash_to_facts!(element, facts_map, new_prefix, fields_to_include)
