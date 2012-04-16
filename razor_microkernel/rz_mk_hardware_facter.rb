@@ -88,8 +88,8 @@ module RazorMicrokernel
         # and add a set of facts from the array of processor information as top-level facts in the
         # facts_map so that we can use them later to tag nodes
         fields_to_include = ["description", "product", "vendor", "physical_id",
-                             "bus_info", "version", "resources", "serial", "slot",
-                             "size", "capacity", "width", "clock", "capabilities",
+                             "bus_info", "version", "serial", "slot", "size",
+                             "capacity", "width", "clock", "capabilities",
                              "configuration"]
         add_flattened_array_to_facts!(hash_map["cpu_array"], facts_map,
                                       "mk_hw_cpu", fields_to_include)
