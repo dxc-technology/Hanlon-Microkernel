@@ -78,8 +78,14 @@ module RazorMicrokernel
         fields_to_include = ["description", "product", "physical_id", "bus_info",
                              "logical_name", "version", "serial", "size",
                              "configuration"]
-        add_flattened_array_to_facts!(hash_map["disk_array"], facts_map,
-                                      "mk_hw_disk", fields_to_include)
+        disk_array = nil
+        if hash_map["disk_array"]
+          disk_array = hash_map["disk_array"]
+        elsif hash_map["disk"]
+          disk_array = []
+          disk_array << hash_map["disk"]
+        end
+        add_flattened_array_to_facts!(disk_array, facts_map, "mk_hw_disk", fields_to_include) if disk_array
 
         # next, the processor information
         lshw_c_processor_str = %x[sudo lshw -c processor]
