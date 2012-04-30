@@ -61,10 +61,14 @@ module RazorMicrokernel
         # build a JSON string from a Hash map containing the hostname, facts, and
         # the last_state
         json_hash = { }
-        # UUID is constructed from the Microkernel hostname, but is a subset the hostname
-        # value (just remove the 'mk' prefix from the hostname and use the rest as the
-        # UUID value for the node)
-        json_hash["@uuid"] = fact_map[:hostname][2..-1]
+        # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
+        # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
+        # containing "hw_id" information to the Razor server and the Razor server uses that
+        # information to construct the UUID that the system will be (or is) mapped to.
+        # The array passed through this "hw_id" key in the JSON hash is constructed by the
+        # FactManager.  Currently, it includes a list of all of the network interfaces that
+        # have names that look like 'eth[0-9]+', but that may change down the line.
+        json_hash["@hw_id"] = @fact_manager.get_hw_id_array
         json_hash["@attributes_hash"] = fact_map
         json_hash["@last_state"] = last_state
         json_string = JSON.generate(json_hash)

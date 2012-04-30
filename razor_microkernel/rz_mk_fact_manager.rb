@@ -7,6 +7,7 @@
 
 require 'rubygems'
 require 'facter'
+require 'facter/util/ip'
 require 'yaml'
 
 module RazorMicrokernel
@@ -39,6 +40,22 @@ module RazorMicrokernel
         YAML::dump(current_fact_map, file)
       }
       @last_saved_timestamp = Time.now
+    end
+
+    def get_hw_id_array
+      hw_id_array = []
+      # get a list of the IP interfaces from Facter
+      interface_array = Facter::Util::IP.get_interfaces
+      # for each interface...
+      interface_array.each { |interface|
+        # if the name of the interface starts with the string 'eth' and is followed by
+        # one or more numbers, add the MAC address for that interface to the hw_id_array
+        if /^eth[0-9]+$/.match(interface)
+          mac_address = Facter::Util::IP.get_interface_value(interface,'macaddress')
+          hw_id_array << mac_address if mac_address
+        end
+      }
+      hw_id_array.join('_').gsub(/:/,'')
     end
 
   end

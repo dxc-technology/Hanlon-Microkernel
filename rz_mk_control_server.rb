@@ -13,7 +13,6 @@
 require 'rubygems'
 #require 'logger'
 require 'net/http'
-require 'cgi'
 require 'json'
 require 'yaml'
 require 'facter'
@@ -114,8 +113,15 @@ loop do
 
     # if the checkin_uri was defined, then send a "checkin" message to the server
     if checkin_uri
-      uuid = Facter.hostname[2..-1]     # subset to remove the 'mk' prefix
-      checkin_uri_string = checkin_uri + "?uuid=#{uuid}&last_state=#{idle}"
+      # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
+      # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
+      # containing "hw_id" information to the Razor server and the Razor server uses that
+      # information to construct the UUID that the system will be (or is) mapped to.
+      # The array passed through this "hw_id" key in the JSON hash is constructed by the
+      # FactManager.  Currently, it includes a list of all of the network interfaces that
+      # have names that look like 'eth[0-9]+', but that may change down the line.
+      hw_id = fact_manager.get_hw_id_array
+      checkin_uri_string = checkin_uri + "?hw_id=#{hw_id}&last_state=#{idle}"
       logger.info "checkin_uri_string = #{checkin_uri_string}"
       uri = URI checkin_uri_string
 
