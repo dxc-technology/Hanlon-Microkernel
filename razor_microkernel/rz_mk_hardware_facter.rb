@@ -115,7 +115,13 @@ module RazorMicrokernel
       rescue => e
         logger.error(e.backtrace.join("\n\t"))
       end
+
+      # finally, sweep through the facts_map and remove any offending keys
+      # (remapping those values to new keys that don't contain any offending
+      # characters)
+      clean_fact_map_keys!(facts_map)
       logger.debug("after...#{facts_map.inspect}")
+
     end
 
     private
@@ -427,6 +433,24 @@ module RazorMicrokernel
       end
       # and return the output hash-map to the caller
       [current_idx, output_array]
+    end
+
+    # this method cleans up the keys in the input fact_map so that they don't include
+    # any characters that could cause problems later on...i.e. any characters from following
+    # string: "!@#\$%\^&*()=+\[\]\{\}"
+    def clean_fact_map_keys!(facts_map)
+      facts_map.each { |key|
+        # search each key to see if there any offending characters
+        # (if so, we'll refer to the key as an "offending key", below)
+        if /[!@#\$%\^&*()=+\[\]\{\}]/ =~ key
+          # if there is a match, then we'll create a new entry in the map using a
+          # "cleansed" key (i.e. a key with all of the offending characters removed),
+          # store the old value under the new key, and and remove the old key-value pair
+          # that stored the same data under the offending key
+          facts_map[key.gsub(/[!@#\$%\^&*()=+\[\]\{\}]/,"")] = facts_map[key]
+          facts_map.delete(key)
+        end
+      }
     end
 
   end
