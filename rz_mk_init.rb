@@ -8,6 +8,7 @@
 #
 # @author Tom McSweeney
 
+require 'yaml'
 require 'razor_microkernel/rz_network_utils'
 require 'razor_microkernel/rz_mk_bundle_controller'
 
@@ -73,6 +74,13 @@ if nw_is_avail then
   t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib:#{facter_lib} \
     mcollectived --config /usr/local/etc/mcollective/server.cfg \
     --pidfile /var/run/mcollective.pid]
+
+  # finally, print out the Microkernel version number (which should be in the
+  # /tmp/mk_version.yaml file)
+  mk_version_hash = File.open("/tmp/mk-version.yaml", 'r') { |file|
+    YAML::load(file)
+  }
+  puts "MK Loaded: v#{mk_version_hash['mk_version']}"
 
 elsif error_cond == RzNetworkUtils::TIMEOUT_EXCEEDED then
 

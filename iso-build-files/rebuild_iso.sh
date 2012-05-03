@@ -13,9 +13,12 @@ ISO_VERSION=$1
 ISO_NAME=rz_mk_dev-image.${ISO_VERSION}.iso
 DIR_NAME=`pwd`
 set -x
+# build the YAML file in the Microkernel's filesystem that will be used to
+# display this same version information during boot
+./add_version_to_mk_fs.rb tmp ${ISO_VERSION}
 # run chroot and ldconfig on the tmp directory (preparing it for construction
 # of a bootable core.gz file)
-chroot ${DIR_NAME}/tmp depmod -a 3.0.3-tinycore
+chroot ${DIR_NAME}/tmp depmod -a 3.0.21-tinycore
 ldconfig -r ${DIR_NAME}/tmp
 # build the new core.gz file (containing the contents of the tmp directory)
 cd tmp
