@@ -25,6 +25,9 @@ module RazorMicrokernel
     # 'Logger::INFO', or 'Logger::DEBUG' (default is 'Logger::ERROR')
     attr_reader :mk_log_level
     attr_reader :default_mk_log_level
+    attr_reader :mk_ext_mirror_port
+    attr_reader :mk_ext_mirror_uri
+    attr_reader :mk_ext_list_uri
 
     def initialize
       @default_mk_log_level = Logger::INFO
@@ -76,6 +79,9 @@ module RazorMicrokernel
         else
           @mk_log_level = default_mk_log_level
       end
+      @mk_ext_mirror_port = mk_conf['mk_ext_mirror_port']
+      @mk_ext_mirror_uri = mk_conf['mk_ext_mirror_uri']
+      @mk_ext_list_uri = mk_conf['mk_ext_list_uri']
     end
 
   end

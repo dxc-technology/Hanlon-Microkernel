@@ -13,6 +13,8 @@
 require 'rubygems'
 #require 'logger'
 require 'net/http'
+require 'uri'
+require 'open-uri'
 require 'json'
 require 'yaml'
 require 'facter'
@@ -20,6 +22,50 @@ require 'razor_microkernel/logging'
 require 'razor_microkernel/rz_mk_registration_manager'
 require 'razor_microkernel/rz_mk_fact_manager'
 require 'razor_microkernel/rz_mk_configuration_manager'
+
+def load_tcl_extensions(config_manager)
+
+  # get the URI from the config that points to the YAML file containing
+  # the list of TCL extensions that we should load, if it doesn't exist,
+  # then just return (because we don't have any extensions to load)
+  tcl_ext_list_uri = config_manager.mk_ext_list_uri
+  return if !tcl_ext_list_uri || (tcl_ext_list_uri =~ URI::regexp).nil?
+
+  # and get the TCL mirror URI from the config, if it doesn't exist, then
+  # we just return (because we don't know where to get the extensions from)
+  tcl_ext_mirror_uri = config_manager.mk_ext_mirror_uri
+  return if !tcl_ext_mirror_uri || (tcl_ext_mirror_uri =~ URI::regexp).nil?
+
+  # modify the /opt/tcemirror file (so that it uses the mirror given in the
+  # configuration we just received from the Razor server)
+  File.open('/opt/tcemirror', 'w') { |file|
+    file.puts tcl_ext_mirror_uri
+  }
+
+  # get the list of 'TCL Extensions' that should be installed (these will)
+  # be obtained from a local 'mirror' containing the appropriate 'tcz' files)
+  begin
+
+    ext_list_array = YAML::load(open(tcl_ext_list_uri))
+
+    # each extension on that list, load that extension (using the tcl-load command)
+    has_kernel_modules = false
+    ext_list_array.each { |extension|
+      logger.debug "loading #{extension}"
+      t = %x[sudo -u tc tce-load -iw #{extension}]
+      has_kernel_modules = true if /open_vm_tools/.match(extension)
+    }
+
+    # if any of the extensions contained kernel modules, then load those kernel modules
+    %x[sudo /usr/local/bin/load_kernel_modules.rb] if has_kernel_modules
+
+  rescue => e
+
+    logger.error e.message
+
+  end
+
+end
 
 # set up a global variable that will be used in the RazorMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
@@ -79,6 +125,9 @@ if config_manager.config_file_exists? then
   logger.debug "exclude_pattern = #{exclude_pattern}"
   registration_manager = RazorMicrokernel::RzMkRegistrationManager.new(registration_uri,
                                                                        exclude_pattern, fact_manager)
+
+  # and load the TCL extensions from the configuration file (if any exist)
+  load_tcl_extensions(config_manager)
 
 else
 

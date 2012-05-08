@@ -439,16 +439,19 @@ module RazorMicrokernel
     # any characters that could cause problems later on...i.e. any characters from following
     # string: "!@#\$%\^&*()=+\[\]\{\}"
     def clean_fact_map_keys!(facts_map)
-      facts_map.each { |key|
+      facts_map.each { |key, value|
         # search each key to see if there any offending characters
         # (if so, we'll refer to the key as an "offending key", below)
-        if /[!@#\$%\^&*()=+\[\]\{\}]/ =~ key
+        key_str = key.to_s
+        if /[!@#\$%\^&*()=+\[\]\{\}]/ =~ key_str
           # if there is a match, then we'll create a new entry in the map using a
           # "cleansed" key (i.e. a key with all of the offending characters removed),
           # store the old value under the new key, and and remove the old key-value pair
           # that stored the same data under the offending key
-          facts_map[key.gsub(/[!@#\$%\^&*()=+\[\]\{\}]/,"")] = facts_map[key]
+          new_key = key_str.gsub(/[!@#\$%\^&*()=+\[\]\{\}]/,"")
+          facts_map[new_key.to_sym] = value
           facts_map.delete(key)
+          logger.debug("offending key '#{key_str}' changed to #{new_key}")
         end
       }
     end
