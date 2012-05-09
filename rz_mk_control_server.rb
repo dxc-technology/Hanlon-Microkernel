@@ -62,21 +62,19 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
   begin
     # load the list of extensions to install from the URI
     install_list_uri = URI.parse(tce_install_list_uri)
-    tce_install_list_map = {}
+    tce_install_list = []
     begin
-      tce_install_list_map = JSON::parse(install_list_uri.read)
-      logger.debug("received a TCE install list of '#{tce_install_list_map.inspect}'")
+      tce_install_list = JSON::parse(install_list_uri.read)
+      logger.debug("received a TCE install list of '#{tce_install_list.inspect}'")
     rescue => e
       logger.debug("error while reading from '#{install_list_uri}' => #{e.message}")
       return
     end
-    ext_list_array = tce_install_list_map['extension_list']
-    logger.debug("TCE install list: '#{ext_list_array.inspect}'")
+    logger.debug("TCE install list: '#{tce_install_list.inspect}'")
 
-    # for each extension on that list, load that extension (using the
-    # 'tcl-load' command)
+    # for each extension on that list, load that extension (using the 'tce-load' command)
     has_kernel_modules = false
-    ext_list_array.each { |extension|
+    tce_install_list.each { |extension|
       # if it's in the list of installed extensions, then skip it
       next if !force_reinstall && installed_extensions.include?(extension.gsub(/.tcz$/,''))
       logger.debug "loading #{extension}"

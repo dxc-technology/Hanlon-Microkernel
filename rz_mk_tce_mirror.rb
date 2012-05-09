@@ -30,7 +30,7 @@ class TceInstallListServlet < HTTPServlet::AbstractServlet
     # create a new HTTP Response
     config = WEBrick::Config::HTTP
     extension_list = YAML::load(File.open('/tmp/tinycorelinux/tce-install-list.yaml'))
-    return_str = JSON.generate({:extension_list => extension_list})
+    return_str = JSON.generate(extension_list)
     logger.info "Returning JSON string '#{return_str}' to user"
     res.content_type = 'application/json'
     res.content_length = return_str.length
@@ -46,7 +46,7 @@ class KmodInstallListServlet < HTTPServlet::AbstractServlet
     # create a new HTTP Response
     config = WEBrick::Config::HTTP
     kmod_list = YAML::load(File.open('/tmp/tinycorelinux/kmod-install-list.yaml'))
-    return_str = JSON.generate({:kmod_list => kmod_list})
+    return_str = JSON.generate(kmod_list)
     logger.info "Returning JSON string '#{return_str}' to user"
     res.content_type = 'application/json'
     res.content_length = return_str.length
