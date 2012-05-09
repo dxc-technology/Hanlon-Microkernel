@@ -57,15 +57,17 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
       logger.info "Config changed, restart the controller..."
       %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
       return_msg = 'New configuration saved, Microkernel Controller restarted'
-      resp['Content-Type'] = 'text/plain'
-      resp['message'] = return_msg
+      resp.content_type = 'text/plain'
+      resp.content_length = return_msg.length
+      resp.body = return_msg
       logger.debug "#{return_msg}..."
     else
       # otherwise, just log the fact that the configuration has not changed in the response
-      resp['Content-Type'] = 'json/application'
+      resp.content_type = 'application/json'
       return_msg = 'Configuration unchanged; no update'
-      resp['message'] = JSON.generate({'json_received' => config_map,
-                                       'message' => return_msg })
+      resp.content_length = return_msg.length
+      resp.body = JSON.generate({'json_received' => config_map,
+                                 'message' => return_msg })
       logger.info "#{return_msg}..."
     end
   end

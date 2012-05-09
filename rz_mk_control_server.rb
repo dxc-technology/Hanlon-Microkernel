@@ -13,7 +13,6 @@
 require 'rubygems'
 #require 'logger'
 require 'net/http'
-require 'uri'
 require 'open-uri'
 require 'json'
 require 'yaml'
@@ -22,6 +21,7 @@ require 'razor_microkernel/logging'
 require 'razor_microkernel/rz_mk_registration_manager'
 require 'razor_microkernel/rz_mk_fact_manager'
 require 'razor_microkernel/rz_mk_configuration_manager'
+require 'razor_microkernel/rz_mk_kernel_module_manager'
 
 # this method is used to load a list of Tiny Core Linux extensions
 # as the Microkernel Controller is starting up (or restarting).
@@ -35,21 +35,21 @@ require 'razor_microkernel/rz_mk_configuration_manager'
 # extensions (those already installed) should be overwritten with new versions
 # from the mirror (defaults to false, which skips the installation of any
 # extensions that are already installed)
-def load_tcl_extensions(tcl_ext_list_uri, tcl_ext_mirror_uri, force_reinstall = false)
+def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = false)
 
-  # get the URI from the config that points to the YAML file containing
-  # the list of TCL extensions that we should load, if it doesn't exist,
-  # then just return (because we don't have any extensions to load)
-  return if !tcl_ext_list_uri || (tcl_ext_list_uri =~ URI::regexp).nil?
+  # get the URI from the config that will return the list of TCL extensions
+  # that we should load, if it doesn't exist, then just return (because we
+  # don't have any extensions to load)
+  return if !tce_install_list_uri || (tce_install_list_uri =~ URI::regexp).nil?
 
-  # and get the TCL mirror URI from the config, if it doesn't exist, then
+  # and get the TCE mirror URI from the config, if it doesn't exist, then
   # we just return (because we don't know where to get the extensions from)
-  return if !tcl_ext_mirror_uri || (tcl_ext_mirror_uri =~ URI::regexp).nil?
+  return if !tce_mirror_uri || (tce_mirror_uri =~ URI::regexp).nil?
 
   # modify the /opt/tcemirror file (so that it uses the mirror given in the
   # configuration we just received from the Razor server)
   File.open('/opt/tcemirror', 'w') { |file|
-    file.puts tcl_ext_mirror_uri
+    file.puts tce_mirror_uri
   }
 
   # get a list of the Tiny Core Extensions that are already installed in the
@@ -61,7 +61,17 @@ def load_tcl_extensions(tcl_ext_list_uri, tcl_ext_mirror_uri, force_reinstall = 
   # be obtained from a local 'mirror' containing the appropriate 'tcz' files)
   begin
     # load the list of extensions to install from the URI
-    ext_list_array = YAML::load(open(tcl_ext_list_uri))
+    install_list_uri = URI.parse(tce_install_list_uri)
+    tce_install_list_map = {}
+    begin
+      tce_install_list_map = JSON::parse(install_list_uri.read)
+      logger.debug("received a TCE install list of '#{tce_install_list_map.inspect}'")
+    rescue => e
+      logger.debug("error while reading from '#{install_list_uri}' => #{e.message}")
+      return
+    end
+    ext_list_array = tce_install_list_map['extension_list']
+    logger.debug("TCE install list: '#{ext_list_array.inspect}'")
 
     # for each extension on that list, load that extension (using the
     # 'tcl-load' command)
@@ -71,11 +81,12 @@ def load_tcl_extensions(tcl_ext_list_uri, tcl_ext_mirror_uri, force_reinstall = 
       next if !force_reinstall && installed_extensions.include?(extension.gsub(/.tcz$/,''))
       logger.debug "loading #{extension}"
       t = %x[sudo -u tc tce-load -iw #{extension}]
-      has_kernel_modules = true if /open_vm_tools/.match(extension)
     }
 
-    # if any of the extensions contained kernel modules, then load those kernel modules
-    %x[sudo /usr/local/bin/load_kernel_modules.rb] if has_kernel_modules
+    # and load the kernel modules (if any), first get a reference to the Configuration
+    # Manager instance (a singleton)
+    kernel_mod_manager = (RazorMicrokernel::RzMkKernelModuleManager).instance
+    kernel_mod_manager.load_kernel_modules
 
   rescue => e
 
@@ -145,7 +156,7 @@ if config_manager.config_file_exists? then
                                                                        exclude_pattern, fact_manager)
 
   # and load the TCL extensions from the configuration file (if any exist)
-  load_tcl_extensions(config_manager.mk_ext_list_uri, config_manager.mk_ext_mirror_uri)
+  load_tcl_extensions(config_manager.mk_tce_install_list_uri, config_manager.mk_tce_mirror_uri)
 
 else
 

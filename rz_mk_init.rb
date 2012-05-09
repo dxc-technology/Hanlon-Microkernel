@@ -65,9 +65,10 @@ if nw_is_avail then
   rz_host_util = RazorMicrokernel::RzHostUtils.new
   rz_host_util.set_host_name
 
-  # next, start the rz_mk_web_server and rz_mk_controller scripts
+  # next, start the rz_mk_web_server, rz_mk_tce_mirror and rz_mk_controller scripts
 
   %x[sudo usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
+  %x[sudo usr/local/bin/rz_mk_tce_mirror.rb 2>&1 > /tmp/rz_mk_tce_mirror.out]
   %x[sudo /usr/local/bin/rz_mk_controller.rb start]
 
   # and start up the MCollective daemon
