@@ -1,7 +1,7 @@
 This project contains the Ruby scripts/classes that are used to
 control the Razor Microkernel (and that interact with the Razor server).
 The files contained in this project are bundled into the current version
-of the Razor Microkernel (v0.1.6.0).  There are three primary services that
+of the Razor Microkernel (v0.8.4.0).  There are three primary services that
 are included in this project that are started up during the Microkernel boot
 process.  Those services include:
 
@@ -22,9 +22,9 @@ In addition, this project also includes a number of additional ruby files
 and configuration files that are used by these services, a set of gems and
 bundles that are installed dynamically each time that the Microkernel
 boots (under the opt/gems and opt/bundles directories, respectively), a copy
-of the 'bootlocal.sh' script (which is, again, under the opt directory in this
+of the 'bootsync.sh' script (which is, again, under the opt directory in this
 project), and the 'rz_mk_init.rb' script itself (which is used by that
-bootlocal.sh script to start the appropriate Ruby-based services during the
+bootsync.sh script to start the appropriate Ruby-based services during the
 Microkernel boot process).
 
 Copies of the files that appear at the top-level of this project's directory

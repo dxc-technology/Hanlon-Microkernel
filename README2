@@ -79,15 +79,15 @@ the current version of the Razor Microkernel (v0.2.0.0):
            /boot/isolinux/isolinux.cfg file in the ISO itself) to
            approximately 10 seconds (the original value was 30 seconds)
 
-        2. We have modified the /opt/bootlocal.sh script that is include
-           in the microcore.gz file used by the Microkernel (which can be
-           found in the ISO's /boot directory) so that when the Microkernel
-           is booted it will automatically:
+        2. We have modified the /opt/bootsync.sh script that is included
+           in the core.gz file used by the Microkernel (which can be found
+           in the ISO's /boot directory) so that when the Microkernel is
+           booted it will automatically:
 
-                a. Starts the SSH daemon
-                b. Installs the Bundler RubyGem
+                a. Start the SSH daemon
+                b. Install the Bundler RubyGem
                 c. Uses the Bundler RubyGem to install the stomp, facter,
-                   daemons, json_pure, and bluepill bundles
+                   daemons, and json_pure bundles
                 d. Run a Ruby-based initialization script that completes
                    the process of setting up the Microkernel for use
 
