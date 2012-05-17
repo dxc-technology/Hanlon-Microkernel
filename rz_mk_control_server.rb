@@ -201,12 +201,12 @@ sleep(rand_secs)
 
 # parameters used for checkin process
 idle = 'idle'
-is_first_checkin = is_first_checkin?
 
 # and enter the main event-handling loop
 loop do
 
   begin
+
     # grab the current time (used for calculation of the wait time and for
     # determining whether or not to register the node if the facts have changed
     # later in the event-handling loop)
@@ -214,6 +214,7 @@ loop do
 
     # if the checkin_uri was defined, then send a "checkin" message to the server
     if checkin_uri
+
       # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
       # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
       # containing "hw_id" information to the Razor server and the Razor server uses that
@@ -222,8 +223,15 @@ loop do
       # FactManager.  Currently, it includes a list of all of the network interfaces that
       # have names that look like 'eth[0-9]+', but that may change down the line.
       hw_id = fact_manager.get_hw_id_array
-      checkin_uri_string = checkin_uri +
-          "?hw_id=#{hw_id}&last_state=#{idle}&first_checkin=#{is_first_checkin}"
+
+      # check to see if this is the first checkin or not (this flag will be true until the
+      # node successfully registers for the first time after boot, after that it will be
+      # false until the node is rebooted)
+      is_first_checkin = is_first_checkin?
+
+      # construct the checkin_uri_string
+      checkin_uri_string = checkin_uri + "?hw_id=#{hw_id}&last_state=#{idle}"
+      checkin_uri_string << "&first_checkin=#{is_first_checkin}" if is_first_checkin
       logger.info "checkin_uri_string = #{checkin_uri_string}"
       uri = URI checkin_uri_string
 
@@ -231,31 +239,50 @@ loop do
       response = Net::HTTP.get(uri)
       logger.debug "checkin response => #{response}"
       response_hash = JSON.parse(response)
+
       # if error code is 0 ()indicating a successful checkin), then process the response
       if response_hash['errcode'] == 0 then
-        # save our state if this successful checkin was the first (after this call,
-        # the is_first_checkin? method should return false until the node is rebooted)
-        first_checkin_performed if is_first_checkin
-        # first, trigger appropriate action based on the command in the response
+
+        # get the command from the response hash (this is the action that the Razor
+        # server would like the Microkernel Controller to take in response to the
+        # checkin it just performed)
         command = response_hash['response']['command_name']
+
+        # then trigger appropriate action based on the command in the response
         if command == "acknowledge" then
           logger.debug "Received #{command} from #{checkin_uri_string}"
         elsif registration_manager && command == "register" then
           logger.debug "Register command received, registering the node"
-          registration_manager.register_node(idle)
+          response = registration_manager.register_node(idle)
+          logger.debug "Response to registration received => #{response.inspect}"
+          # if this is the first checkin to result in a successful registration,
+          # then set a flag to indicate that the first checkin has been successfully
+          # performed (here the 'first checkin' is represented by a checkin and
+          # registration, not just a registration).  After this occurs, the
+          # 'is_first_checkin' flag should be false until the node is power-cycled
+          # or rebooted.
+          case response
+            when Net::HTTPSuccess then
+              logger.debug "Checkin successful; is_first_checkin = #{is_first_checkin}"
+              first_checkin_performed if is_first_checkin
+            else
+              logger.debug "Checkin failed; is_first_checkin = #{is_first_checkin}"
+          end
+
         elsif command == "reboot" then
           # reboots the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the reboot happens
           %x[sudo reboot now]
         end
+
         # next, check the configuration that is included in the response...
         config_map = response_hash['client_config']
         if config_map
-          # check to see if the configuration from the response is different from the current
-          # Microkernel Controller configuration
+          # if the configuration from the response is different from the current
+          # Microkernel Controller configuration, then post the new configuration
+          # to the local WEBrick instance (which will save it and restart this
+          # Microkernel Controller so that the new configuration is picked up)
           if config_manager.mk_config_has_changed?(config_map)
-            # If it has changed, then post the new configuration to the WEBrick instance
-            # (which will trigger a restart of this Microkernel Controller instance)
             config_map_string = JSON.generate(config_map)
             logger.debug "Posting config to WEBrick server => #{config_map_string}"
             uri = URI "http://localhost:2156/setMkConfig"
@@ -265,7 +292,9 @@ loop do
             logger.debug "Response received back => #{res.body}"
           end
         end
-      end
+
+      end   # end if successful checkin
+
     end
 
     # if we haven't saved the facts since we started this iteration, then we

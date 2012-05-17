@@ -42,7 +42,7 @@ module RazorMicrokernel
     def register_node_if_changed(last_state)
       # register facts with the server, but only if they've changed since the
       # last registration
-      register_with_server(last_state, true)
+      response = register_with_server(last_state, true)
     end
 
     def register_with_server(last_state, only_if_changed = false)
@@ -86,9 +86,9 @@ module RazorMicrokernel
         end
         # finally, if are debugging the server, output the body (as a string) to stdout
         # (which will typically be captured in a log file)
-        logger.debug response.body
+        logger.debug "response = #{response.inspect}"
         # and return the response from the server to the caller
-        response
+        return response
       end
     end
 
