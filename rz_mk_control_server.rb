@@ -94,6 +94,29 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
 
 end
 
+# file used to track whether or not a node has already checked in
+# at least once (the first time through, this file will contain
+# a true value, after that the value in this file will be false)
+FIRST_CHECKIN_STATE_FILENAME = "/tmp/first_checkin.yaml"
+
+# checks to see if this is the first checkin being made by this node
+# since it was booted up
+def is_first_checkin?
+  first_checkin_flag = false
+  File.open(FIRST_CHECKIN_STATE_FILENAME, 'r') { |file|
+    first_checkin_flag = YAML::load(file)
+  }
+  first_checkin_flag
+end
+
+# used to set the flag in the first checkin file to false
+def first_checkin_performed
+  first_checkin_flag = false
+  File.open(FIRST_CHECKIN_STATE_FILENAME, 'w') { |file|
+    YAML::dump(first_checkin_flag, file)
+  }
+end
+
 # set up a global variable that will be used in the RazorMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
 RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
@@ -176,7 +199,9 @@ rand_secs = rand(max_skew_msecs) / 1000.0
 logger.info "Sleeping for #{rand_secs} seconds"
 sleep(rand_secs)
 
+# parameters used for checkin process
 idle = 'idle'
+is_first_checkin = is_first_checkin?
 
 # and enter the main event-handling loop
 loop do
@@ -197,7 +222,8 @@ loop do
       # FactManager.  Currently, it includes a list of all of the network interfaces that
       # have names that look like 'eth[0-9]+', but that may change down the line.
       hw_id = fact_manager.get_hw_id_array
-      checkin_uri_string = checkin_uri + "?hw_id=#{hw_id}&last_state=#{idle}"
+      checkin_uri_string = checkin_uri +
+          "?hw_id=#{hw_id}&last_state=#{idle}&first_checkin=#{is_first_checkin}"
       logger.info "checkin_uri_string = #{checkin_uri_string}"
       uri = URI checkin_uri_string
 
@@ -207,6 +233,9 @@ loop do
       response_hash = JSON.parse(response)
       # if error code is 0 ()indicating a successful checkin), then process the response
       if response_hash['errcode'] == 0 then
+        # save our state if this successful checkin was the first (after this call,
+        # the is_first_checkin? method should return false until the node is rebooted)
+        first_checkin_performed if is_first_checkin
         # first, trigger appropriate action based on the command in the response
         command = response_hash['response']['command_name']
         if command == "acknowledge" then
