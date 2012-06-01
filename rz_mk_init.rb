@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 #
-# Used during the boot process to initialize the Microkernel (install gems,
-# bundles, and start up the critical services, like MCollective)
+# Used during the boot process to initialize the Microkernel (install gems
+# and start up the critical services, like MCollective)
 #
 # EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
 # Copyright © 2012 EMC Corporation, All Rights Reserved
@@ -10,17 +10,16 @@
 
 require 'yaml'
 require 'razor_microkernel/rz_network_utils'
-require 'razor_microkernel/rz_mk_bundle_controller'
+require 'razor_microkernel/rz_mk_gem_controller'
 
-# First, install the bundles we'll need later on (this call should install
-# stomp, facter, and bluepill using bundler).  Note: we are taking advantage
-# of the two default values defined in the RzMkBundleController constructor
-# here (that the bundle list file will be called "bundle.list" and that the
-# gemfile for all of these bundles will be called "Gemfile")
-bc = RazorMicrokernel::RzMkBundleController.new("/opt/bundles")
-bc.installAllBundles
+# First, install the gems that we'll need later on.  Note: we are taking
+# advantage of the default values for the second argument to the
+# RzMkGemController constructor here (since our gem list file is called
+# "gem.list", we don't need to specify it's value)
+gemController = RazorMicrokernel::RzMkGemController.new("/opt/gems")
+gemController.installAllGems
 
-# Now that we've installed the facter bundle, need do do a bit more work
+# Now that we've installed the facter gem, need do do a bit more work
 # first, determine where the facter gem's library is at (will need that later,
 # when we start the MCollective daemon)
 
@@ -39,7 +38,7 @@ if !File.exists?("/usr/local/bin/facter") then
   %x[sudo ln -s #{facter_exec} /usr/local/bin/facter]
 end
 
-# now that the bundles are installed, can require the RzHostUtils class
+# now that the gems are installed, can require the RzHostUtils class
 # (which depends on the 'facter' gem)
 require 'razor_microkernel/rz_host_utils'
 
@@ -67,8 +66,8 @@ if nw_is_avail then
 
   # next, start the rz_mk_web_server, rz_mk_tce_mirror and rz_mk_controller scripts
 
-  %x[sudo usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
-  %x[sudo usr/local/bin/rz_mk_tce_mirror.rb 2>&1 > /tmp/rz_mk_tce_mirror.out]
+  %x[sudo /usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
+  %x[sudo /usr/local/bin/rz_mk_tce_mirror.rb 2>&1 > /tmp/rz_mk_tce_mirror.out]
   %x[sudo /usr/local/bin/rz_mk_controller.rb start]
 
   # and start up the MCollective daemon
