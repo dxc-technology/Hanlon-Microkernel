@@ -7,14 +7,70 @@
 # subdirectory of the directory being used to build the Microkernel
 # (where it will be picked up from by the build script).
 
-# check to see if should re-use previous downloads (or not)
+# define a function we can use to print out the usage for this script
+usage()
+{
+cat << EOF
+
+Usage: $0 OPTIONS
+
+This script builds a gzipped tarfile containing all of the files necessary to
+build an instance of the Razor Microkernel ISO.
+
+OPTIONS:
+   -h, --help                 print usage for this command
+   -r, --reuse-prev-dl        reuse the downloads rather than downloading again
+   -b, --builtin-list FILE    file containing extensions to install as builtin
+   -m, --mirror-list FILE     file containing extensions to add to TCE mirror
+   -p, --build-prod-image     build a production ISO (no openssh, no passwd)
+   -d, --build-dev-image      build a development ISO (include openssh, passwd)
+
+Note; currently, the default is to build a development ISO (which includes the
+openssh.tcz extension along with the openssh/openssl configuration file changes
+and the passwd changes needed to access the Microkernel image from the command
+line or via the console)
+
+EOF
+}
+
+# initialize a few variables to hold the options passed in by the user
+BUILTIN_LIST=
+MIRROR_LIST=
 RE_USE_PREV_DL='no'
-if [ $# -eq 1 ]
+BUILD_DEV_ISO='yes'
+
+# options may be followed by one colon to indicate they have a required argument
+if ! options=$(getopt -o hrb:m:pd -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-dev-image -- "$@")
 then
+    usage
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+set -- $options
+
+while [ $# -gt 0 ]
+do
   case $1 in
-  (--reuse-prev-dl) RE_USE_PREV_DL="yes" ;;
-  (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
+  -r|--reuse-prev-dl) RE_USE_PREV_DL='yes';;
+  -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'"`; shift;;
+  -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'"`; shift;;
+  -p|--build-prod-image) BUILD_DEV_ISO='no';;
+  -d|--build-dev-image) BUILD_DEV_ISO='yes';;
+  -h|--help) usage; exit 0;;
+  (--) shift; break;;
+  (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
   esac
+  shift
+done
+
+if [  -z $BUILTIN_LIST ] || [ -z $MIRROR_LIST ]; then
+  echo "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified"
+  usage
+  exit 1
+elif [ ! -r $BUILTIN_LIST ] || [ ! -r $MIRROR_LIST ]; then
+  echo "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
+  usage
+  exit 1
 fi
 
 # if not, then make sure we're starting with a clean (i.e. empty) build directory
@@ -49,6 +105,10 @@ mkdir -p tmp-build-dir/build_dir/dependencies
 # the files/tools needed to build the Microkernel ISO)
 
 cp -p iso-build-files/* tmp-build-dir/build_dir
+if [ $BUILD_DEV_ISO = 'no' ]
+then
+  sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
+fi
 
 # create a copy of the modifications to the DHCP client configuration that
 # are needed for the Razor Microkernel Controller to find the appropriate
@@ -105,48 +165,50 @@ cd $TOP_DIR
 
 mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
-cd tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-for file in `cat $TOP_DIR/extension-file.list`; do
-  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+for file in `cat $MIRROR_LIST`; do
+  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$file ]
   then
-    wget $TCL_MIRROR_URI/$file
-    wget -q $TCL_MIRROR_URI/$file.md5.txt
-    wget -q $TCL_MIRROR_URI/$file.info
-    wget -q $TCL_MIRROR_URI/$file.list
-    wget -q $TCL_MIRROR_URI/$file.dep
+    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
+    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.md5.txt
+    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.info
+    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.list
+    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.dep
   fi
 done
-cd $TOP_DIR
 
-# download a set of extensions that will be installed at boot; these files
-# will be placed into the /tmp/builtin directory in the Microkernel ISO;
-# the list of files downloaded (and loaded at boot) are contained in the
-# file $TOP_DIR/additional-build-files/onboot.list
+# download a set of extensions that will be installed during the Microkernel
+# boot process.  These files will be placed into the /tmp/builtin directory in
+# the Microkernel ISO.  The list of files downloaded (and loaded at boot) are
+# assumed to be contained in the file specified by the BUILTIN_LIST parameter
 
+echo `pwd`
 mkdir -p tmp-build-dir/tmp/builtin/optional
-cd tmp-build-dir/tmp/builtin
-cp -p $TOP_DIR/additional-build-files/onboot.lst .
-cd optional
-for file in `cat ../onboot.lst`; do
-  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
+for file in `cat $BUILTIN_LIST`; do
+  if [ $BUILD_DEV_ISO = 'yes' ] || [ ! $file = 'openssh.tcz' ]; then
+    if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/builtin/optional/$file ]
+    then
+      wget -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
+      wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.md5.txt
+      wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.dep
+    fi
+    echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+  elif [ $BUILD_DEV_ISO = 'no' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
   then
-    wget $TCL_MIRROR_URI/$file
-    wget -q $TCL_MIRROR_URI/$file.md5.txt
-    wget -q $TCL_MIRROR_URI/$file.dep
+    rm tmp-build-dir/tmp/builtin/optional/$file
+    rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
+    rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
   fi
 done
-cd $TOP_DIR
 
 # download the ruby-gems distribution (will be installed during the boot
 # process prior to starting the Microkernel initialization process)
 
-cd tmp-build-dir/opt
 file=`echo $RUBY_GEMS_URL | awk -F/ '{print $NF}'`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/opt/$file ]
 then
-  wget $RUBY_GEMS_URL
+  wget -P tmp-build-dir/opt $RUBY_GEMS_URL
 fi
-cd $TOP_DIR
 
 # copy over a couple of initial configuration files that will be included in the
 # /tmp and /etc directories of the Microkernel instance (the first two control the
@@ -158,25 +220,22 @@ cp -p etc/inittab tmp-build-dir/etc
 
 # get a copy of the current Tiny Core Linux "Core" ISO
 
-cd tmp-build-dir/build_dir
 file=`echo $TCL_ISO_URL | awk -F/ '{print $NF}'`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/$file ]
 then
-  wget $TCL_ISO_URL
+  wget -P tmp-build-dir/build_dir $TCL_ISO_URL
 fi
-cd $TOP_DIR
 
 # download the MCollective, unpack it in the appropriate location, and
 # add a couple of soft links
 
-cd tmp-build-dir
 file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
 mcoll_dir=`echo $file | cut -d'.' -f-3`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
 then
-  wget $MCOLLECTIVE_URL
+  wget -P tmp-build-dir $MCOLLECTIVE_URL
 fi
-cd usr/local/tce.installed
+cd tmp-build-dir/usr/local/tce.installed
 tar zxvf $TOP_DIR/tmp-build-dir/$file
 cd $TOP_DIR/tmp-build-dir
 rm usr/local/mcollective usr/local/bin/mcollectived 2> /dev/null
@@ -192,12 +251,39 @@ mkdir -p tmp-build-dir/usr/sbin
 rm tmp-build-dir/usr/sbin 2> /dev/null
 ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 
+# copy over a few additional dependencies (currently, this includes the
+# following files:
+#   1. ssh-setup-files.tar.gz -> contains the setup files needed for the
+#         SSH/SSL along with the passwd and shadow files (used for development
+#         access to the Microkernel); if the '--build-prod-image' flag is set,
+#         then this file will be skipped
+#   2. mcollective-setup-files.tar.gz -> contains the setup files needed for
+#         running the mcollective daemon
+#   3. mk-open-vm-tools.tar.gz -> contains the files needed for the
+#         'open_vm_tools.tcz' extension
+
+cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
+# if we're building a production system, remove the SSH setup files from the
+# files we just copied over to the dependencies directory
+if [ $BUILD_DEV_ISO = 'no' ]; then
+  rm tmp-build-dir/build_dir/dependencies/ssh-setup-files.tar.gz
+fi
+
+# get the latest util-linux.tcz, then extract the two executables that
+# we need from that file (using the unsquashfs command)
+
+file='util-linux.tcz'
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
+then
+  wget -P tmp-build-dir $TCL_MIRROR_URI/$file
+fi
+unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
+
 # create a gzipped tarfile containing all of the files from the Razor-Microkernel
 # project that we just copied over, along with the files that were downloaded from
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
 
-cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 cd tmp-build-dir
 tar zcvf build_dir/dependencies/razor-microkernel-files.tar.gz usr etc opt tmp
 
