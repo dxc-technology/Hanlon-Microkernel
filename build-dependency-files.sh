@@ -11,28 +11,32 @@
 RE_USE_PREV_DL='no'
 if [ $# -eq 1 ]
 then
-    case $1 in
-    (--reuse-prev-dl) RE_USE_PREV_DL="yes" ;;
-    (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
-    esac
+  case $1 in
+  (--reuse-prev-dl) RE_USE_PREV_DL="yes" ;;
+  (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
+  esac
 fi
 
 # if not, then make sure we're starting with a clean (i.e. empty) build directory
 if [ $RE_USE_PREV_DL = 'no' ]
 then
-    if [ ! -d tmp-build-dir ]; then
-        # make a directory we can use to build our gzipped tarfile
-        mkdir tmp-build-dir
-    else
-        # directory exists, so remove the contents
-        rm -rf tmp-build-dir/*
-    fi
+  if [ ! -d tmp-build-dir ]; then
+    # make a directory we can use to build our gzipped tarfile
+    mkdir tmp-build-dir
+  else
+    # directory exists, so remove the contents
+    rm -rf tmp-build-dir/*
+  fi
 fi
 
 # initialize a couple of variables that we'll use later
 
 TOP_DIR=`pwd`
 TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
+TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
+RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
+#MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-1.2.1.tgz'
+MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
 
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
@@ -69,12 +73,14 @@ mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
 cp -p razor_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
 
 # create copies of the MCollective agents from this project (will be placed
-# into the /usr/local/tce.installed/mcollective-1.2.1/plugins/mcollective/agent
+# into the /usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
 # directory in the Razor Microkernel ISO
 
-mkdir -p tmp-build-dir/usr/local/tce.installed/mcollective-1.2.1/plugins/mcollective/agent
+file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
+mcoll_dir=`echo $file | cut -d'.' -f-3`
+mkdir -p tmp-build-dir/usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
 cp -p configuration-agent/configuration.rb facter-agent/facteragent.rb \
-    tmp-build-dir/usr/local/tce.installed/mcollective-1.2.1/plugins/mcollective/agent
+    tmp-build-dir/usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
 
 # create a copy of the files from this project that will be placed into the
 # /opt directory in the Razor Microkernel ISO; as part of this process will
@@ -87,23 +93,60 @@ cp -p opt/bootsync.sh tmp-build-dir/opt
 cp -p opt/gems/gem.list tmp-build-dir/opt/gems
 cd tmp-build-dir/opt/gems
 for file in `cat gem.list`; do
-  gem fetch $file
+  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file*.gem ]
+  then
+    gem fetch $file
+  fi
 done
 cd $TOP_DIR
 
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
 
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -d tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz ]
+mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
+cd tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+for file in `cat $TOP_DIR/extension-file.list`; do
+  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+  then
+    wget $TCL_MIRROR_URI/$file
+    wget -q $TCL_MIRROR_URI/$file.md5.txt
+    wget -q $TCL_MIRROR_URI/$file.info
+    wget -q $TCL_MIRROR_URI/$file.list
+    wget -q $TCL_MIRROR_URI/$file.dep
+  fi
+done
+cd $TOP_DIR
+
+# download a set of extensions that will be installed at boot; these files
+# will be placed into the /tmp/builtin directory in the Microkernel ISO;
+# the list of files downloaded (and loaded at boot) are contained in the
+# file $TOP_DIR/additional-build-files/onboot.list
+
+mkdir -p tmp-build-dir/tmp/builtin/optional
+cd tmp-build-dir/tmp/builtin
+cp -p $TOP_DIR/additional-build-files/onboot.lst .
+cd optional
+for file in `cat ../onboot.lst`; do
+  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+  then
+    wget $TCL_MIRROR_URI/$file
+    wget -q $TCL_MIRROR_URI/$file.md5.txt
+    wget -q $TCL_MIRROR_URI/$file.dep
+  fi
+done
+cd $TOP_DIR
+
+# download the ruby-gems distribution (will be installed during the boot
+# process prior to starting the Microkernel initialization process)
+
+cd tmp-build-dir/opt
+file=`echo $RUBY_GEMS_URL | awk -F/ '{print $NF}'`
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
 then
-    mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-    cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
-    cd tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-    for file in `cat $TOP_DIR/extension-file.list`; do
-        wget $TCL_MIRROR_URI/$file
-    done
-    cd $TOP_DIR
+  wget $RUBY_GEMS_URL
 fi
+cd $TOP_DIR
 
 # copy over a couple of initial configuration files that will be included in the
 # /tmp and /etc directories of the Microkernel instance (the first two control the
@@ -115,7 +158,39 @@ cp -p etc/inittab tmp-build-dir/etc
 
 # get a copy of the current Tiny Core Linux "Core" ISO
 
-cp -p additional-build-files/Core-current.iso tmp-build-dir/build_dir
+cd tmp-build-dir/build_dir
+file=`echo $TCL_ISO_URL | awk -F/ '{print $NF}'`
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+then
+  wget $TCL_ISO_URL
+fi
+cd $TOP_DIR
+
+# download the MCollective, unpack it in the appropriate location, and
+# add a couple of soft links
+
+cd tmp-build-dir
+file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
+mcoll_dir=`echo $file | cut -d'.' -f-3`
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file ]
+then
+  wget $MCOLLECTIVE_URL
+fi
+cd usr/local/tce.installed
+tar zxvf $TOP_DIR/tmp-build-dir/$file
+cd $TOP_DIR/tmp-build-dir
+rm usr/local/mcollective usr/local/bin/mcollectived 2> /dev/null
+ln -s /usr/local/tce.installed/$mcoll_dir usr/local/mcollective
+ln -s /usr/local/mcollective/bin/mcollectived usr/local/bin/mcollectived
+cd $TOP_DIR
+
+# add a soft-link in what will become the /usr/local/sbin directory in the
+# Microkernel ISO (this fixes an issue with where Facter expects to find
+# the 'dmidecode' executable)
+
+mkdir -p tmp-build-dir/usr/sbin
+rm tmp-build-dir/usr/sbin 2> /dev/null
+ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 
 # create a gzipped tarfile containing all of the files from the Razor-Microkernel
 # project that we just copied over, along with the files that were downloaded from
@@ -134,7 +209,3 @@ tar zcvf build_dir/dependencies/razor-microkernel-files.tar.gz usr etc opt tmp
 cd build_dir
 tar zcvf $TOP_DIR/build-files/razor-microkernel-overlay.tar.gz *
 cd $TOP_DIR
-
-# and, finally, clean up the directory that was used to build the gzipped
-# tarfile containing the files from this project
-# rm -rf tmp-build-dir

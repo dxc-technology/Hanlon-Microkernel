@@ -16,18 +16,17 @@ mkdir extract
 cd extract
 zcat ../original-iso-files/boot/core.gz | cpio -i -H newc -d
 
-# merge the results of this and our snapshot in the tmp subdirectory
+# copy the resulting files over to a temporary directory (which we will
+# use to build a new core.gz file for a new ISO
 cd ..
 mkdir tmp
 cd tmp
-cp -rp ../extract/dev ../extract/mnt ../extract/proc ../extract/run \
-    ../extract/sbin ../extract/sys ../extract/var .
-tar zxvf ../orig-fs-snapshot/mc-linux-fs-snap.tar.gz
+cp -rp ../extract/* .
 
 # unpack the dependency files that were extracted earlier (these files were
 # built from the current contents of the Razor-Microkernel project using the
 # build-dependency-files.sh shell script, which is part of that same project)
-for file in fix-dmidecode-path-for-facter.tar.gz mk-open-vm-tools.tar.gz razor-microkernel-files.tar.gz; do
+for file in mk-open-vm-tools.tar.gz razor-microkernel-files.tar.gz mcollective-setup-files.tar.gz ssh-setup-files.tar.gz util-linux-exec-files.tar.gz; do
   tar zxvf ../dependencies/$file
 done
 
