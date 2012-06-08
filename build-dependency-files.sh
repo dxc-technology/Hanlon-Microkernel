@@ -254,18 +254,29 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 # copy over a few additional dependencies (currently, this includes the
 # following files:
 #   1. ssh-setup-files.tar.gz -> contains the setup files needed for the
-#         SSH/SSL along with the passwd and shadow files (used for development
-#         access to the Microkernel); if the '--build-prod-image' flag is set,
-#         then this file will be skipped
+#         SSH/SSL (used for development access to the Microkernel); if
+#         the '--build-prod-image' flag is set, then this file will be skipped
 #   2. mcollective-setup-files.tar.gz -> contains the setup files needed for
 #         running the mcollective daemon
 #   3. mk-open-vm-tools.tar.gz -> contains the files needed for the
 #         'open_vm_tools.tcz' extension
+#   4. the etc/passwd and etc/shadow files from the Razor-Microkernel project
+#         (note; if this is a production system then the etc/shadow-nologin
+#         file will be copied over instead of the etc/shadow file (to block
+#         access to the Microkernel from the console)
 
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
-# if we're building a production system, remove the SSH setup files from the
-# files we just copied over to the dependencies directory
-if [ $BUILD_DEV_ISO = 'no' ]; then
+# Copy over the etc/passwd file to the tmp-build-dir/etc directory.
+# If we're building a production system, development system, also copy over the
+# etc/shadow file to the same directory.  If it's a production system we're
+# building the ISO for, then copy over the etc/shadow-nologin file instead
+# (and remove the SSH setup files from the files we just copied over to the
+# dependencies directory)
+cp -p etc/passwd tmp-build-dir/etc
+if [ $BUILD_DEV_ISO = 'yes' ]; then
+  cp -p etc/shadow tmp-build-dir/etc
+else
+  cp -p etc/shadow-nologin tmp-build-dir/etc/shadow
   rm tmp-build-dir/build_dir/dependencies/ssh-setup-files.tar.gz
 fi
 
