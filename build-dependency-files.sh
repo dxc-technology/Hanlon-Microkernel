@@ -23,7 +23,6 @@ OPTIONS:
    -b, --builtin-list FILE    file containing extensions to install as builtin
    -m, --mirror-list FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
-   -d, --build-dev-image      build a development ISO (include openssh, passwd)
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -37,10 +36,10 @@ EOF
 BUILTIN_LIST=
 MIRROR_LIST=
 RE_USE_PREV_DL='no'
-BUILD_DEV_ISO='yes'
+BUILD_PROD_ISO='no'
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:pd -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-dev-image -- "$@")
+if ! options=$(getopt -o hrb:m:p -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -54,8 +53,7 @@ do
   -r|--reuse-prev-dl) RE_USE_PREV_DL='yes';;
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'"`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'"`; shift;;
-  -p|--build-prod-image) BUILD_DEV_ISO='no';;
-  -d|--build-dev-image) BUILD_DEV_ISO='yes';;
+  -p|--build-prod-image) BUILD_PROD_ISO='yes';;
   -h|--help) usage; exit 0;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
@@ -93,6 +91,8 @@ TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-curren
 RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 #MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-1.2.1.tgz'
 MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
+#OPEN_VM_TOOLS_URL='https://github.com/downloads/lynxbat/Razor-Microkernel/mk-open-vm-tools.tar.gz'
+OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor/mk-open-vm-tools.tar.gz'
 
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
@@ -105,7 +105,7 @@ mkdir -p tmp-build-dir/build_dir/dependencies
 # the files/tools needed to build the Microkernel ISO)
 
 cp -p iso-build-files/* tmp-build-dir/build_dir
-if [ $BUILD_DEV_ISO = 'no' ]
+if [ $BUILD_PROD_ISO = 'yes' ]
 then
   sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
 fi
@@ -185,7 +185,7 @@ echo `pwd`
 mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
-  if [ $BUILD_DEV_ISO = 'yes' ] || [ ! $file = 'openssh.tcz' ]; then
+  if [ $BUILD_PROD_ISO = 'no' ] || [ ! $file = 'openssh.tcz' ]; then
     if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/builtin/optional/$file ]
     then
       wget -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
@@ -193,7 +193,7 @@ for file in `cat $BUILTIN_LIST`; do
       wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.dep
     fi
     echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
-  elif [ $BUILD_DEV_ISO = 'no' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
+  elif [ $BUILD_PROD_ISO = 'yes' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
   then
     rm tmp-build-dir/tmp/builtin/optional/$file
     rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
@@ -266,6 +266,11 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #         access to the Microkernel from the console)
 
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
+file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
+if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/dependencies/$file ]
+then
+  wget -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
+fi
 # Copy over the etc/passwd file to the tmp-build-dir/etc directory.
 # If we're building a production system, development system, also copy over the
 # etc/shadow file to the same directory.  If it's a production system we're
@@ -273,7 +278,7 @@ cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 # (and remove the SSH setup files from the files we just copied over to the
 # dependencies directory)
 cp -p etc/passwd tmp-build-dir/etc
-if [ $BUILD_DEV_ISO = 'yes' ]; then
+if [ $BUILD_PROD_ISO = 'no' ]; then
   cp -p etc/shadow tmp-build-dir/etc
 else
   cp -p etc/shadow-nologin tmp-build-dir/etc/shadow
@@ -296,13 +301,18 @@ unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-buil
 # a dependencies subdirectory of the build_dir
 
 cd tmp-build-dir
-tar zcvf build_dir/dependencies/razor-microkernel-files.tar.gz usr etc opt tmp
+tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
 
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
 # copy over this one file to a directory somewhere and unpack it and they will
 # be ready to build the ISO
 
+bundle_out_file_name='razor-microkernel-bundle-dev.tar.gz'
+if [ $BUILD_PROD_ISO = 'yes' ]; then
+  bundle_out_file_name='razor-microkernel-bundle-prod.tar.gz'
+fi
+
 cd build_dir
-tar zcvf $TOP_DIR/build-files/razor-microkernel-overlay.tar.gz *
+tar zcvf $TOP_DIR/build-files/$bundle_out_file_name *
 cd $TOP_DIR
