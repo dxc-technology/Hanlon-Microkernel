@@ -23,6 +23,8 @@ OPTIONS:
    -b, --builtin-list FILE    file containing extensions to install as builtin
    -m, --mirror-list FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
+   -d, --build-debug-image    build a debug ISO (automatic console login, no passwd required)
+   -t, --tc-passwd            specify a password for the tc user (if not a production ISO)
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -35,11 +37,13 @@ EOF
 # initialize a few variables to hold the options passed in by the user
 BUILTIN_LIST=
 MIRROR_LIST=
+TC_PASSWD=
 RE_USE_PREV_DL='no'
 BUILD_PROD_ISO='no'
+BUILD_DEBUG_ISO='no'
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:p -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image -- "$@")
+if ! options=$(getopt -o hrb:m:pdt: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd: -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -54,6 +58,8 @@ do
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'"`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'"`; shift;;
   -p|--build-prod-image) BUILD_PROD_ISO='yes';;
+  -d|--build-debug-image) BUILD_DEBUG_ISO='yes';;
+  -t|--tc-passwd) TC_PASSWD=`echo $2 | tr -d "'"`; shift;;
   -h|--help) usage; exit 0;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
@@ -67,6 +73,16 @@ if [  -z $BUILTIN_LIST ] || [ -z $MIRROR_LIST ]; then
   exit 1
 elif [ ! -r $BUILTIN_LIST ] || [ ! -r $MIRROR_LIST ]; then
   echo "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
+  usage
+  exit 1
+elif [ $BUILD_DEBUG_ISO = 'yes' ] && [ $BUILD_PROD_ISO = 'yes' ]; then
+  echo "\nError; Only one of the '-d' and '-p' options should be specified"
+  echo "     (ISO cannot be both a debug and production ISO)"
+  usage
+  exit 1
+elif [ ! -z $TC_PASSWD ] && [ $BUILD_PROD_ISO = 'yes' ]; then
+  echo "\nError; Only one of the '-t' and '-p' options should be specified"
+  echo "     (Cannot specify a 'tc' password to use for a production ISO)"
   usage
   exit 1
 fi
@@ -105,9 +121,10 @@ mkdir -p tmp-build-dir/build_dir/dependencies
 # the files/tools needed to build the Microkernel ISO)
 
 cp -p iso-build-files/* tmp-build-dir/build_dir
-if [ $BUILD_PROD_ISO = 'yes' ]
-then
+if [ $BUILD_PROD_ISO = 'yes' ]; then
   sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
+elif [ $BUILD_DEBUG_ISO = 'yes' ]; then
+  sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_debug-image/' tmp-build-dir/build_dir/rebuild_iso.sh
 fi
 
 # create a copy of the modifications to the DHCP client configuration that
@@ -217,6 +234,13 @@ fi
 
 cp -p tmp/first_checkin.yaml tmp/mk_conf.yaml tmp-build-dir/tmp
 cp -p etc/inittab tmp-build-dir/etc
+# check to see if we're building a "Debug ISO"; if so, use sed to modify the inittab
+# file we just copied over so that re-enables autologin
+if [ $BUILD_DEBUG_ISO = 'yes' ]; then
+  AUTO_LOGIN_STR='-nl /sbin/autologin'
+  OLD_INITTAB_TTY1_PAT='^\(tty1.*\)\(38400 tty1\)$'
+  sed -i "s/$OLD_INITTAB_TTY1_PAT/\1$(echo $AUTO_LOGIN_STR | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g') \2/" tmp-build-dir/etc/inittab
+fi
 
 # get a copy of the current Tiny Core Linux "Core" ISO
 
@@ -280,6 +304,20 @@ fi
 cp -p etc/passwd tmp-build-dir/etc
 if [ $BUILD_PROD_ISO = 'no' ]; then
   cp -p etc/shadow tmp-build-dir/etc
+  # if a password for the tc user was passed in (using the -t or --tc-passwd flag)
+  # then use it to replace the default password for the tc user in the shadow
+  # password file we're burning into the ISO here (requires that openssl be installed
+  # locally for this to work)
+  if [ ! -z $TC_PASSWD ]; then
+    NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
+    # use sed to replace the default password with the new one generated (above)
+    # (but remember, need to escape the replacement string for use with sed first,
+    # which is what the "$(echo ... | sed -e ...)" part of this command does; it
+    # escapes any '\', '/', and '&' characters in the $NEW_PWD_ENTRY string so that
+    # they will be passed as literals during replacement instead of being used as
+    # part of the surrounding sed command)
+    sed -i "s/^\(tc:\)[^\:]*\(.*\)/\1$(echo $NEW_PWD_ENTRY | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')\2/" tmp-build-dir/etc/shadow
+  fi
 else
   cp -p etc/shadow-nologin tmp-build-dir/etc/shadow
   rm tmp-build-dir/build_dir/dependencies/ssh-setup-files.tar.gz
@@ -311,6 +349,8 @@ tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
 bundle_out_file_name='razor-microkernel-bundle-dev.tar.gz'
 if [ $BUILD_PROD_ISO = 'yes' ]; then
   bundle_out_file_name='razor-microkernel-bundle-prod.tar.gz'
+elif [ $BUILD_DEBUG_ISO = 'yes' ]; then
+  bundle_out_file_name='razor-microkernel-bundle-debug.tar.gz'
 fi
 
 cd build_dir
