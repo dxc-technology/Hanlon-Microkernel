@@ -29,13 +29,15 @@ OPTIONS:
    -b, --builtin-list FILE    file containing extensions to install as builtin
    -m, --mirror-list FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
-   -d, --build-debug-image    build a debug ISO (automatic console login, no passwd required)
-   -t, --tc-passwd            specify a password for the tc user (if not a production ISO)
+   -d, --build-debug-image    build a debug ISO (enable automatic console login)
+   -t, --tc-passwd            specify a password for the tc user
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
 and the passwd changes needed to access the Microkernel image from the command
-line or via the console)
+line or via the console).  Also note that only one of the '-p' and '-d' flags
+may be specified and the '-t' option may not be used when building a production
+ISO (using the '-p' flag).
 
 EOF
 }
