@@ -1,11 +1,17 @@
 #!/bin/sh
 #
-# Used to build the overlay file needed to add the files from the
-# Razor-Microkernel project to a Microkernel ISO image.  The file
-# built by this script (along with any other gzipped tarfiles in
-# the build_files subdirectory) should be placed into the "dependencies"
-# subdirectory of the directory being used to build the Microkernel
-# (where it will be picked up from by the build script).
+# Used to build the bundle file needed to build a new version of the
+# Razor Microkernel ISO (from the contents of the Razor Microkernel
+# project and it's dependencies.  The file built by this script can
+# be copied over to another directory (on another machine?) and unpacked.
+# Once it has been unpacked, running the 'build_initial_directories.sh'
+# script in that directory, followed by the 'rebuild_iso.sh' script,
+# will result in a new ISO built from the current state of the this
+# (Razor-Microkernel) project.
+#
+# Note:  the bundle file does not creaate a subdirectory, so a new, clean
+#    directory should be used when unpacking the bundle file to build a
+#    new version of the Microkernel ISO.
 
 # define a function we can use to print out the usage for this script
 usage()
