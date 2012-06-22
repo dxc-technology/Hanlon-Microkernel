@@ -26,11 +26,11 @@ build an instance of the Razor Microkernel ISO.
 OPTIONS:
    -h, --help                 print usage for this command
    -r, --reuse-prev-dl        reuse the downloads rather than downloading again
-   -b, --builtin-list FILE    file containing extensions to install as builtin
-   -m, --mirror-list FILE     file containing extensions to add to TCE mirror
+   -b, --builtin-list=FILE    file containing extensions to install as builtin
+   -m, --mirror-list=FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
-   -t, --tc-passwd            specify a password for the tc user
+   -t, --tc-passwd=PASSWD     specify a password for the tc user
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -59,15 +59,37 @@ then
 fi
 set -- $options
 
+# loop through the command line arguments, parsing them as we go along
+# (and shifting them off of the list of command line arguments as they,
+# and their arguments if they have any, are parsed).  Note the use of
+# the 'tr' and 'sed' commands when parsing the command arguments. The
+# 'tr' command is used to remove the leading and trailing quotes from
+# the arguments while the 'sed' command is used to remove the leading
+# equals sign from the argument (if it exists).
 while [ $# -gt 0 ]
 do
   case $1 in
   -r|--reuse-prev-dl) RE_USE_PREV_DL='yes';;
-  -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'"`; shift;;
-  -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'"`; shift;;
+  -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
+  -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -p|--build-prod-image) BUILD_PROD_ISO='yes';;
   -d|--build-debug-image) BUILD_DEBUG_ISO='yes';;
-  -t|--tc-passwd) TC_PASSWD=`echo $2 | tr -d "'"`; shift;;
+  -t|--tc-passwd)
+    TC_PASSWD=`echo $2 | tr -d "'"`
+    test1=`echo $TC_PASSWD | grep '^c-passwd='`
+    if [ ! -z $test1 ]; then
+      test=`echo $test1 | sed 's:^c-passwd=\(.*\)$:\1:'`
+      echo -n "$0: WARNING, found value that looks like it includes part"
+      echo -n " of the long argument name ($TC_PASSWD); should the password value be"
+      echo " \"$test\" instead?"
+    fi;
+    test2=`echo $TC_PASSWD | grep '^='`
+    if [ ! -z $test2 ]; then
+      echo -n "$0: WARNING, password value with a leading '=' found"
+      echo -n " ($test2), did you use an '=' between the short argument (-t)"
+      echo " and its value? If so, you might not get the password you expect..."
+    fi;
+    shift;;
   -h|--help) usage; exit 0;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
@@ -75,12 +97,24 @@ do
   shift
 done
 
+# if there are still arguments left, the syntax of the command is wrong
+# (there were extra arguments given that don't belong)
+if [ ! $# -eq 0 ]; then
+  echo "$0: error - extra fields included in commmand; remaining args=$@" 1>&2; usage; exit 1
+fi
+
+# otherwise, sanity check the arguments that were parsed to ensure that
+# the required arguments are present and the optional ones make sense
+# (in terms of which optional arguments were given, and in what combination)
 if [  -z $BUILTIN_LIST ] || [ -z $MIRROR_LIST ]; then
   echo "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified"
   usage
   exit 1
 elif [ ! -r $BUILTIN_LIST ] || [ ! -r $MIRROR_LIST ]; then
-  echo "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
+  echo -n "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
+  echo " values parsed are as follows:"
+  echo "\tbuiltin-list\t=> \"$BUILTIN_LIST\""
+  echo "\tmirror-list\t=> \"$MIRROR_LIST\""
   usage
   exit 1
 elif [ $BUILD_DEBUG_ISO = 'yes' ] && [ $BUILD_PROD_ISO = 'yes' ]; then
@@ -95,7 +129,8 @@ elif [ ! -z $TC_PASSWD ] && [ $BUILD_PROD_ISO = 'yes' ]; then
   exit 1
 fi
 
-# if not, then make sure we're starting with a clean (i.e. empty) build directory
+# the '-r' or '--reuse-prev-dl' flags were not given, then make sure we're
+# starting with a clean (i.e. empty) build directory
 if [ $RE_USE_PREV_DL = 'no' ]
 then
   if [ ! -d tmp-build-dir ]; then
@@ -108,7 +143,6 @@ then
 fi
 
 # initialize a couple of variables that we'll use later
-
 TOP_DIR=`pwd`
 TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
 TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
@@ -120,14 +154,12 @@ OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor/mk-open-vm-tool
 
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
-
 mkdir -p tmp-build-dir/build_dir/dependencies
 
 # copy over the scripts that are needed to actually build the ISO into
 # the build_dir (from there, they will be included into a single
 # gzipped tarfile that can be unpacked and will contain almost all of
 # the files/tools needed to build the Microkernel ISO)
-
 cp -p iso-build-files/* tmp-build-dir/build_dir
 if [ $BUILD_PROD_ISO = 'yes' ]; then
   sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
@@ -138,7 +170,6 @@ fi
 # create a copy of the modifications to the DHCP client configuration that
 # are needed for the Razor Microkernel Controller to find the appropriate
 # Razor server for it's first checkin
-
 mkdir -p tmp-build-dir/etc/init.d
 cp -p etc/init.d/dhcp.sh tmp-build-dir/etc/init.d
 mkdir -p tmp-build-dir/usr/share/udhcpc
@@ -146,21 +177,18 @@ cp -p usr/share/udhcpc/dhcp_mk_config.script tmp-build-dir/usr/share/udhcpc
 
 # create copies of the files from this project that will be placed
 # into the /usr/local/bin directory in the Razor Microkernel ISO
-
 mkdir -p tmp-build-dir/usr/local/bin
 cp -p rz_mk_*.rb tmp-build-dir/usr/local/bin
 
 # create copies of the files from this project that will be placed
 # into the /usr/local/lib/ruby/1.8/razor_microkernel directory in the Razor
 # Microkernel ISO
-
 mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
 cp -p razor_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
 
 # create copies of the MCollective agents from this project (will be placed
 # into the /usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
 # directory in the Razor Microkernel ISO
-
 file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
 mcoll_dir=`echo $file | cut -d'.' -f-3`
 mkdir -p tmp-build-dir/usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
@@ -172,7 +200,6 @@ cp -p configuration-agent/configuration.rb facter-agent/facteragent.rb \
 # download the latest version of the gems in the 'gem.list' file into the
 # appropriate directory to use in the build process (rather than including
 # fixed versions of those gems as part of the Razor-Microkernel project)
-
 mkdir -p tmp-build-dir/opt/gems
 cp -p opt/bootsync.sh tmp-build-dir/opt
 cp -p opt/gems/gem.list tmp-build-dir/opt/gems
@@ -187,7 +214,6 @@ cd $TOP_DIR
 
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
-
 mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
@@ -205,7 +231,6 @@ done
 # boot process.  These files will be placed into the /tmp/builtin directory in
 # the Microkernel ISO.  The list of files downloaded (and loaded at boot) are
 # assumed to be contained in the file specified by the BUILTIN_LIST parameter
-
 echo `pwd`
 mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
@@ -228,7 +253,6 @@ done
 
 # download the ruby-gems distribution (will be installed during the boot
 # process prior to starting the Microkernel initialization process)
-
 file=`echo $RUBY_GEMS_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/opt/$file ]
 then
@@ -239,7 +263,6 @@ fi
 # /tmp and /etc directories of the Microkernel instance (the first two control the
 # initial behavior of the Razor Microkernel Controller, the third disables automatic
 # login of the tc user when the Microkernel finishes booting)
-
 cp -p tmp/first_checkin.yaml tmp/mk_conf.yaml tmp-build-dir/tmp
 cp -p etc/inittab tmp-build-dir/etc
 # check to see if we're building a "Debug ISO"; if so, use sed to modify the inittab
@@ -251,7 +274,6 @@ if [ $BUILD_DEBUG_ISO = 'yes' ]; then
 fi
 
 # get a copy of the current Tiny Core Linux "Core" ISO
-
 file=`echo $TCL_ISO_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/$file ]
 then
@@ -260,7 +282,6 @@ fi
 
 # download the MCollective, unpack it in the appropriate location, and
 # add a couple of soft links
-
 file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
 mcoll_dir=`echo $file | cut -d'.' -f-3`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
@@ -278,7 +299,6 @@ cd $TOP_DIR
 # add a soft-link in what will become the /usr/local/sbin directory in the
 # Microkernel ISO (this fixes an issue with where Facter expects to find
 # the 'dmidecode' executable)
-
 mkdir -p tmp-build-dir/usr/sbin
 rm tmp-build-dir/usr/sbin 2> /dev/null
 ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
@@ -296,13 +316,13 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #         (note; if this is a production system then the etc/shadow-nologin
 #         file will be copied over instead of the etc/shadow file (to block
 #         access to the Microkernel from the console)
-
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/dependencies/$file ]
 then
   wget -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
 fi
+
 # Copy over the etc/passwd file to the tmp-build-dir/etc directory.
 # If we're building a production system, development system, also copy over the
 # etc/shadow file to the same directory.  If it's a production system we're
@@ -317,6 +337,7 @@ if [ $BUILD_PROD_ISO = 'no' ]; then
   # password file we're burning into the ISO here (requires that openssl be installed
   # locally for this to work)
   if [ ! -z $TC_PASSWD ]; then
+    echo "changing password for 'tc' user to $TC_PASSWD"
     NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
     # use sed to replace the default password with the new one generated (above)
     # (but remember, need to escape the replacement string for use with sed first,
@@ -333,7 +354,6 @@ fi
 
 # get the latest util-linux.tcz, then extract the two executables that
 # we need from that file (using the unsquashfs command)
-
 file='util-linux.tcz'
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
 then
@@ -345,7 +365,6 @@ unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-buil
 # project that we just copied over, along with the files that were downloaded from
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
-
 cd tmp-build-dir
 tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
 
@@ -353,7 +372,6 @@ tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
 # of scripts that are used to build the ISO (so that all the user has to do is
 # copy over this one file to a directory somewhere and unpack it and they will
 # be ready to build the ISO
-
 bundle_out_file_name='razor-microkernel-bundle-dev.tar.gz'
 if [ $BUILD_PROD_ISO = 'yes' ]; then
   bundle_out_file_name='razor-microkernel-bundle-prod.tar.gz'
