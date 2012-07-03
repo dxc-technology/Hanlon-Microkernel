@@ -18,7 +18,8 @@ set -x
 ./add_version_to_mk_fs.rb tmp ${ISO_VERSION}
 # run chroot and ldconfig on the tmp directory (preparing it for construction
 # of a bootable core.gz file)
-chroot ${DIR_NAME}/tmp depmod -a 3.0.21-tinycore
+#chroot ${DIR_NAME}/tmp depmod -a 3.0.21-tinycore
+chroot ${DIR_NAME}/tmp depmod -a `ls ${DIR_NAME}/extract/lib/modules`
 ldconfig -r ${DIR_NAME}/tmp
 # build the new core.gz file (containing the contents of the tmp directory)
 cd tmp

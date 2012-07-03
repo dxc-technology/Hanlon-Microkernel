@@ -379,6 +379,11 @@ elif [ $BUILD_DEBUG_ISO = 'yes' ]; then
   bundle_out_file_name='razor-microkernel-bundle-debug.tar.gz'
 fi
 
+# and, finally, create our bundle file
+if [ ! -d $TOP_DIR/build-files ]; then
+    # make a directory we can use to build our gzipped tarfile
+    mkdir $TOP_DIR/build-files
+fi
 cd build_dir
 tar zcvf $TOP_DIR/build-files/$bundle_out_file_name *
 cd $TOP_DIR
