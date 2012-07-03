@@ -191,10 +191,13 @@ module RazorMicrokernel
     def add_flattened_array_to_facts!(hash_array, facts_map, prefix, fields_to_include)
       return unless hash_array
       count = 0
-      array_len_str = hash_array.size.to_s
+      # get the number of non-nil elements in the hash_array; will be used
+      # as the count for this key (below)
+      array_len_str = hash_array.select{ |item| item }.size.to_s
       count_key = prefix + "_count"
       facts_map[count_key.to_sym] = array_len_str
       hash_array.each { |element|
+        next unless element
         new_prefix = prefix + count.to_s
         add_flattened_hash_to_facts!(element, facts_map, new_prefix, fields_to_include)
         count += 1
@@ -273,15 +276,16 @@ module RazorMicrokernel
       # }
       parse_array = []
       prev_indent = 0
+      prev_array_fieldname = ""
       indent_level = -1
       array.each { |line|
         name_line = /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)$/.match(line) ||
             /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(DISABLED)$/.match(line) ||
             /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(UNCLAIMED)$/.match(line)
-        if name_line && name_line[1].length > prev_indent
+        if name_line && name_line[1].length > prev_indent && name_line[2] != prev_array_fieldname
           indent_level += 1
           prev_indent = name_line[1].length
-        elsif name_line && name_line[1].length < prev_indent
+        elsif name_line && name_line[1].length < prev_indent && name_line[2] != prev_array_fieldname
           indent_level -= 1
           prev_indent = name_line[1].length
         end
@@ -303,6 +307,7 @@ module RazorMicrokernel
             key = name_line[2]
             parse_array << { :indent_level => indent_level, :type => "map", :name => key }
           end
+          prev_array_fieldname = name_line[2]
         else
           # it's a value, so parse it using the delimiter that was passed in as an argument
           # to the function (above) and save the result in the parse_array...first, parse the
