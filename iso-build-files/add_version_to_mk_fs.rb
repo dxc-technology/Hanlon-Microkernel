@@ -4,10 +4,7 @@
 # will be saved in the directory named in the first command-line argument (which, for
 # our Microkernel ISO files, will be at the root of the Microkernel ISO's' filesystem)
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'yaml'
 

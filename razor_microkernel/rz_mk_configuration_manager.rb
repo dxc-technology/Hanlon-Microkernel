@@ -1,10 +1,7 @@
 # Used to manage the Microkernel Controller configuration (methods in this Module are called from both)
 # the WEBrick server and the Microkernel Controller itself.
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'yaml'
 require 'json'
