@@ -5,10 +5,7 @@
 # MCollective (will probably construct a Razor server-side daemon that does
 # something like what's here, but that remains to be seen)
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 $LOAD_PATH << "/usr/lib/ruby/1.8"
 require 'mcollective'

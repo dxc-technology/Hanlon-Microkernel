@@ -3,10 +3,7 @@
 # This class defines the set of network utilities that are used by the
 # Razor Microkernel Controller script
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 module RazorMicrokernel
   class RzNetworkUtils

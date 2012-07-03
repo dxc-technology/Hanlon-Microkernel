@@ -1,10 +1,7 @@
 # Manages the registration process (used by the rz_mk_control_server to
 # register node with the Razor server on request or when facts change)
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'rubygems'
 require 'facter'

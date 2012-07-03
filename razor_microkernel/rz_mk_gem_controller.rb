@@ -3,10 +3,7 @@
 # This class makes call to the "gem" CLI (provided by the RubyGems) to install
 # all of the in the stated directory.
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 module RazorMicrokernel
   class RzMkGemController

@@ -3,10 +3,7 @@
 # Used during the boot process to initialize the Microkernel (install gems
 # and start up the critical services, like MCollective)
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'yaml'
 require 'razor_microkernel/rz_network_utils'

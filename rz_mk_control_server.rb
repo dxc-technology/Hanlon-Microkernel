@@ -5,10 +5,7 @@
 # it is the Microkernel Controller script, and is started as a daemon process using
 # the associated rz_mk_controller.rb script
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'rubygems'
 #require 'logger'

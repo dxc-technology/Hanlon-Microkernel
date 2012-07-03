@@ -2,10 +2,7 @@
 # rz_web_server to save the new configuration to the filesystem on the
 # Microkernel and restart the rz_mk_contoller)
 #
-# EMC Confidential Information, protected under EMC Bilateral Non-Disclosure Agreement.
-# Copyright © 2012 EMC Corporation, All Rights Reserved
 #
-# @author Tom McSweeney
 
 require 'net/http'
 
