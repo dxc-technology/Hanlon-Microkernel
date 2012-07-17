@@ -149,8 +149,7 @@ TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-curren
 RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 #MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-1.2.1.tgz'
 MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
-#OPEN_VM_TOOLS_URL='https://github.com/downloads/lynxbat/Razor-Microkernel/mk-open-vm-tools.tar.gz'
-OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor/mk-open-vm-tools.tar.gz'
+OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
 
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
