@@ -34,9 +34,11 @@ case "$1" in
 			echo adding dns $i
 			echo nameserver $i >> $RESOLV_CONF
 		done
-		# added by tjmcs, 28-Feb-2012
-		echo $siaddr > /tmp/nextServerIP.addr
-                sed -i "s/RAZOR_URI_IP_ADDR/$siaddr/" /tmp/mk_conf.yaml
+		if [ -n "$siaddr" ] ; then
+			# added by tjmcs, 28-Feb-2012
+			echo $siaddr > /tmp/nextServerIP.addr
+			sed -i "s/RAZOR_URI_IP_ADDR/$siaddr/" /tmp/mk_conf.yaml
+		fi
 		;;
 esac
 
