@@ -9,7 +9,7 @@ module RazorMicrokernel
   class RzNetworkUtils
 
     # used internally
-    MAX_WAIT_TIME = 15 * 60   # wait for 15 minutes, max
+    MAX_WAIT_TIME = 5 * 60    # wait for 5 minutes, max
     WAIT_BETWEEN_ITER = 15    # wait 15 seconds between iterations
     DEF_ETH_PREFIX = "eth"
     SUCCESS = 0
