@@ -43,7 +43,7 @@ require 'razor_microkernel/rz_host_utils'
 nw_is_avail = false
 rz_nw_util = RazorMicrokernel::RzNetworkUtils.new
 error_cond = rz_nw_util.wait_until_nw_avail
-nw_is_avail = true if error_cond == 0
+nw_is_avail = true if error_cond == RazorMicrokernel::RzNetworkUtils::SUCCESS
 
 # if the network is available (there's an ethernet adapter that is up and
 # has a valid IP address), then start up the MCollective agent
@@ -79,14 +79,14 @@ if nw_is_avail then
   }
   puts "MK Loaded: v#{mk_version_hash['mk_version']}"
 
-elsif error_cond == RzNetworkUtils::TIMEOUT_EXCEEDED then
+elsif error_cond == RazorMicrokernel::RzNetworkUtils::TIMEOUT_EXCEEDED then
 
   puts "Maximum wait time exceeded, network not found, exiting..."
-  exit(RzNetworkUtils::TIMEOUT_EXCEEDED)
+  exit(RazorMicrokernel::RzNetworkUtils::TIMEOUT_EXCEEDED)
 
-elsif error_cond == RzNetworkUtils::INVALID_IP_ADDRESS then
+elsif error_cond == RazorMicrokernel::RzNetworkUtils::INVALID_IP_ADDRESS then
 
   puts "DHCP address assignment failed, exiting..."
-  exit(RzNetworkUtils::INVALID_IP_ADDRESS)
+  exit(RazorMicrokernel::RzNetworkUtils::INVALID_IP_ADDRESS)
 
 end
