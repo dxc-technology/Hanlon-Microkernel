@@ -10,7 +10,6 @@ module RazorMicrokernel
 
     # used internally
     MAX_WAIT_TIME = 2 * 60    # wait for 2 minutes, max
-    WAIT_BETWEEN_ITER = 15    # wait 15 seconds between iterations
     DEF_ETH_PREFIX = "eth"
     SUCCESS = 0
 
@@ -29,10 +28,10 @@ module RazorMicrokernel
 
     def wait_until_nw_avail
 
-      # Set a couple of flags that will be used later on
-      is_first_iter = true
+      # Set a few flags/values that will be used later on
       is_eth_up = false
       ip_is_valid = false
+      prev_attempts = 0
 
       # and grab the start time (to use in calculating the total time elapsed)
       @start_time = Time.now.to_i
@@ -40,12 +39,19 @@ module RazorMicrokernel
       # Start loop that will run until the network is available (or until the timeout
       # value is exceeded)
 
+      puts "Looking for network, this is attempt ##{prev_attempts + 1}"
       begin
 
-        # if it's not hte first time through the loop, sleep, otherwise reset the
-        # is_first_iter flag to false (it shouldn't be true the next time through)
-
-        !is_first_iter ? sleep(WAIT_BETWEEN_ITER) : is_first_iter = false
+        # calculate the "wait_time" using an exponential backoff algorithm:
+        #
+        #      1/2 * (2**c - 1)
+        #
+        # Note; here the value "c" represents the number of previous attempts
+        # that have been made (starting with a value of zero, it is incremented by
+        # one each time an attempt is made)
+        wait_time = (((1 << prev_attempts) - 1) / 2.0).round
+        puts "Attempt ##{prev_attempts} failed; sleeping for #{wait_time} secs and retrying..." if wait_time > 0.0
+        sleep(wait_time) if wait_time > 0.0
 
         # loop through the entries in the output of the "ifconfig" command
         # (under TCL, these entries are separated by a double-newline, so
@@ -75,6 +81,8 @@ module RazorMicrokernel
             break
 
           end
+
+          prev_attempts += 1
 
         }
 

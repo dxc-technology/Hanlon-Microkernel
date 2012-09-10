@@ -20,6 +20,14 @@ require 'razor_microkernel/rz_mk_fact_manager'
 require 'razor_microkernel/rz_mk_configuration_manager'
 require 'razor_microkernel/rz_mk_kernel_module_manager'
 
+# Number of seconds to sleep before attempting to load the kernel module
+# (this provides a brief window in time that may be needed to initialize
+# the hardware that some of these kernel modules are intended to be used
+# with; as an example, if the network cards are not initialized when the
+# kernel modules containing the firmware for those cards are loaded into
+# the kernel, then the kernel will not 'see' the underlying network)
+KMOD_SLEEP_TIME = 15
+
 # this method is used to load a list of Tiny Core Linux extensions
 # as the Microkernel Controller is starting up (or restarting).
 # It loads the extensions listed in the YAML file at the tcl_ext_list_uri
@@ -78,9 +86,14 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
       t = %x[sudo -u tc tce-load -iw #{extension}]
     }
 
+    # sleep for KMOD_SLEEP_TIME seconds before starting the process of loading the
+    # kernel modules (this allows for a bit of time to initialize the hardware, if
+    # any, that the kernel modules might be intended for use with)
+    sleep(KMOD_SLEEP_TIME)
     # and load the kernel modules (if any), first get a reference to the Configuration
     # Manager instance (a singleton)
     kernel_mod_manager = (RazorMicrokernel::RzMkKernelModuleManager).instance
+    # and then load the modules
     kernel_mod_manager.load_kernel_modules
 
   rescue => e
