@@ -9,6 +9,7 @@ module RazorMicrokernel
   class RzNetworkUtils
 
     # used internally
+    NETWORK_MOD_SEL_PATTERN = /^(bnx2)/
     MAX_WAIT_TIME = 2 * 60    # wait for 2 minutes, max
     DEF_ETH_PREFIX = "eth"
     SUCCESS = 0
@@ -29,8 +30,9 @@ module RazorMicrokernel
     def wait_until_nw_avail
 
       # Set a few flags/values that will be used later on
-      is_eth_up = false
-      ip_is_valid = false
+      nic_found = false
+      nic_has_ip_addr = false
+      found_a_valid_ip = false
       prev_attempts = 0
 
       # and grab the start time (to use in calculating the total time elapsed)
@@ -42,6 +44,9 @@ module RazorMicrokernel
       puts "Looking for network, this is attempt ##{prev_attempts + 1}"
       begin
 
+        # get the current ifconfig output
+        ifconfig_entries = %x[ifconfig].split("\n\n")
+
         # calculate the "wait_time" using an exponential backoff algorithm:
         #
         #      1/2 * (2**c - 1)
@@ -50,49 +55,72 @@ module RazorMicrokernel
         # that have been made (starting with a value of zero, it is incremented by
         # one each time an attempt is made)
         wait_time = (((1 << prev_attempts) - 1) / 2.0).round
-        puts "Attempt ##{prev_attempts} failed; sleeping for #{wait_time} secs and retrying..." if wait_time > 0.0
-        sleep(wait_time) if wait_time > 0.0
+        if wait_time > 0.0
+          puts "Attempt ##{prev_attempts} failed; sleeping for #{wait_time} secs and retrying..."
+          sleep(wait_time)
+          # if a NIC wasn't found in the previous attempt, try reloading the
+          # firmware drivers that were installed in the kernel module
+          unless nic_found
+            kernel_mod_list = %x[lsmod].split("\n")
+            network_mod_list = kernel_mod_list.select{|elem| NETWORK_MOD_SEL_PATTERN.match(elem)}.map{|match| match.split()[0]}
+            if network_mod_list.length > 0
+              puts "no NICs found; reload network #{network_mod_list[0]} firmware module..."
+              mod_name = network_mod_list[0]
+              %x[sudo rmmod #{mod_name}; sudo modprobe #{mod_name}]
+            end
+          end
+          # if a NIC was found in the previous attemplt, but it doesn't have
+          # a valid IP address, try restarting the DHCP client (to force another
+          # DHCP request)
+          unless nic_has_ip_addr
+            puts "no valid IP addresses found; restart DHCP client..."
+            %x[sudo /etc/init.d/services/dhcp stop; sudo /etc/init.d/services/dhcp start]
+          end
+        end
 
-        # loop through the entries in the output of the "ifconfig" command
-        # (under TCL, these entries are separated by a double-newline, so
-        # split the output of the "ifconfig" command on that string)
+        # loop through the ifconfig entries and search one ethernet NIC that
+        # has a valid IP address
+        ifconfig_entries.each { |entry|
 
-        %x[ifconfig].split("\n\n").each { |entry|
-
+          # for each entry, check for an ethernet adapter (to eliminate
           # for each entry, check for an ethernet adapter (to eliminate
           # the loopback adapter) that has been assigned an IP address
           # and is in an "UP" state
 
-          is_eth_up = (/#{@eth_prefix}\d+/.match(entry) &&
-              /inet addr:\d+\.\d+\.\d+\.\d+\s+/.match(entry) &&
-              /UP/.match(entry))
+          nic_prefix_match = /(#{@eth_prefix}\d+)/.match(entry)
+          dev_prefix = nil unless nic_prefix_match
+          dev_prefix = nic_prefix_match[1] if nic_prefix_match
+
+          nic_found = (dev_prefix != nil && /UP/.match(entry) != nil)
+          nic_has_ip_addr = (nic_found && /inet addr:\d+\.\d+\.\d+\.\d+\s+/.match(entry) != nil)
 
           # if we find an adapter that matches the criteria, above, then
           # check to see if it has a valid IP address and break out of the
           # inner loop (over ifconfig entries)
 
-          if is_eth_up
+          if nic_has_ip_addr
 
-            # 169.xx.xx.xx type addresses indicate that the DHCP request failed
-            # to assign an address to the NIC in question (even though the adapter
-            # is up, it doesn't have a valid IP address assigned to it)
-
-            ip_is_valid = !/inet addr:169\.\d+\.\d+\.\d+\s+/.match(entry)
-            break
+            # 127.xx.xx.xx type addresses are loopback interfaces, and
+            # 169.xx.xx.xx type addresses indicate that the DHCP request timed out
+            # and no routable IP address was assigned to the NIC in question (even
+            # though the adapter is up, it doesn't have a valid IP address assigned
+            # to it); in either case it's not a "valid IP"
+            found_a_valid_ip = !/inet addr:(127|169)\.\d+\.\d+\.\d+\s+/.match(entry)
+            break if found_a_valid_ip
 
           end
 
-          prev_attempts += 1
-
         }
 
-      end until (is_eth_up || current_wait_time >= MAX_WAIT_TIME)
+        prev_attempts += 1
+
+      end until (found_a_valid_ip || current_wait_time >= MAX_WAIT_TIME)
 
       # Return an appropriate error condition if the timeout was exceeded or if we
       # didn't receive a valid IP address
 
-      return(TIMEOUT_EXCEEDED) if !is_eth_up
-      return(INVALID_IP_ADDRESS) if !ip_is_valid
+      return(TIMEOUT_EXCEEDED) if !nic_has_ip_addr
+      return(INVALID_IP_ADDRESS) if !found_a_valid_ip
 
       # Otherwise, return a zero "error condition" (for success)
       SUCCESS
