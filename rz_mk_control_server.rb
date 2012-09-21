@@ -87,6 +87,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
   rescue => e
 
     logger.error e.message
+    e.backtrace.each { |line| logger.debug line }
 
   end
 
@@ -302,8 +303,9 @@ loop do
       registration_manager.register_node_if_changed(idle)
     end
 
-  rescue
-    logger.error("An exception occurred: #{$!}")
+  rescue => e
+    logger.error("An exception occurred: #{e.message}")
+    e.backtrace.each { |line| logger.debug line }
   end
 
   # check to see how much time has elapsed, sleep for the time remaining
