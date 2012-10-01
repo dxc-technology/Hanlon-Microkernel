@@ -262,7 +262,17 @@ fi
 # /tmp and /etc directories of the Microkernel instance (the first two control the
 # initial behavior of the Razor Microkernel Controller, the third disables automatic
 # login of the tc user when the Microkernel finishes booting)
-cp -p tmp/first_checkin.yaml tmp/mk_conf.yaml tmp-build-dir/tmp
+  cp -p tmp/first_checkin.yaml tmp-build-dir/tmp
+if [ $BUILD_DEBUG_ISO = 'yes' ]
+then
+  # if we're building a "debug" bundle, then copy over a microkernel configuration
+  # file that will enable logging of DEBUG messages from the start
+  cp -p tmp/mk_conf_debug.yaml tmp-build-dir/tmp/mk_conf.yaml
+else
+  # else copy over a file that will only enable logging of INFO/ERROR messages
+  # from the start
+  cp -p tmp/mk_conf.yaml tmp-build-dir/tmp
+fi
 cp -p etc/inittab tmp-build-dir/etc
 # check to see if we're building a "Debug ISO"; if so, use sed to modify the inittab
 # file we just copied over so that re-enables autologin
