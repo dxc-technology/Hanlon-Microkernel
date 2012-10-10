@@ -33,7 +33,9 @@ module RazorMicrokernel
       nic_found = false
       nic_has_ip_addr = false
       found_a_valid_ip = false
+      dev_prefix = nil
       prev_attempts = 0
+      wait_time = 0.0
 
       # and grab the start time (to use in calculating the total time elapsed)
       @start_time = Time.now.to_i
@@ -44,17 +46,7 @@ module RazorMicrokernel
       puts "Looking for network, this is attempt ##{prev_attempts + 1}"
       begin
 
-        # calculate the "wait_time" using an exponential backoff algorithm:
-        #
-        #      1/2 * (2**c - 1)
-        #
-        # Note; here the value "c" represents the number of previous attempts
-        # that have been made (starting with a value of zero, it is incremented by
-        # one each time an attempt is made)
-        wait_time = (((1 << prev_attempts) - 1) / 2.0).round
         if wait_time > 0.0
-          puts "Attempt ##{prev_attempts} failed; sleeping for #{wait_time} secs and retrying..."
-          sleep(wait_time)
           # if a NIC wasn't found in the previous attempt, try reloading the
           # firmware drivers that were installed in the kernel module
           unless nic_found
@@ -77,6 +69,7 @@ module RazorMicrokernel
 
         # loop through the ifconfig entries and search one ethernet NIC that
         # has a valid IP address
+
         %x[ifconfig].split("\n\n").each { |entry|
 
           # for each entry, check for an ethernet adapter (to eliminate
@@ -87,8 +80,12 @@ module RazorMicrokernel
           dev_prefix = nil unless nic_prefix_match
           dev_prefix = nic_prefix_match[1] if nic_prefix_match
 
-          nic_found = (dev_prefix != nil && /UP/.match(entry) != nil)
-          nic_has_ip_addr = (nic_found && /inet addr:\d+\.\d+\.\d+\.\d+\s+/.match(entry) != nil)
+          # set a flag indicating whether or not we found a NIC with an IP address assigned to it
+          this_nic_pref_matches = (dev_prefix != nil)
+          nic_has_ip_addr = (this_nic_pref_matches && /inet addr:\d+\.\d+\.\d+\.\d+\s+/.match(entry) != nil)
+
+          # and set a flag indicating whether or not we found any NICs (at least one) with the right prefix
+          nic_found = this_nic_pref_matches unless nic_found
 
           # if we find an adapter that matches the criteria, above, then
           # check to see if it has a valid IP address and break out of the
@@ -108,7 +105,21 @@ module RazorMicrokernel
 
         }
 
-        prev_attempts += 1
+        # if this attempt failed, sleep for some time and try again
+        unless found_a_valid_ip
+          # increment the counter for the number of previous attempts made
+          prev_attempts += 1
+          # calculate the "wait_time" using an exponential backoff algorithm:
+          #
+          #      1/2 * (2**c - 1)
+          #
+          # Note; here the value "c" represents the number of previous attempts
+          # that have been made (starting with a value of zero, it is incremented by
+          # one each time an attempt is made)
+          wait_time = (((1 << prev_attempts) - 1) / 2.0).round
+          puts "Attempt ##{prev_attempts} failed; sleeping for #{wait_time} secs and retrying..."
+          sleep(wait_time)
+        end
 
       end until (found_a_valid_ip || current_wait_time >= MAX_WAIT_TIME)
 

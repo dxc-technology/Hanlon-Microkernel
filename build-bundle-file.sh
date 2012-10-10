@@ -200,7 +200,7 @@ cp -p configuration-agent/configuration.rb facter-agent/facteragent.rb \
 # appropriate directory to use in the build process (rather than including
 # fixed versions of those gems as part of the Razor-Microkernel project)
 mkdir -p tmp-build-dir/opt/gems
-cp -p opt/bootsync.sh tmp-build-dir/opt
+cp -p opt/boot*.sh tmp-build-dir/opt
 cp -p opt/gems/gem.list tmp-build-dir/opt/gems
 cd tmp-build-dir/opt/gems
 for file in `cat gem.list`; do
