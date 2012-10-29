@@ -1,6 +1,6 @@
-## Project Razor - MicroKernel
+## Project Razor-Microkernel
 
-This is part of [Project Razor][razor] - the MicroKernel is the in-memory
+This is part of [Project Razor][razor] - the Microkernel is the in-memory
 Linux instance used to discover the hardware details and initiate
 provisioning operations.
 
