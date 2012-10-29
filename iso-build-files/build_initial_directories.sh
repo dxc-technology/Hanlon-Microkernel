@@ -6,7 +6,7 @@ rm -rf original-iso-files extract tmp newiso
 if [ ! -d /tmp/cdrom ]; then
     mkdir /tmp/cdrom
 fi
-mount Core-current.iso /tmp/cdrom
+mount Core-current.iso /tmp/cdrom -o loop
 mkdir original-iso-files
 cp -a /tmp/cdrom/boot original-iso-files/
 umount /tmp/cdrom
