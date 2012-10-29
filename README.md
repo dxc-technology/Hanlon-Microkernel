@@ -1,3 +1,14 @@
+## Project Razor - MicroKernel
+
+This is part of [Project Razor][razor] - the MicroKernel is the in-memory Linux
+instance used to discover the hardware details and initiate provisioning operations.
+
+You can find more information about Razor in general, as well as ways to get help,
+over at the [Razor project on GitHub][razor].
+
+[razor]: https://github.com/puppetlabs/razor
+
+
 ## Project Description
 
 This project contains the Ruby scripts/classes that are used to control the Razor Microkernel (and that interact with the Razor server) along with a set of scripts and files that are needed during the Microkernel boot and initialization proces. The files contained in this project are all bundled into the current version of the Razor Microkernel (v0.9.0.1). There are three primary services that are included in this project that are started up during the Microkernel boot process. Those services include:
