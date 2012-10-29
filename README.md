@@ -1,10 +1,12 @@
 ## Project Razor - MicroKernel
 
-This is part of [Project Razor][razor] - the MicroKernel is the in-memory Linux
-instance used to discover the hardware details and initiate provisioning operations.
+This is part of [Project Razor][razor] - the MicroKernel is the in-memory
+Linux instance used to discover the hardware details and initiate
+provisioning operations.
 
-You can find more information about Razor in general, as well as ways to get help,
-over at the [Razor project on GitHub][razor].
+You can find more information about Razor in general, as well as ways to get
+help, over at the [Razor project on GitHub][razor].  That includes the
+contributing guide, and the official list of committers to the project.
 
 [razor]: https://github.com/puppetlabs/razor
 
