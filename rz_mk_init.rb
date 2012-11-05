@@ -9,6 +9,9 @@ require 'yaml'
 require 'razor_microkernel/rz_network_utils'
 require 'razor_microkernel/rz_mk_gem_controller'
 
+# Start the Gem mirror so we can install from it
+%x[sudo /usr/local/bin/rz_mk_gem_mirror.rb 2>&1 > /tmp/rz_mk_gem_mirror.out]
+
 # First, install the gems that we'll need later on.  Note: we are taking
 # advantage of the default values for the second argument to the
 # RzMkGemController constructor here (since our gem list file is called
