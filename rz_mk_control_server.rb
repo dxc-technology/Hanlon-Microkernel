@@ -63,7 +63,11 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
     begin
       tce_install_list = JSON::parse(install_list_uri.read)
       logger.debug("received a TCE install list of '#{tce_install_list.inspect}'")
-    rescue => e
+    rescue SystemExit => e
+      throw e
+    rescue NoMemoryError => e
+      throw e
+    rescue Exception => e
       logger.debug("error while reading from '#{install_list_uri}' => #{e.message}")
       return
     end
@@ -84,11 +88,13 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
     # and then load the modules
     kernel_mod_manager.load_kernel_modules
 
-  rescue => e
-
+  rescue SystemExit => e
+    throw e
+  rescue NoMemoryError => e
+    throw e
+  rescue Exception => e
     logger.error e.message
     e.backtrace.each { |line| logger.debug line }
-
   end
 
 end
@@ -303,7 +309,11 @@ loop do
       registration_manager.register_node_if_changed(idle)
     end
 
-  rescue => e
+  rescue SystemExit => e
+    throw e
+  rescue NoMemoryError => e
+    throw e
+  rescue Exception => e
     logger.error("An exception occurred: #{e.message}")
     e.backtrace.each { |line| logger.debug line }
   end
