@@ -23,9 +23,9 @@ module RazorMicrokernel
     end
 
     def installGem(gemName)
+      # Can install from the gem mirror now, no need for absolute path
       puts "installing gem #{gemName}"
-      gemFile = @dirName + "/"+ gemName
-      %x[gem install --no-ri --no-rdoc #{gemFile}]
+      %x[gem install --no-ri --no-rdoc #{gemName}]
     end
 
   end

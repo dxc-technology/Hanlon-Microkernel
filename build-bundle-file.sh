@@ -211,6 +211,16 @@ for file in `cat gem.list`; do
 done
 cd $TOP_DIR
 
+# Create a gem mirror for running locally in the MK
+mkdir -p tmp-build-dir/tmp/gem-mirror
+cp -r tmp-build-dir/opt/gems tmp-build-dir/tmp/gem-mirror
+gem generate_index -d tmp-build-dir/tmp/gem-mirror
+sleep 5
+
+# Add GemRC file to the ISO to use the mirror
+mkdir -p tmp-build-dir/root
+cp rz_mk_gemrc.yaml tmp-build-dir/root/.gemrc
+
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
 mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
@@ -375,7 +385,7 @@ unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-buil
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
 cd tmp-build-dir
-tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
+tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
 
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
