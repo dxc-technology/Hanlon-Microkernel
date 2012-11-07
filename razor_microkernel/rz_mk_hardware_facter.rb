@@ -109,7 +109,11 @@ module RazorMicrokernel
                              "configuration"]
         add_flattened_array_to_facts!(hash_map["network_array"], facts_map,
                                       "mk_hw_nic", fields_to_include)
-      rescue => e
+      rescue SystemExit => e
+        throw e
+      rescue NoMemoryError => e
+        throw e
+      rescue Exception => e
         logger.error(e.backtrace.join("\n\t"))
       end
 

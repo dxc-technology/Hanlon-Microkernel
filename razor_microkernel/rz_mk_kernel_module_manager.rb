@@ -53,7 +53,11 @@ module RazorMicrokernel
         begin
           kmod_install_list = JSON::parse(install_list_uri.read)
           logger.debug "received a TCE install list of '#{kmod_install_list.inspect}'"
-        rescue => e
+        rescue SystemExit => e
+          throw e
+        rescue NoMemoryError => e
+          throw e
+        rescue Exception => e
           logger.debug "error while reading from '#{install_list_uri}' => #{e.message}"
           return
         end
