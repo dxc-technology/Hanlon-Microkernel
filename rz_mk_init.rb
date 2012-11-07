@@ -58,6 +58,13 @@ if nw_is_avail then
   # and proceed with startup of the network-dependent tasks
   puts "Network is available, proceeding..."
 
+  # Discover the IP of the Razor server
+  ip = rz_nw_util.discover_rz_server_ip
+  puts "Discovered Razor Server at: #{ip}"
+  y = YAML.load_file('/tmp/mk_conf.yaml')
+  y["mk_uri"] = "http://#{ip}:8026"
+  File.open('/tmp/mk_conf.yaml', 'w') {|f| f.write(y.to_yaml) }
+
   # first, set the hostname for this host to something unique
   # (waited until now because didn't want to have eth0 not
   # available at this point)
@@ -65,7 +72,6 @@ if nw_is_avail then
   rz_host_util.set_host_name
 
   # next, start the rz_mk_web_server, rz_mk_tce_mirror and rz_mk_controller scripts
-
   %x[sudo /usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
   %x[sudo /usr/local/bin/rz_mk_tce_mirror.rb 2>&1 > /tmp/rz_mk_tce_mirror.out]
   %x[sudo /usr/local/bin/rz_mk_controller.rb start]

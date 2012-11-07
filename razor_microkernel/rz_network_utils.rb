@@ -134,5 +134,46 @@ module RazorMicrokernel
 
     end
 
+    def discover_rz_server_ip
+      discover_by_pxe or discover_by_dns or discover_by_dhcp
+    end
+
+    def discover_by_pxe
+      begin
+        contents = File.open("/proc/cmdline", 'r') { |f| f.read }
+        server_ip = contents.split.map { |x| $1 if x.match(/razor.ip=(.*)/)}.compact
+        if server_ip.size == 1
+          return server_ip.join
+        else
+          return false
+        end
+      rescue
+        return false
+      end
+    end
+
+    def discover_by_dns
+      begin
+        contents = File.open("/proc/cmdline", 'r') { |f| f.read }
+        server_name = contents.split.map { |x| $1 if x.match(/razor.server=(.*)/)}.compact
+        server_name = server_name.size == 1 ? server_name.join : 'razor'
+
+        require 'socket'
+        return TCPSocket.gethostbyname(server_name)[3..-1].first || false
+      rescue
+        return false
+      end
+    end
+
+    def discover_by_dhcp
+      udhcp_file = "/tmp/nextServerIP.addr"
+      begin
+        contents = File.open(udhcp_file, 'r') { |f| f.read }
+        return contents.strip
+      rescue
+        return false
+      end
+    end
+
   end
 end
