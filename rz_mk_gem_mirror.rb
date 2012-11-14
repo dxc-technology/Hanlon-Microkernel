@@ -26,7 +26,7 @@ s = HTTPServer.new(:Port => 2158, :Logger => log, :AccessLog => access_log, :Ser
 
 # mount our servlets as directories under our HTTP server's URI
 
-s.mount("/gems", HTTPServlet::FileHandler, "/tmp/gem-mirror")
+s.mount("/gem-mirror", HTTPServlet::FileHandler, "/tmp/gem-mirror")
 
 # setup the server to shut down if the process is shut down
 
