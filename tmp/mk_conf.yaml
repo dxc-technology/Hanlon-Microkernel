@@ -10,3 +10,5 @@ mk_tce_install_list_uri: http://localhost:2157/tinycorelinux/tce-install-list
 mk_checkin_skew: 5
 mk_fact_excl_pattern: (^facter.*$)|(^id$)|(^kernel.*$)|(^memoryfree$)|(^operating.*$)|(^osfamily$)|(^path$)|(^ps$)|(^ruby.*$)|(^selinux$)|(^ssh.*$)|(^swap.*$)|(^timezone$)|(^uniqueid$)|(^uptime.*$)|(.*json_str$)
 mk_log_level: Logger::INFO
+mk_gem_mirror_uri: http://localhost:2158/gem-mirror
+mk_gemlist_uri: http://localhost:2158/gem-mirror/gems/gem.list

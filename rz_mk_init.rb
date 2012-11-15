@@ -8,16 +8,24 @@
 require 'yaml'
 require 'razor_microkernel/rz_network_utils'
 require 'razor_microkernel/rz_mk_gem_controller'
+require 'razor_microkernel/rz_mk_configuration_manager'
 
 # Start the Gem mirror so we can install from it
 %x[sudo /usr/local/bin/rz_mk_gem_mirror.rb 2>&1 > /tmp/rz_mk_gem_mirror.out]
 
-# First, install the gems that we'll need later on.  Note: we are taking
-# advantage of the default values for the second argument to the
-# RzMkGemController constructor here (since our gem list file is called
-# "gem.list", we don't need to specify it's value)
-gemController = RazorMicrokernel::RzMkGemController.new("/opt/gems")
-gemController.installAllGems
+# First, install the gems that we'll need later on.  Note: if the parameters
+# needed to find an external mirror are not specified, we'll take advantage
+# of the default values for the two input arguments to the RzMkGemController
+# constructor here (since we use the "http://localhost:2158/gem-mirror" URI
+# for our local gem mirror and the "gem.list" file, which contains the list
+# of gems to install from that mirror, is in the "gems/gem.list" file under
+# that local mirror URI)
+gemController = (RazorMicrokernel::RzMkGemController).instance
+mk_conf_filename = RazorMicrokernel::RzMkConfigurationManager::MK_CONF_FILE
+mk_conf = YAML::load(File.open(mk_conf_filename))
+gemController.gemSource = mk_conf['mk_gem_mirror_uri']
+gemController.gemListURI = mk_conf['mk_gemlist_uri']
+gemController.installListedGems
 
 # Now that we've installed the facter gem, need do do a bit more work
 # first, determine where the facter gem's library is at (will need that later,

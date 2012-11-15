@@ -4,7 +4,6 @@
 #
 
 require 'yaml'
-require 'json'
 require 'singleton'
 
 module RazorMicrokernel
@@ -12,6 +11,10 @@ module RazorMicrokernel
     # make this class a singleton class (only want one)
     include Singleton
 
+    MK_CONF_FILE = '/tmp/mk_conf.yaml'
+    DEF_MK_GEM_MIRROR_URI = "http://localhost:2158/gem-mirror"
+    DEF_MK_GEMLIST_URI = "http://localhost:2158/gem-mirror"
+    
     attr_reader :mk_checkin_interval
     attr_reader :mk_checkin_skew
     attr_reader :mk_uri
@@ -26,32 +29,34 @@ module RazorMicrokernel
     attr_reader :mk_tce_mirror_uri
     attr_reader :mk_tce_install_list_uri
     attr_reader :mk_kmod_install_list_uri
+    attr_reader :mk_gem_mirror_uri
+    attr_reader :mk_gemlist_uri
 
     def initialize
       @default_mk_log_level = Logger::INFO
-      @mk_config_file = '/tmp/mk_conf.yaml'
     end
 
     def mk_config_has_changed?(new_mk_config_map)
-      return true if !File.exists?(@mk_config_file)
-      old_mk_config_map = YAML::load(File.open(@mk_config_file, 'r'))
+      return true if !File.exists?(MK_CONF_FILE)
+      old_mk_config_map = YAML::load(File.open(MK_CONF_FILE, 'r'))
       return_val = old_mk_config_map != new_mk_config_map
       return_val
     end
 
     def save_mk_config(mk_config_map)
-      File.open(@mk_config_file, 'w') { |file|
+      puts "Saving MK Configuration..."
+      File.open(MK_CONF_FILE, 'w') { |file|
         YAML::dump(mk_config_map, file)
       }
       set_current_config(mk_config_map)
     end
 
     def config_file_exists?
-      File.exists?(@mk_config_file)
+      File.exists?(MK_CONF_FILE)
     end
 
     def load_current_config
-      mk_conf = YAML::load(File.open(@mk_config_file))
+      mk_conf = YAML::load(File.open(MK_CONF_FILE))
       set_current_config(mk_conf)
     end
 
@@ -81,6 +86,16 @@ module RazorMicrokernel
       @mk_tce_mirror_uri = mk_conf['mk_tce_mirror_uri']
       @mk_tce_install_list_uri = mk_conf['mk_tce_install_list_uri']
       @mk_kmod_install_list_uri = mk_conf['mk_kmod_install_list_uri']
+      if mk_conf['mk_gem_mirror_uri']
+        @mk_gem_mirror_uri = mk_conf['mk_gem_mirror_uri']
+      else
+        @mk_gem_mirror_uri = DEF_MK_GEM_MIRROR_URI
+      end
+      if mk_conf['mk_gemlist_uri']
+        @mk_gemlist_uri = mk_conf['mk_gemlist_uri']
+      else
+        @mk_gemlist_uri = DEF_MK_GEMLIST_URI
+      end
     end
 
   end
