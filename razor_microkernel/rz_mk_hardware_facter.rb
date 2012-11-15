@@ -280,7 +280,7 @@ module RazorMicrokernel
       prev_array_fieldname = ""
       indent_level = -1
       array.each { |line|
-        name_line = /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)$/.match(line) ||
+        name_line = /^(\s*)\*\-([A-Za-z]+)(\:?[0-9]*)?$/.match(line) ||
             /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(DISABLED)$/.match(line) ||
             /^(\s+)\*\-([A-Za-z]+)\:?([0-9]*)\s+(UNCLAIMED)$/.match(line)
         if name_line && name_line[1].length > prev_indent && name_line[2] != prev_array_fieldname
@@ -294,21 +294,23 @@ module RazorMicrokernel
         # Hash map or Array, otherwise this line is a value for the previously named element
         # of the containing Hash map
         if name_line
+          key_name = name_line[2]
+          key_name = key_name[1..-1] if key_name.start_with?(':')
           # if the third element is non-nil, then this represents one element of an array of
           # maps that should be used for this property; else we're just looking at the name
           # of a map of name/value pairs for this property (the exception to this is the
           # "network" output, which is always an array but never includes numbers, so we'll
           # just force it to be an array)
-          if name_line[3].length > 0 || name_line[2] == "network"
-            key = name_line[2] + "_array"
+          if name_line[3].length > 0 || key_name == "network" || key_name == "disk"
+            key = key_name + "_array"
             parse_array << { :indent_level => indent_level, :type => "map_array",
                              :name => key, :is_enabled => (name_line[4] != "DISABLED"),
                              :unclaimed => (name_line[4] != "UNCLAIMED") }
           else
-            key = name_line[2]
+            key = key_name
             parse_array << { :indent_level => indent_level, :type => "map", :name => key }
           end
-          prev_array_fieldname = name_line[2]
+          prev_array_fieldname = key_name
         else
           # it's a value, so parse it using the delimiter that was passed in as an argument
           # to the function (above) and save the result in the parse_array...first, parse the
