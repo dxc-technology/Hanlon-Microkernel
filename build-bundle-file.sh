@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 #
 # Used to build the bundle file needed to build a new version of the
 # Razor Microkernel ISO (from the contents of the Razor Microkernel
@@ -14,6 +14,7 @@
 #    new version of the Microkernel ISO.
 
 # define a function we can use to print out the usage for this script
+
 usage()
 {
 cat << EOF
@@ -83,14 +84,14 @@ do
   -t|--tc-passwd)
     TC_PASSWD=`echo $2 | tr -d "'"`
     test1=`echo $TC_PASSWD | grep '^c-passwd='`
-    if [ ! -z $test1 ]; then
+    if [[ ! -z $test1 ]]; then
       test=`echo $test1 | sed 's:^c-passwd=\(.*\)$:\1:'`
       echo -n "$0: WARNING, found value that looks like it includes part"
       echo -n " of the long argument name ($TC_PASSWD); should the password value be"
       echo " \"$test\" instead?"
     fi;
     test2=`echo $TC_PASSWD | grep '^='`
-    if [ ! -z $test2 ]; then
+    if [[ ! -z $test2 ]]; then
       echo -n "$0: WARNING, password value with a leading '=' found"
       echo -n " ($test2), did you use an '=' between the short argument (-t)"
       echo " and its value? If so, you might not get the password you expect..."
@@ -157,7 +158,7 @@ TOP_DIR=`pwd`
 # otherwise, sanity check the arguments that were parsed to ensure that
 # the required arguments are present and the optional ones make sense
 # (in terms of which optional arguments were given, and in what combination)
-if [  -z $BUILTIN_LIST ] || [ -z $MIRROR_LIST ]; then
+if [[ -z $BUILTIN_LIST ]] || [[ -z $MIRROR_LIST ]]; then
   echo "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified"
   usage
   exit 1
@@ -173,7 +174,7 @@ elif [ $BUILD_DEBUG_ISO = 'yes' ] && [ $BUILD_PROD_ISO = 'yes' ]; then
   echo "     (ISO cannot be both a debug and production ISO)"
   usage
   exit 1
-elif [ ! -z $TC_PASSWD ] && [ $BUILD_PROD_ISO = 'yes' ]; then
+elif [[ ! -z $TC_PASSWD ]] && [ $BUILD_PROD_ISO = 'yes' ]; then
   echo "\nError; Only one of the '-t' and '-p' options should be specified"
   echo "     (Cannot specify a 'tc' password to use for a production ISO)"
   usage
@@ -402,7 +403,7 @@ if [ $BUILD_PROD_ISO = 'no' ]; then
   # then use it to replace the default password for the tc user in the shadow
   # password file we're burning into the ISO here (requires that openssl be installed
   # locally for this to work)
-  if [ ! -z $TC_PASSWD ]; then
+  if [[ ! -z $TC_PASSWD ]]; then
     echo "changing password for 'tc' user to $TC_PASSWD"
     NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
     # use sed to replace the default password with the new one generated (above)
