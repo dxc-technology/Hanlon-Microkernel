@@ -31,6 +31,9 @@ OPTIONS:
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
    -t, --tc-passwd=PASSWD     specify a password for the tc user
+   -c, --config=FILE          file containing configuration values; see
+                                bundle.cfg.example for settable-values
+                              
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -42,16 +45,19 @@ ISO (using the '-p' flag).
 EOF
 }
 
-# initialize a few variables to hold the options passed in by the user
-BUILTIN_LIST=
-MIRROR_LIST=
-TC_PASSWD=
-RE_USE_PREV_DL='no'
-BUILD_PROD_ISO='no'
-BUILD_DEBUG_ISO='no'
+# Define a function to read configuration-values in from a file
+read_config_file()
+{
+  while read LINE; do
+    VAR=`printf '%s' "$LINE" | sed 's|\(.*\)=.*|\1|'`
+  
+    VAL=`printf '%s' "$LINE" | sed 's|.*=\(.*\)|\1|'`
+    eval "$VAR=\"$VAL\""
+  done < $1
+}
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:pdt: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd: -- "$@")
+if ! options=$(getopt -o hrb:m:pdt:c: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config: -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -90,6 +96,7 @@ do
       echo " and its value? If so, you might not get the password you expect..."
     fi;
     shift;;
+  -c|--config) CONFIG_FILE=`printf '%s' "$2" | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -h|--help) usage; exit 0;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
@@ -102,6 +109,50 @@ done
 if [ ! $# -eq 0 ]; then
   echo "$0: error - extra fields included in commmand; remaining args=$@" 1>&2; usage; exit 1
 fi
+
+# If a config-file was specified on the command-line, read it into the
+# environment (obliterating any values already in the environment)
+if [ -n "$CONFIG_FILE" ]; then
+  read_config_file $CONFIG_FILE
+fi
+# Use any config-values which were provided in the config file or environment 
+# variables, but not over-ridden on the command-line
+[ -z "$BUILTIN_LIST" -a -n "$MK_BUNDLE_BUILTIN_LIST" ] && 
+  BUILTIN_LIST="$MK_BUNDLE_BUILTIN_LIST"
+[ -z "$MIRROR_LIST" -a -n "$MK_BUNDLE_MIRROR_LIST" ] && 
+  MIRROR_LIST="$MK_BUNDLE_MIRROR_LIST"
+[ -z "$TC_PASSWD" -a -n "$MK_BUNDLE_TC_PASSWD" ] && 
+  TC_PASSWD="$MK_BUNDLE_TC_PASSWD"
+[ -z "$RE_USE_PREV_DL" -a -n "$MK_BUNDLE_RE_USE_PREV_DL" ] && 
+  RE_USE_PREV_DL="$MK_BUNDLE_RE_USE_PREV_DL"
+[ -z "$BUILD_PROD_ISO" -a -n "$MK_BUNDLE_BUILD_PROD_ISO" ] && 
+  BUILD_PROD_ISO="$MK_BUNDLE_BUILD_PROD_ISO"
+[ -z "$BUILD_DEBUG_ISO" -a -n "$MK_BUNDLE_BUILD_DEBUG_ISO" ] && 
+  BUILD_DEBUG_ISO="$MK_BUNDLE_BUILD_DEBUG_ISO"
+[ -z "$TCL_MIRROR_URI" -a -n "$MK_BUNDLE_TCL_MIRROR_URI" ] && 
+  TCL_MIRROR_URI="$MK_BUNDLE_TCL_MIRROR_URI"
+[ -z "$TCL_ISO_URL" -a -n "$MK_BUNDLE_TCL_ISO_URL" ] && 
+  TCL_ISO_URL="$MK_BUNDLE_TCL_ISO_URL"
+[ -z "$RUBY_GEMS_URL" -a -n "$MK_BUNDLE_RUBY_GEMS_URL" ] && 
+  RUBY_GEMS_URL="$MK_BUNDLE_RUBY_GEMS_URL"
+[ -z "$MCOLLECTIVE_URL" -a -n "$MK_BUNDLE_MCOLLECTIVE_URL" ] && 
+  MCOLLECTIVE_URL="$MK_BUNDLE_MCOLLECTIVE_URL"
+[ -z "$OPEN_VM_TOOLS_URL" -a -n "$MK_BUNDLE_OPEN_VM_TOOLS_URL" ] && 
+  OPEN_VM_TOOLS_URL="$MK_BUNDLE_OPEN_VM_TOOLS_URL"
+[ -z "$GEM_SERVER_URI" -a -n "$MK_BUNDLE_GEM_SERVER_URI" ] && 
+  GEM_SERVER_URI="$MK_BUNDLE_GEM_SERVER_URI"
+
+# Set to default anything still not specified, for which there is a reasonable
+# default-value
+[ -z "$RE_USE_PREV_DL" ] && RE_USE_PREV_DL='no'
+[ -z "$BUILD_PROD_ISO" ] && BUILD_PROD_ISO='no'
+[ -z "$BUILD_DEBUG_ISO" ] && BUILD_DEBUG_ISO='no'
+[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
+[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
+[ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
+[ -z "$MCOLLECTIVE_URL" ] && MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
+[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
+TOP_DIR=`pwd`
 
 # otherwise, sanity check the arguments that were parsed to ensure that
 # the required arguments are present and the optional ones make sense
@@ -141,15 +192,6 @@ then
     rm -rf tmp-build-dir/*
   fi
 fi
-
-# initialize a couple of variables that we'll use later
-TOP_DIR=`pwd`
-TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
-TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
-RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-#MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-1.2.1.tgz'
-MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
-OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
 
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
@@ -206,7 +248,12 @@ cd tmp-build-dir/opt/gems
 for file in `cat gem.list`; do
   if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file*.gem ]
   then
-    gem fetch $file
+    if [ -n "$GEM_SERVER_URI" ]
+    then
+      gem fetch --clear-sources --source "$GEM_SERVER_URI" $file
+    else
+      gem fetch $file
+    fi
   fi
 done
 cd $TOP_DIR
