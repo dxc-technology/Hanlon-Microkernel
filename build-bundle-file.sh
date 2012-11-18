@@ -32,8 +32,9 @@ OPTIONS:
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
    -t, --tc-passwd=PASSWD     specify a password for the tc user
-   -c, --config=FILE          file containing configuration values; see
-                                bundle.cfg.example for settable-values
+   -c, --config=FILE          optional: specify a file containing configuration 
+                                values; see bundle.cfg.example 
+                               
                               
 
 Note; currently, the default is to build a development ISO (which includes the
