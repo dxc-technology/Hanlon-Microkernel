@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 #
 # Used to build the bundle file needed to build a new version of the
 # Razor Microkernel ISO (from the contents of the Razor Microkernel
@@ -160,24 +160,24 @@ TOP_DIR=`pwd`
 # the required arguments are present and the optional ones make sense
 # (in terms of which optional arguments were given, and in what combination)
 if [[ -z $BUILTIN_LIST ]] || [[ -z $MIRROR_LIST ]]; then
-  echo "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified"
+  printf "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified\n"
   usage
   exit 1
 elif [ ! -r $BUILTIN_LIST ] || [ ! -r $MIRROR_LIST ]; then
-  echo -n "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
-  echo " values parsed are as follows:"
-  echo "\tbuiltin-list\t=> \"$BUILTIN_LIST\""
-  echo "\tmirror-list\t=> \"$MIRROR_LIST\""
+  printf "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files;"
+  printf ' values parsed are as follows:\n'
+  printf '\tbuiltin-list\t=> "%s"\n' "$BUILTIN_LIST"
+  printf '\tmirror-list\t=> "%s"\n' "$MIRROR_LIST"
   usage
   exit 1
 elif [ $BUILD_DEBUG_ISO = 'yes' ] && [ $BUILD_PROD_ISO = 'yes' ]; then
-  echo "\nError; Only one of the '-d' and '-p' options should be specified"
-  echo "     (ISO cannot be both a debug and production ISO)"
+  printf "\nError; Only one of the '-d' and '-p' options should be specified\n"
+  printf "     (ISO cannot be both a debug and production ISO)\n"
   usage
   exit 1
 elif [[ ! -z $TC_PASSWD ]] && [ $BUILD_PROD_ISO = 'yes' ]; then
-  echo "\nError; Only one of the '-t' and '-p' options should be specified"
-  echo "     (Cannot specify a 'tc' password to use for a production ISO)"
+  printf "\nError; Only one of the '-t' and '-p' options should be specified\n"
+  printf "     (Cannot specify a 'tc' password to use for a production ISO)\n"
   usage
   exit 1
 fi
