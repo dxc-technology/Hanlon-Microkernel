@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # Used to build the bundle file needed to build a new version of the
 # Razor Microkernel ISO (from the contents of the Razor Microkernel
@@ -14,6 +14,7 @@
 #    new version of the Microkernel ISO.
 
 # define a function we can use to print out the usage for this script
+
 usage()
 {
 cat << EOF
@@ -31,6 +32,8 @@ OPTIONS:
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
    -t, --tc-passwd=PASSWD     specify a password for the tc user
+   -c, --config=FILE          optional: specify a file containing configuration 
+                                values; see bundle.cfg.example 
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -42,16 +45,19 @@ ISO (using the '-p' flag).
 EOF
 }
 
-# initialize a few variables to hold the options passed in by the user
-BUILTIN_LIST=
-MIRROR_LIST=
-TC_PASSWD=
-RE_USE_PREV_DL='no'
-BUILD_PROD_ISO='no'
-BUILD_DEBUG_ISO='no'
+# Define a function to read configuration-values in from a file
+read_config_file()
+{
+  while read LINE; do
+    VAR=`printf '%s' "$LINE" | sed 's|\(.*\)=.*|\1|'`
+  
+    VAL=`printf '%s' "$LINE" | sed 's|.*=\(.*\)|\1|'`
+    eval "$VAR=\"$VAL\""
+  done < $1
+}
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:pdt: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd: -- "$@")
+if ! options=$(getopt -o hrb:m:pdt:c: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config: -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -66,30 +72,52 @@ set -- $options
 # 'tr' command is used to remove the leading and trailing quotes from
 # the arguments while the 'sed' command is used to remove the leading
 # equals sign from the argument (if it exists).
+BUNDLE_TYPE_SELECTED=0
 while [ $# -gt 0 ]
 do
   case $1 in
   -r|--reuse-prev-dl) RE_USE_PREV_DL='yes';;
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
-  -p|--build-prod-image) BUILD_PROD_ISO='yes';;
-  -d|--build-debug-image) BUILD_DEBUG_ISO='yes';;
+  -p|--build-prod-image) 
+    if [ $BUNDLE_TYPE_SELECTED -eq 0 ]; then 
+      BUNDLE_TYPE='prod'; 
+      BUNDLE_TYPE_SELECTED=1
+    else 
+      printf '%s: ERROR, cannot specify both -d and -p\n' "$0"
+      printf '    (bundle must be either prod or debug, not both)\n'
+      usage
+      exit 1
+    fi
+    ;;
+  -d|--build-debug-image)
+    if [ $BUNDLE_TYPE_SELECTED -eq 0 ]; then 
+      BUNDLE_TYPE='debug'; 
+      BUNDLE_TYPE_SELECTED=1
+    else 
+      printf '%s: ERROR, cannot specify both -d and -p\n' "$0"
+      printf '    (bundle must be either prod or debug, not both)\n'
+      usage
+      exit 1
+    fi
+    ;;
   -t|--tc-passwd)
     TC_PASSWD=`echo $2 | tr -d "'"`
     test1=`echo $TC_PASSWD | grep '^c-passwd='`
-    if [ ! -z $test1 ]; then
+    if [[ ! -z $test1 ]]; then
       test=`echo $test1 | sed 's:^c-passwd=\(.*\)$:\1:'`
-      echo -n "$0: WARNING, found value that looks like it includes part"
-      echo -n " of the long argument name ($TC_PASSWD); should the password value be"
-      echo " \"$test\" instead?"
+      printf '%s: WARNING, found value that looks like it includes part' "$0"
+      printf ' of the long argument name (%s); should the password value be' "$TC_PASSWD"
+      printf ' "%s" instead?\n' "$test"
     fi;
     test2=`echo $TC_PASSWD | grep '^='`
-    if [ ! -z $test2 ]; then
-      echo -n "$0: WARNING, password value with a leading '=' found"
-      echo -n " ($test2), did you use an '=' between the short argument (-t)"
-      echo " and its value? If so, you might not get the password you expect..."
+    if [[ ! -z $test2 ]]; then
+      printf "%s: WARNING, password value with a leading '=' found" "$0"
+      printf " (%s), did you use an '=' between the short argument (-t)" "$test2"
+      printf " and its value? If so, you might not get the password you expect...\n"
     fi;
     shift;;
+  -c|--config) CONFIG_FILE=`printf '%s' "$2" | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -h|--help) usage; exit 0;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
@@ -103,30 +131,68 @@ if [ ! $# -eq 0 ]; then
   echo "$0: error - extra fields included in commmand; remaining args=$@" 1>&2; usage; exit 1
 fi
 
+# If a config-file was specified on the command-line, read it into the
+# environment (obliterating any values already in the environment)
+if [ -n "$CONFIG_FILE" ]; then
+  read_config_file $CONFIG_FILE
+fi
+# Use any config-values which were provided in the config file or environment 
+# variables, but not over-ridden on the command-line
+[ -z "$BUILTIN_LIST" -a -n "$MK_BUNDLE_BUILTIN_LIST" ] && 
+  BUILTIN_LIST="$MK_BUNDLE_BUILTIN_LIST"
+[ -z "$MIRROR_LIST" -a -n "$MK_BUNDLE_MIRROR_LIST" ] && 
+  MIRROR_LIST="$MK_BUNDLE_MIRROR_LIST"
+[ -z "$TC_PASSWD" -a -n "$MK_BUNDLE_TC_PASSWD" ] && 
+  TC_PASSWD="$MK_BUNDLE_TC_PASSWD"
+[ -z "$RE_USE_PREV_DL" -a -n "$MK_BUNDLE_RE_USE_PREV_DL" ] && 
+  RE_USE_PREV_DL="$MK_BUNDLE_RE_USE_PREV_DL"
+[ -z "$BUNDLE_TYPE" -a -n "$MK_BUNDLE_TYPE" ] && 
+  BUNDLE_TYPE="$MK_BUNDLE_TYPE"
+[ -z "$TCL_MIRROR_URI" -a -n "$MK_BUNDLE_TCL_MIRROR_URI" ] && 
+  TCL_MIRROR_URI="$MK_BUNDLE_TCL_MIRROR_URI"
+[ -z "$TCL_ISO_URL" -a -n "$MK_BUNDLE_TCL_ISO_URL" ] && 
+  TCL_ISO_URL="$MK_BUNDLE_TCL_ISO_URL"
+[ -z "$RUBY_GEMS_URL" -a -n "$MK_BUNDLE_RUBY_GEMS_URL" ] && 
+  RUBY_GEMS_URL="$MK_BUNDLE_RUBY_GEMS_URL"
+[ -z "$MCOLLECTIVE_URL" -a -n "$MK_BUNDLE_MCOLLECTIVE_URL" ] && 
+  MCOLLECTIVE_URL="$MK_BUNDLE_MCOLLECTIVE_URL"
+[ -z "$OPEN_VM_TOOLS_URL" -a -n "$MK_BUNDLE_OPEN_VM_TOOLS_URL" ] && 
+  OPEN_VM_TOOLS_URL="$MK_BUNDLE_OPEN_VM_TOOLS_URL"
+[ -z "$GEM_SERVER_URI" -a -n "$MK_BUNDLE_GEM_SERVER_URI" ] && 
+  GEM_SERVER_URI="$MK_BUNDLE_GEM_SERVER_URI"
+
+# Set to default anything still not specified, for which there is a reasonable
+# default-value
+[ -z "$RE_USE_PREV_DL" ] && RE_USE_PREV_DL='no'
+[ -z "$BUNDLE_TYPE" ] && BUNDLE_TYPE='dev'
+[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
+[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
+[ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
+[ -z "$MCOLLECTIVE_URL" ] && MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
+[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
+TOP_DIR=`pwd`
+
 # otherwise, sanity check the arguments that were parsed to ensure that
 # the required arguments are present and the optional ones make sense
 # (in terms of which optional arguments were given, and in what combination)
-if [  -z $BUILTIN_LIST ] || [ -z $MIRROR_LIST ]; then
-  echo "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified"
+if [[ -z $BUILTIN_LIST ]] || [[ -z $MIRROR_LIST ]]; then
+  printf "\nError (Missing Argument); the 'builtin-list' and 'mirror-list' must both be specified\n"
   usage
   exit 1
 elif [ ! -r $BUILTIN_LIST ] || [ ! -r $MIRROR_LIST ]; then
-  echo -n "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files"
-  echo " values parsed are as follows:"
-  echo "\tbuiltin-list\t=> \"$BUILTIN_LIST\""
-  echo "\tmirror-list\t=> \"$MIRROR_LIST\""
+  printf "\nError; the 'builtin-list' and 'mirror-list' values must both be readable files;"
+  printf ' values parsed are as follows:\n'
+  printf '\tbuiltin-list\t=> "%s"\n' "$BUILTIN_LIST"
+  printf '\tmirror-list\t=> "%s"\n' "$MIRROR_LIST"
   usage
   exit 1
-elif [ $BUILD_DEBUG_ISO = 'yes' ] && [ $BUILD_PROD_ISO = 'yes' ]; then
-  echo "\nError; Only one of the '-d' and '-p' options should be specified"
-  echo "     (ISO cannot be both a debug and production ISO)"
+elif [ "$BUNDLE_TYPE" != 'prod' ] && [ "$BUNDLE_TYPE" != 'debug' ] && [ "$BUNDLE_TYPE" != 'dev' ]; then
+  printf "\nBundle type must be one of 'prod', 'dev', or 'debug'\n"
   usage
   exit 1
-elif [ ! -z $TC_PASSWD ] && [ $BUILD_PROD_ISO = 'yes' ]; then
-  echo "\nError; Only one of the '-t' and '-p' options should be specified"
-  echo "     (Cannot specify a 'tc' password to use for a production ISO)"
-  usage
-  exit 1
+elif [[ ! -z $TC_PASSWD ]] && [ $BUNDLE_TYPE = 'prod' ]; then
+  printf "Warning; a 'tc' password cannot be set for a production Microkernel ISO,\n"
+  printf "     the specified password (${TC_PASSWD}) will be ignored\n"
 fi
 
 # the '-r' or '--reuse-prev-dl' flags were not given, then make sure we're
@@ -142,15 +208,6 @@ then
   fi
 fi
 
-# initialize a couple of variables that we'll use later
-TOP_DIR=`pwd`
-TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
-TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
-RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-#MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-1.2.1.tgz'
-MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
-OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
-
 # create a folder to hold the gzipped tarfile that will contain all of
 # dependencies
 mkdir -p tmp-build-dir/build_dir/dependencies
@@ -160,9 +217,9 @@ mkdir -p tmp-build-dir/build_dir/dependencies
 # gzipped tarfile that can be unpacked and will contain almost all of
 # the files/tools needed to build the Microkernel ISO)
 cp -p iso-build-files/* tmp-build-dir/build_dir
-if [ $BUILD_PROD_ISO = 'yes' ]; then
+if [ $BUNDLE_TYPE = 'prod' ]; then
   sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
-elif [ $BUILD_DEBUG_ISO = 'yes' ]; then
+elif [ $BUNDLE_TYPE = 'debug' ]; then
   sed -i 's/ISO_NAME=rz_mk_dev-image/ISO_NAME=rz_mk_debug-image/' tmp-build-dir/build_dir/rebuild_iso.sh
 fi
 
@@ -206,7 +263,12 @@ cd tmp-build-dir/opt/gems
 for file in `cat gem.list`; do
   if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file*.gem ]
   then
-    gem fetch $file
+    if [ -n "$GEM_SERVER_URI" ]
+    then
+      gem fetch --clear-sources --source "$GEM_SERVER_URI" $file
+    else
+      gem fetch $file
+    fi
   fi
 done
 cd $TOP_DIR
@@ -244,7 +306,7 @@ echo `pwd`
 mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
-  if [ $BUILD_PROD_ISO = 'no' ] || [ ! $file = 'openssh.tcz' ]; then
+  if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
     if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/builtin/optional/$file ]
     then
       wget -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
@@ -252,7 +314,7 @@ for file in `cat $BUILTIN_LIST`; do
       wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.dep
     fi
     echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
-  elif [ $BUILD_PROD_ISO = 'yes' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
+  elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
   then
     rm tmp-build-dir/tmp/builtin/optional/$file
     rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
@@ -273,7 +335,7 @@ fi
 # initial behavior of the Razor Microkernel Controller, the third disables automatic
 # login of the tc user when the Microkernel finishes booting)
   cp -p tmp/first_checkin.yaml tmp-build-dir/tmp
-if [ $BUILD_DEBUG_ISO = 'yes' ]
+if [ $BUNDLE_TYPE = 'debug' ]
 then
   # if we're building a "debug" bundle, then copy over a microkernel configuration
   # file that will enable logging of DEBUG messages from the start
@@ -286,7 +348,7 @@ fi
 cp -p etc/inittab tmp-build-dir/etc
 # check to see if we're building a "Debug ISO"; if so, use sed to modify the inittab
 # file we just copied over so that re-enables autologin
-if [ $BUILD_DEBUG_ISO = 'yes' ]; then
+if [ $BUNDLE_TYPE = 'debug' ]; then
   AUTO_LOGIN_STR='-nl /sbin/autologin'
   OLD_INITTAB_TTY1_PAT='^\(tty1.*\)\(38400 tty1\)$'
   sed -i "s/$OLD_INITTAB_TTY1_PAT/\1$(echo $AUTO_LOGIN_STR | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g') \2/" tmp-build-dir/etc/inittab
@@ -349,13 +411,13 @@ fi
 # (and remove the SSH setup files from the files we just copied over to the
 # dependencies directory)
 cp -p etc/passwd tmp-build-dir/etc
-if [ $BUILD_PROD_ISO = 'no' ]; then
+if [ $BUNDLE_TYPE != 'prod' ]; then
   cp -p etc/shadow tmp-build-dir/etc
   # if a password for the tc user was passed in (using the -t or --tc-passwd flag)
   # then use it to replace the default password for the tc user in the shadow
   # password file we're burning into the ISO here (requires that openssl be installed
   # locally for this to work)
-  if [ ! -z $TC_PASSWD ]; then
+  if [[ ! -z $TC_PASSWD ]]; then
     echo "changing password for 'tc' user to $TC_PASSWD"
     NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
     # use sed to replace the default password with the new one generated (above)
@@ -392,9 +454,9 @@ tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp
 # copy over this one file to a directory somewhere and unpack it and they will
 # be ready to build the ISO
 bundle_out_file_name='razor-microkernel-bundle-dev.tar.gz'
-if [ $BUILD_PROD_ISO = 'yes' ]; then
+if [ $BUNDLE_TYPE = 'prod' ]; then
   bundle_out_file_name='razor-microkernel-bundle-prod.tar.gz'
-elif [ $BUILD_DEBUG_ISO = 'yes' ]; then
+elif [ $BUNDLE_TYPE = 'debug' ]; then
   bundle_out_file_name='razor-microkernel-bundle-debug.tar.gz'
 fi
 
