@@ -34,8 +34,6 @@ OPTIONS:
    -t, --tc-passwd=PASSWD     specify a password for the tc user
    -c, --config=FILE          optional: specify a file containing configuration 
                                 values; see bundle.cfg.example 
-                               
-                              
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -193,10 +191,8 @@ elif [ "$BUNDLE_TYPE" != 'prod' ] && [ "$BUNDLE_TYPE" != 'debug' ] && [ "$BUNDLE
   usage
   exit 1
 elif [[ ! -z $TC_PASSWD ]] && [ $BUNDLE_TYPE = 'prod' ]; then
-  printf "\nError; Only one of the '-t' and '-p' options should be specified\n"
-  printf "     (Cannot specify a 'tc' password to use for a production ISO)\n"
-  usage
-  exit 1
+  printf "Warning; a 'tc' password cannot be set for a production Microkernel ISO,\n"
+  printf "     the specified password (${TC_PASSWD}) will be ignored\n"
 fi
 
 # the '-r' or '--reuse-prev-dl' flags were not given, then make sure we're
