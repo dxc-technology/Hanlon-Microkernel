@@ -1,15 +1,34 @@
 #!/bin/sh
+. ./mk-build-lib.sh
+
+if ! test -f Core-current.iso; then
+    echo "Can't find Core-current.iso in the current directory."
+    echo "You should have extracted it from the build bundle."
+    exit 1
+fi
+
+if test 0 -ne "$(id -u)"; then
+    echo "You must have (fake)root privileges to unpack the directories"
+    echo "the CPIO root file system has device nodes that you must be"
+    echo "able to create, as well as setuid programs."
+    echo ""
+    echo "Using fakeroot or real root should behave equivalently, however"
+    exit 1
+fi
+
 
 rm -rf original-iso-files extract tmp newiso
+mkdir original-iso-files
 
 # get a copy of the files from the original ISO
-if [ ! -d /tmp/cdrom ]; then
-    mkdir /tmp/cdrom
+if exists 7z; then
+    7z -o"original-iso-files" x Core-current.iso
+else
+    test -d /tmp/cdrom || mkdir -p /tmp/cdrom
+    mount Core-current.iso /tmp/cdrom -o loop
+    cp -a /tmp/cdrom/boot original-iso-files/
+    umount /tmp/cdrom
 fi
-mount Core-current.iso /tmp/cdrom -o loop
-mkdir original-iso-files
-cp -a /tmp/cdrom/boot original-iso-files/
-umount /tmp/cdrom
 
 # extract the boot/core.gz file from that directory
 mkdir extract
