@@ -256,28 +256,9 @@ cp -p configuration-agent/configuration.rb facter-agent/facteragent.rb \
 # download the latest version of the gems in the 'gem.list' file into the
 # appropriate directory to use in the build process (rather than including
 # fixed versions of those gems as part of the Razor-Microkernel project)
-mkdir -p tmp-build-dir/opt/gems
 cp -p opt/boot*.sh tmp-build-dir/opt
-cp -p opt/gems/gem.list tmp-build-dir/opt/gems
-cd tmp-build-dir/opt/gems
-for file in `cat gem.list`; do
-  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f $file*.gem ]
-  then
-    if [ -n "$GEM_SERVER_URI" ]
-    then
-      gem fetch --clear-sources --source "$GEM_SERVER_URI" $file
-    else
-      gem fetch $file
-    fi
-  fi
-done
-cd $TOP_DIR
-
-# Create a gem mirror for running locally in the MK
-mkdir -p tmp-build-dir/tmp/gem-mirror
-cp -r tmp-build-dir/opt/gems tmp-build-dir/tmp/gem-mirror
-gem generate_index -d tmp-build-dir/tmp/gem-mirror
-sleep 5
+[ -n "$GEM_SERVER_URI" ] && GEM_SERVER_ARG="-s $GEM_SERVER_URI"
+./bin/mirror-gem $GEM_SERVER_ARG -d tmp-build-dir/tmp/gem-mirror `cat opt/gems/gem.list`
 
 # Add GemRC file to the ISO to use the mirror
 mkdir -p tmp-build-dir/root
