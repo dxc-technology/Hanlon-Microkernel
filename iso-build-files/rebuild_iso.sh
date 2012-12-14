@@ -1,15 +1,27 @@
 #!/bin/sh
-
 . ./mk-build-lib.sh
 
-if [ $# -ne 1 ]
-then
-  echo "USAGE:  `echo $0 | awk -F'/' '{print $(NF)}' -` ISO_VERSION"
-  echo "  where ISO_VERSION is the version of the ISO file you are creating"
-  echo "  (it will be transformed into a filename that looks like:"
-  echo '        rz_mk_dev-image_${ISO_VERSION}.iso'
-  exit
-fi
+# bring in the git derived version number...
+. ./gitversion.sh
+
+case $# in
+    0)
+        ;;                      # nothing to do
+
+    1)
+        if test x"$1" != x"${ISO_VERSION}"; then
+            echo "overriding version from [${ISO_VERSION}] to [${1}]"
+        fi
+        ISO_VERSION="$1"        # override git version
+        ;;
+
+    *)
+        echo "USAGE:  `echo $0 | awk -F'/' '{print $(NF)}' -` [VERSION]"
+        echo "  where VERSION will override the version number of the ISO file from git"
+        echo "  (it will be transformed into a filename that looks like:"
+        echo '        rz_mk_dev-image_${ISO_VERSION}.iso'
+        exit 1
+esac
 
 # We need to work out which of the set of tool names for building ISO images
 # is used on this platform, and save it for later.
@@ -22,7 +34,6 @@ else
     exit 1
 fi
 
-ISO_VERSION=$1
 ISO_NAME=rz_mk_dev-image.${ISO_VERSION}.iso
 DIR_NAME=`pwd`
 set -x
