@@ -423,6 +423,16 @@ then
 fi
 unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
 
+# determine, and store, the git derived ISO file version into the bundle
+gitversion="$(git describe --tags --dirty --always | sed -e 's@-@+@')"
+if test $? -gt 0; then
+    echo "unable to determine the build version with git!"
+    exit 1
+fi
+echo ""
+echo "This build is tagged as version [${gitversion}]"
+echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
+
 # create a gzipped tarfile containing all of the files from the Razor-Microkernel
 # project that we just copied over, along with the files that were downloaded from
 # the network for the gems and TCL extensions; place this gzipped tarfile into
