@@ -52,7 +52,7 @@ if ! ${BUSYBOX} true; then
 fi
 
 ISO_NAME=rz_mk_dev-image.${ISO_VERSION}.iso
-DIR_NAME=`pwd`
+DIR_NAME="${PWD}"
 set -x
 # build the YAML file in the Microkernel's filesystem that will be used to
 # display this same version information during boot
@@ -66,13 +66,13 @@ set -x
 # symlink, to allow depmod to correctly follow it without having to chroot.
 #
 # This is entirely compatible, but not done upstream, unfortunately.
-kernelver="$(ls ${DIR_NAME}/extract/lib/modules)"
+kernelver="$(ls "${DIR_NAME}/extract/lib/modules")"
 rm -f tmp/lib/modules/${kernelver}/kernel.tclocal
 ln -s ../../../usr/local/lib/modules/${kernelver}/kernel \
     tmp/lib/modules/${kernelver}/kernel.tclocal
 
-${BUSYBOX} depmod -a -b ${DIR_NAME}/tmp ${kernelver}
-/sbin/ldconfig -r ${DIR_NAME}/tmp
+${BUSYBOX} depmod -a -b "${DIR_NAME}/tmp" ${kernelver}
+/sbin/ldconfig -r "${DIR_NAME}/tmp"
 
 # build the new core.gz file (containing the contents of the tmp directory)
 cd tmp
