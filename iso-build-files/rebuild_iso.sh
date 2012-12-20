@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . ./mk-build-lib.sh
 
 # bring in the git derived version number...
@@ -41,9 +41,14 @@ fi
 # This invocation is enough to run the guest Busybox on a 32-bit or 64-bit
 # kernel, without needing to depend on host libraries matching the guest, or
 # chroot, or anything super-fancy like that.
-BUSYBOX="env LD_LIBRARY_PATH=$PWD/tmp/lib:$LD_LIBRARY_PATH LD_PRELOAD="
-BUSYBOX="${BUSYBOX} $PWD/tmp/lib/ld-linux.so.2 $PWD/tmp/bin/busybox"
-if ! ${BUSYBOX} true; then
+busybox() {
+    env LD_LIBRARY_PATH="${PWD}/tmp/lib:${LD_LIBRARY_PATH}" \
+        LD_PRELOAD='' \
+        "${PWD}/tmp/lib/ld-linux.so.2" "${PWD}/tmp/bin/busybox" \
+        "$@"
+}
+
+if ! busybox true; then
     echo "It looks like I can't Unable to locate a working busybox for depmod!"
     echo "I tried the TCL busybox too, and it failed even with chroot."
     echo "If you see 'No such file or directory' above you probably need to install"
@@ -71,7 +76,7 @@ rm -f tmp/lib/modules/${kernelver}/kernel.tclocal
 ln -s ../../../usr/local/lib/modules/${kernelver}/kernel \
     tmp/lib/modules/${kernelver}/kernel.tclocal
 
-${BUSYBOX} depmod -a -b "${DIR_NAME}/tmp" ${kernelver}
+busybox depmod -a -b "${DIR_NAME}/tmp" ${kernelver}
 /sbin/ldconfig -r "${DIR_NAME}/tmp"
 
 # build the new core.gz file (containing the contents of the tmp directory)
