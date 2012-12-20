@@ -81,16 +81,16 @@ busybox depmod -a -b "${DIR_NAME}/tmp" ${kernelver}
 
 # build the new core.gz file (containing the contents of the tmp directory)
 cd tmp
-find | cpio -o -H newc | gzip -2 > ../core.gz
+find | cpio -o -H newc | gzip -9 > ../core.gz
 cd ..
 # compress the file and copy it to the correct location for building the ISO
-advdef -z4 core.gz 
+advdef -z4 core.gz
 cp -p core.gz newiso/boot/
 # build the YAML file needed for use in Razor, place it into the root of the
 # ISO filesystem
 ./build_iso_yaml.rb newiso ${ISO_VERSION} boot/vmlinuz boot/core.gz
 # finally, build the ISO itself from the newiso directory
-"${GENISO}" -l -J -R -V TC-custom                           \
+"${GENISO}" -quiet -l -J -R -V TC-custom                    \
     -no-emul-boot -boot-load-size 4 -boot-info-table        \
     -b boot/isolinux/isolinux.bin                           \
     -c boot/isolinux/boot.cat                               \
