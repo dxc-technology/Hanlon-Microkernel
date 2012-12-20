@@ -48,8 +48,8 @@ cp -rp ../extract/* .
 for file in mk-open-vm-tools.tar.gz razor-microkernel-overlay.tar.gz mcollective-setup-files.tar.gz ssh-setup-files.tar.gz; do
   # all of these files may not exist for all Microkernels, so only try to unpack
   # the files that do exist
-  if [ -r ../dependencies/$file ]; then
-    tar zxvf ../dependencies/$file
+  if [ -r "../dependencies/${file}" ]; then
+    tar zxvf "../dependencies/${file}"
   fi
 done
 

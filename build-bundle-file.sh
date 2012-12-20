@@ -50,7 +50,7 @@ read_config_file()
 {
   while read LINE; do
     VAR=`printf '%s' "$LINE" | sed 's|\(.*\)=.*|\1|'`
-  
+
     VAL=`printf '%s' "$LINE" | sed 's|.*=\(.*\)|\1|'`
     eval "$VAR=\"$VAL\""
   done < $1
@@ -170,7 +170,10 @@ fi
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 [ -z "$MCOLLECTIVE_URL" ] && MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
 [ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
-TOP_DIR=`pwd`
+
+
+# Save our top level directory; watch out for spaces!
+TOP_DIR="${PWD}"
 
 # otherwise, sanity check the arguments that were parsed to ensure that
 # the required arguments are present and the optional ones make sense
@@ -286,7 +289,7 @@ done
 # boot process.  These files will be placed into the /tmp/builtin directory in
 # the Microkernel ISO.  The list of files downloaded (and loaded at boot) are
 # assumed to be contained in the file specified by the BUILTIN_LIST parameter
-echo `pwd`
+echo "working in ${PWD}"
 mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
@@ -354,12 +357,12 @@ then
   wget -P tmp-build-dir $MCOLLECTIVE_URL
 fi
 cd tmp-build-dir/usr/local/tce.installed
-tar zxvf $TOP_DIR/tmp-build-dir/$file
-cd $TOP_DIR/tmp-build-dir
+tar zxvf "${TOP_DIR}/tmp-build-dir/${file}"
+cd "${TOP_DIR}/tmp-build-dir"
 rm usr/local/mcollective usr/local/bin/mcollectived 2> /dev/null
 ln -s /usr/local/tce.installed/$mcoll_dir usr/local/mcollective
 ln -s /usr/local/mcollective/bin/mcollectived usr/local/bin/mcollectived
-cd $TOP_DIR
+cd "${TOP_DIR}"
 
 # add a soft-link in what will become the /usr/local/sbin directory in the
 # Microkernel ISO (this fixes an issue with where Facter expects to find
@@ -455,10 +458,10 @@ elif [ $BUNDLE_TYPE = 'debug' ]; then
 fi
 
 # and, finally, create our bundle file
-if [ ! -d $TOP_DIR/build-files ]; then
+if [ ! -d "${TOP_DIR}/build-files" ]; then
     # make a directory we can use to build our gzipped tarfile
-    mkdir $TOP_DIR/build-files
+    mkdir "${TOP_DIR}/build-files"
 fi
 cd build_dir
-tar zcvf $TOP_DIR/build-files/$bundle_out_file_name *
-cd $TOP_DIR
+tar zcvf "${TOP_DIR}/build-files/${bundle_out_file_name}" *
+cd "${TOP_DIR}"
