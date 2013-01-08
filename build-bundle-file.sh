@@ -448,6 +448,9 @@ echo ""
 echo "This build is tagged as version [${gitversion}]"
 echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
 
+# ensure the copyright and license content is added to the image
+cp COPYING LICENSE tmp-build-dir/build_dir/
+
 # create a gzipped tarfile containing all of the files from the Razor-Microkernel
 # project that we just copied over, along with the files that were downloaded from
 # the network for the gems and TCL extensions; place this gzipped tarfile into
@@ -455,9 +458,6 @@ echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
 cd tmp-build-dir
 echo "creating razor microkernel overlay tarball"
 tar zc${TAR_V}f build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
-
-# ensure the copyright and license content is added to the image
-cp COPYING LICENSE tmp-build-dir/build_dir/
 
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
