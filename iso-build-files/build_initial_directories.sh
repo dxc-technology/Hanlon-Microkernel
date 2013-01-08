@@ -49,7 +49,8 @@ for file in mk-open-vm-tools.tar.gz razor-microkernel-overlay.tar.gz mcollective
   # all of these files may not exist for all Microkernels, so only try to unpack
   # the files that do exist
   if [ -r "../dependencies/${file}" ]; then
-    tar zxvf "../dependencies/${file}"
+      echo "extracting ${file} into rootfs"
+      tar zxf "../dependencies/${file}"
   fi
 done
 

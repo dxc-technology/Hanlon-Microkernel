@@ -33,7 +33,8 @@ OPTIONS:
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
    -t, --tc-passwd=PASSWD     specify a password for the tc user
    -c, --config=FILE          optional: specify a file containing configuration 
-                                values; see bundle.cfg.example 
+                                values; see bundle.cfg.example
+   -v, --verbose              be (extremely) verbose about the build process
 
 Note; currently, the default is to build a development ISO (which includes the
 openssh.tcz extension along with the openssh/openssl configuration file changes
@@ -57,13 +58,17 @@ read_config_file()
 }
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:pdt:c: -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config: -- "$@")
+if ! options=$(getopt -o hrb:m:pdt:c:v -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
     exit 1
 fi
 set -- $options
+
+# Some internal defaults - be quiet by default.
+WGET_V='-nv'
+TAR_V=''
 
 # loop through the command line arguments, parsing them as we go along
 # (and shifting them off of the list of command line arguments as they,
@@ -119,6 +124,10 @@ do
     shift;;
   -c|--config) CONFIG_FILE=`printf '%s' "$2" | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -h|--help) usage; exit 0;;
+  -v|--verbose)
+          TAR_V='v'
+          WGET_V='-v'
+          ;;
   (--) shift; break;;
   (-*) echo "$0: error - unrecognized option $1" 1>&2; usage; exit 1;;
   esac
@@ -277,11 +286,11 @@ cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
   if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$file ]
   then
-    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
-    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.md5.txt
-    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.info
-    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.list
-    wget -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz -q $TCL_MIRROR_URI/$file.dep
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.info
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.list
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.dep
   fi
 done
 
@@ -296,9 +305,9 @@ for file in `cat $BUILTIN_LIST`; do
   if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
     if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/builtin/optional/$file ]
     then
-      wget -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
-      wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.md5.txt
-      wget -P tmp-build-dir/tmp/builtin/optional -q $TCL_MIRROR_URI/$file.dep
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
     fi
     echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
   elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
@@ -314,7 +323,7 @@ done
 file=`echo $RUBY_GEMS_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/opt/$file ]
 then
-  wget -P tmp-build-dir/opt $RUBY_GEMS_URL
+  wget $WGET_V -P tmp-build-dir/opt $RUBY_GEMS_URL
 fi
 
 # copy over a couple of initial configuration files that will be included in the
@@ -345,7 +354,7 @@ fi
 file=`echo $TCL_ISO_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/$file ]
 then
-  wget -P tmp-build-dir/build_dir $TCL_ISO_URL
+  wget $WGET_V -P tmp-build-dir/build_dir $TCL_ISO_URL
 fi
 
 # download the MCollective, unpack it in the appropriate location, and
@@ -354,10 +363,10 @@ file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
 mcoll_dir=`echo $file | cut -d'.' -f-3`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
 then
-  wget -P tmp-build-dir $MCOLLECTIVE_URL
+  wget $WGET_V -P tmp-build-dir $MCOLLECTIVE_URL
 fi
 cd tmp-build-dir/usr/local/tce.installed
-tar zxvf "${TOP_DIR}/tmp-build-dir/${file}"
+tar zx${TAR_V}f "${TOP_DIR}/tmp-build-dir/${file}"
 cd "${TOP_DIR}/tmp-build-dir"
 rm usr/local/mcollective usr/local/bin/mcollectived 2> /dev/null
 ln -s /usr/local/tce.installed/$mcoll_dir usr/local/mcollective
@@ -388,7 +397,7 @@ cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/dependencies/$file ]
 then
-  wget -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
+  wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
 fi
 
 # Copy over the etc/passwd file to the tmp-build-dir/etc directory.
@@ -425,7 +434,7 @@ fi
 file='util-linux.tcz'
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
 then
-  wget -P tmp-build-dir $TCL_MIRROR_URI/$file
+  wget $WGET_V -P tmp-build-dir $TCL_MIRROR_URI/$file
 fi
 unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
 
@@ -444,7 +453,8 @@ echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
 cd tmp-build-dir
-tar zcvf build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
+echo "creating razor microkernel overlay tarball"
+tar zc${TAR_V}f build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
 
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
@@ -463,5 +473,6 @@ if [ ! -d "${TOP_DIR}/build-files" ]; then
     mkdir "${TOP_DIR}/build-files"
 fi
 cd build_dir
-tar zcvf "${TOP_DIR}/build-files/${bundle_out_file_name}" *
+echo "creating build bundle ${bundle_out_file_name}"
+tar zc${TAR_V}f "${TOP_DIR}/build-files/${bundle_out_file_name}" *
 cd "${TOP_DIR}"
