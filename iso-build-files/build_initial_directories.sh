@@ -58,3 +58,6 @@ cd ..
 mkdir newiso
 cp -rp original-iso-files/boot newiso
 sed -i "s/timeout 300/timeout 100/" newiso/boot/isolinux/isolinux.cfg
+
+# Install the copyright and license files in the new ISO image
+cp COPYING LICENSE newiso/
