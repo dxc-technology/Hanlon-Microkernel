@@ -91,13 +91,12 @@ cp -p core.gz newiso/boot/
 ./build_iso_yaml.rb newiso ${ISO_VERSION} boot/vmlinuz boot/core.gz
 
 # since this is multi-line, easier to build it here
-preparer=<<EOF
-Puppet Labs <puppet-razor@googlegroups.com>
+preparer="Puppet Labs <puppet-razor@googlegroups.com>
 http://puppetlabs.com/solutions/next-generation-provisioning/
 Built on [$(uname -a)]
 Built at [$(date +'%Y-%m-%d %H:%M:%S')]
-Built by [$(whoami)@$(hostname -f)]
-EOF
+Built by [$(whoami)@$(hostname -f)]"
+
 # finally, build the ISO itself from the newiso directory
 "${GENISO}" -quiet -l -J -R                                     \
     -no-emul-boot -boot-load-size 4 -boot-info-table            \
