@@ -106,4 +106,5 @@ EOF
     -A 'Razor Microkernel' -sysid 'LINUX'                       \
     -p "${preparer:0:128}"                                      \
     -V "Razor MK ${ISO_VERSION:0:22}"                           \
+    -copyright 'LICENSE'                                        \
     -o "${ISO_NAME}" newiso

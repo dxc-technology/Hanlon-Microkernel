@@ -456,6 +456,9 @@ cd tmp-build-dir
 echo "creating razor microkernel overlay tarball"
 tar zc${TAR_V}f build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
 
+# ensure the copyright and license content is added to the image
+cp COPYING LICENSE tmp-build-dir/build_dir/
+
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
 # copy over this one file to a directory somewhere and unpack it and they will
