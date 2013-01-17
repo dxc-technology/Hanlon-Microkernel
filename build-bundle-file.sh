@@ -431,6 +431,17 @@ fi
 
 # get the latest util-linux.tcz, then extract the two executables that
 # we need from that file (using the unsquashfs command)
+#
+# TJMCS as per https://github.com/puppetlabs/Razor-Microkernel/issues/45#issuecomment-12376846
+#
+# The reason we're only pulling a couple of binaries out of this package
+# (rather than installing the entire util-linux TCE) is that we ran into
+# issues with Facter (if I remember correctly) when some of the utilities
+# contained in that package were installed. Rather than trying to get the
+# issues with Facter resolved for the busybox versions of some of these
+# commands (which are different from more standard Linux distributions), it
+# was felt that we should just install the bits that we need out of that
+# particular TCE...
 file='util-linux.tcz'
 if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
 then
