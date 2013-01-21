@@ -19,8 +19,7 @@ require 'razor_microkernel/logging'
 include WEBrick
 
 # next, define our actions (as servlets)...for now we have one (used to
-# save the Microkernel Configuration that is received from the MCollective
-# Configuration Agent)
+# save the Microkernel Configuration)
 
 class MKConfigServlet < HTTPServlet::AbstractServlet
 
@@ -80,7 +79,7 @@ include RazorMicrokernel::Logging
 
 # Now, create an HTTP Server instance (and Daemonize it)
 
-s = HTTPServer.new(:Port => 2156, :Logger => logger, :ServerType => WEBrick::Daemon)
+s = HTTPServer.new(:Port => 2156, :Logger => logger, :ServerType => WEBrick::Daemon, :BindAddress => "127.0.0.1")
 
 # mount our servlets as directories under our HTTP server's URI
 

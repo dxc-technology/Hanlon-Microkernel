@@ -62,7 +62,7 @@ include RazorMicrokernel::Logging
 
 # Now, create an HTTP Server instance (and Daemonize it)
 
-s = HTTPServer.new(:Port => 2157, :Logger => logger, :ServerType => WEBrick::Daemon)
+s = HTTPServer.new(:Port => 2157, :Logger => logger, :ServerType => WEBrick::Daemon, :BindAddress => "127.0.0.1")
 
 # mount our servlets as directories under our HTTP server's URI
 
