@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 #
 # Used during the boot process to initialize the Microkernel (install gems
-# and start up the critical services, like MCollective)
+# and start up the critical services)
 #
 #
 
@@ -28,8 +28,7 @@ gemController.gemListURI = mk_conf['mk_gemlist_uri']
 gemController.installListedGems
 
 # Now that we've installed the facter gem, need do do a bit more work
-# first, determine where the facter gem's library is at (will need that later,
-# when we start the MCollective daemon)
+# first, determine where the facter gem's library is at
 
 require 'rubygems'
 require 'facter'
@@ -57,7 +56,7 @@ error_cond = rz_nw_util.wait_until_nw_avail
 nw_is_avail = true if error_cond == RazorMicrokernel::RzNetworkUtils::SUCCESS
 
 # if the network is available (there's an ethernet adapter that is up and
-# has a valid IP address), then start up the MCollective agent
+# has a valid IP address), then start up the controller scripts
 if nw_is_avail then
 
   # sleep 5 more seconds, just in case
@@ -83,11 +82,6 @@ if nw_is_avail then
   %x[sudo /usr/local/bin/rz_mk_web_server.rb 2>&1 > /tmp/rz_web_server.out]
   %x[sudo /usr/local/bin/rz_mk_tce_mirror.rb 2>&1 > /tmp/rz_mk_tce_mirror.out]
   %x[sudo /usr/local/bin/rz_mk_controller.rb start]
-
-  # and start up the MCollective daemon
-  t = %x[sudo env RUBYLIB=/usr/local/lib/ruby/1.8:/usr/local/mcollective/lib:#{facter_lib} \
-    mcollectived --config /usr/local/etc/mcollective/server.cfg \
-    --pidfile /var/run/mcollective.pid]
 
   # finally, print out the Microkernel version number (which should be in the
   # /tmp/mk_version.yaml file)

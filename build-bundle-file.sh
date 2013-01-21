@@ -163,8 +163,6 @@ fi
   TCL_ISO_URL="$MK_BUNDLE_TCL_ISO_URL"
 [ -z "$RUBY_GEMS_URL" -a -n "$MK_BUNDLE_RUBY_GEMS_URL" ] && 
   RUBY_GEMS_URL="$MK_BUNDLE_RUBY_GEMS_URL"
-[ -z "$MCOLLECTIVE_URL" -a -n "$MK_BUNDLE_MCOLLECTIVE_URL" ] && 
-  MCOLLECTIVE_URL="$MK_BUNDLE_MCOLLECTIVE_URL"
 [ -z "$OPEN_VM_TOOLS_URL" -a -n "$MK_BUNDLE_OPEN_VM_TOOLS_URL" ] && 
   OPEN_VM_TOOLS_URL="$MK_BUNDLE_OPEN_VM_TOOLS_URL"
 [ -z "$GEM_SERVER_URI" -a -n "$MK_BUNDLE_GEM_SERVER_URI" ] && 
@@ -177,7 +175,6 @@ fi
 [ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$MCOLLECTIVE_URL" ] && MCOLLECTIVE_URL='http://puppetlabs.com/downloads/mcollective/mcollective-2.0.0.tgz'
 [ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
 
 
@@ -253,15 +250,6 @@ cp -p rz_mk_*.rb tmp-build-dir/usr/local/bin
 # Microkernel ISO
 mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
 cp -p razor_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/razor_microkernel
-
-# create copies of the MCollective agents from this project (will be placed
-# into the /usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
-# directory in the Razor Microkernel ISO
-file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
-mcoll_dir=`echo $file | cut -d'.' -f-3`
-mkdir -p tmp-build-dir/usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
-cp -p configuration-agent/configuration.rb facter-agent/facteragent.rb \
-    tmp-build-dir/usr/local/tce.installed/$mcoll_dir/plugins/mcollective/agent
 
 # create a copy of the files from this project that will be placed into the
 # /opt directory in the Razor Microkernel ISO; as part of this process will
@@ -357,22 +345,6 @@ then
   wget $WGET_V -P tmp-build-dir/build_dir $TCL_ISO_URL
 fi
 
-# download the MCollective, unpack it in the appropriate location, and
-# add a couple of soft links
-file=`echo $MCOLLECTIVE_URL | awk -F/ '{print $NF}'`
-mcoll_dir=`echo $file | cut -d'.' -f-3`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
-then
-  wget $WGET_V -P tmp-build-dir $MCOLLECTIVE_URL
-fi
-cd tmp-build-dir/usr/local/tce.installed
-tar zx${TAR_V}f "${TOP_DIR}/tmp-build-dir/${file}"
-cd "${TOP_DIR}/tmp-build-dir"
-rm usr/local/mcollective usr/local/bin/mcollectived 2> /dev/null
-ln -s /usr/local/tce.installed/$mcoll_dir usr/local/mcollective
-ln -s /usr/local/mcollective/bin/mcollectived usr/local/bin/mcollectived
-cd "${TOP_DIR}"
-
 # add a soft-link in what will become the /usr/local/sbin directory in the
 # Microkernel ISO (this fixes an issue with where Facter expects to find
 # the 'dmidecode' executable)
@@ -385,11 +357,9 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #   1. ssh-setup-files.tar.gz -> contains the setup files needed for the
 #         SSH/SSL (used for development access to the Microkernel); if
 #         the '--build-prod-image' flag is set, then this file will be skipped
-#   2. mcollective-setup-files.tar.gz -> contains the setup files needed for
-#         running the mcollective daemon
-#   3. mk-open-vm-tools.tar.gz -> contains the files needed for the
+#   2. mk-open-vm-tools.tar.gz -> contains the files needed for the
 #         'open_vm_tools.tcz' extension
-#   4. the etc/passwd and etc/shadow files from the Razor-Microkernel project
+#   3. the etc/passwd and etc/shadow files from the Razor-Microkernel project
 #         (note; if this is a production system then the etc/shadow-nologin
 #         file will be copied over instead of the etc/shadow file (to block
 #         access to the Microkernel from the console)
