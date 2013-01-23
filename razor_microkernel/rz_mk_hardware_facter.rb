@@ -28,6 +28,10 @@ module RazorMicrokernel
     # @param [Hash] facts_map
     def add_facts_to_map!(facts_map, mk_fct_excl_pattern)
       logger.debug("before...#{facts_map.inspect}")
+      # check type of virtualization used (if any); must disable 'dmi' for KVM
+      # virtual machines (see Razor issue #297)
+      virtual_type = Facter.virtual
+      lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
       begin
         # add the facts that result from running the "lscpu" command
         lscpu_facts_str = %x[lscpu]
@@ -44,7 +48,7 @@ module RazorMicrokernel
 
         # and add the facts that result from running a few "lshw" commands...first,
         # add the bus information
-        lshw_c_bus_str = %x[sudo lshw -c bus]
+        lshw_c_bus_str = %x[sudo #{lshw_cmd} -c bus]
         hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_bus")
         # and add a set of facts from this bus information as top-level facts in the
@@ -53,7 +57,7 @@ module RazorMicrokernel
         add_flattened_hash_to_facts!(hash_map["core"], facts_map, "mk_hw_bus", fields_to_include)
 
         # next, the memory information (including firmware, system memory, and caches)
-        lshw_c_memory_str = %x[sudo lshw -c memory]
+        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory]
         hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_mem", /cache_array/)
         # and add a set of facts from this memory information as top-level facts in the
@@ -67,7 +71,7 @@ module RazorMicrokernel
                                      "mk_hw_mem", fields_to_include)
 
         # next, the disk information (number of disks, sizes, etc.)
-        lshw_c_disk_str = %x[sudo lshw -c disk]
+        lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk]
         hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_disk")
         # and add a set of facts from the array of disk information as top-level facts in the
@@ -85,7 +89,7 @@ module RazorMicrokernel
         add_flattened_array_to_facts!(disk_array, facts_map, "mk_hw_disk", fields_to_include) if disk_array
 
         # next, the processor information
-        lshw_c_processor_str = %x[sudo lshw -c processor]
+        lshw_c_processor_str = %x[sudo #{lshw_cmd} -c processor]
         hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_proc")
         # and add a set of facts from the array of processor information as top-level facts in the
@@ -98,7 +102,7 @@ module RazorMicrokernel
                                       "mk_hw_cpu", fields_to_include)
 
         # and finally, the network information
-        lshw_c_network_str = %x[sudo lshw -c network]
+        lshw_c_network_str = %x[sudo #{lshw_cmd} -c network]
         hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_nw")
         # and add a set of facts from the array of network information as top-level facts in the
