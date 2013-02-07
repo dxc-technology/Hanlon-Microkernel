@@ -420,7 +420,7 @@ fi
 unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
 
 # determine, and store, the git derived ISO file version into the bundle
-gitversion="$(git describe --tags --dirty --always | sed -e 's@-@+@')"
+gitversion="$(git describe --tags --dirty --always | sed -e 's@-@+@' | sed -e 's/^v//')"
 if test $? -gt 0; then
     echo "unable to determine the build version with git!"
     exit 1
