@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . ./mk-build-lib.sh
 
 if ! test -f Core-current.iso; then
@@ -23,11 +23,17 @@ mkdir original-iso-files
 # get a copy of the files from the original ISO
 if exists 7z; then
     7z -o"original-iso-files" x Core-current.iso
-else
+elif test x"${FAKEROOTKEY}" = x""; then
     test -d /tmp/cdrom || mkdir -p /tmp/cdrom
     mount Core-current.iso /tmp/cdrom -o loop
     cp -a /tmp/cdrom/boot original-iso-files/
     umount /tmp/cdrom
+else
+    echo "It looks like you are running with fakeroot, but you don't"
+    echo "have the 7z command (p7zip or p7zip-full) available.  This"
+    echo "means we can't unpack the ISO image; either install that tool"
+    echo "or run this as real root instead."
+    exit 1
 fi
 
 # extract the boot/core.gz file from that directory
