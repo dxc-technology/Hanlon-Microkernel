@@ -24,6 +24,10 @@ EOT
   o.on('--server URL', '--gem-server URL', '-s URL', 'the remote gem source to use') do |url|
     $server = url
   end
+
+  o.on('--gemfile FILE', '-f FILE', 'a file with the list of gems to mirror') do |file|
+    $gemfile = file
+  end
 end
 
 optparse.parse!
@@ -74,7 +78,16 @@ $server and Gem.sources = [$server]
 
 # We actually want the gems one level down, in their repository structure.
 # REVISIT: Should we support gem version information here?  (eg: ~> 2.7)
-ARGV.each {|gem| mirror_gem($where, gem) }
+if $gemfile then
+  File.read($gemfile).each_line do |line|
+    gem, version = line.chomp.split(/\s+/, 2)
+    gem or next                 # skip empty lines, just in case
+    gem =~ /^\s*#/ and next     # also comments
+    mirror_gem($where, gem, version)
+  end
+else
+  ARGV.each {|gem| mirror_gem($where, gem) }
+end
 
 puts "Generating the GEM mirror indexes..."
 system('gem', 'generate_index', '-d', $where.parent.to_s)
