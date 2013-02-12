@@ -260,7 +260,7 @@ mkdir -p tmp-build-dir/opt
 cp -t tmp-build-dir/opt -p opt/boot*.sh
 chmod +rx tmp-build-dir/opt/boot*.sh
 [ -n "$GEM_SERVER_URI" ] && GEM_SERVER_ARG="-s $GEM_SERVER_URI"
-./bin/mirror-gem $GEM_SERVER_ARG -d tmp-build-dir/tmp/gem-mirror `cat opt/gems/gem.list`
+./bin/mirror-gem $GEM_SERVER_ARG -d tmp-build-dir/tmp/gem-mirror -f opt/gems/gem.list
 
 # Add GemRC file to the ISO to use the mirror
 cp -p opt/gems/gem.list tmp-build-dir/tmp/gem-mirror/gems/gem.list
