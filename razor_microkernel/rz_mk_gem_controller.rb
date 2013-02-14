@@ -73,8 +73,8 @@ module RazorMicrokernel
         response = Net::HTTP.get_response(uri)
         case response
           when Net::HTTPSuccess
-          response.body.split.each { |gemNameFromFile|
-            gemName = gemNameFromFile.chomp
+          response.body.split("\n").each { |gemNameFromFile|
+            gemName = gemNameFromFile.split[0].chomp
             addToInstalledGems(gemName)
           }
         else
