@@ -370,35 +370,6 @@ then
   wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
 fi
 
-# Copy over the etc/passwd file to the tmp-build-dir/etc directory.
-# If we're building a production system, development system, also copy over the
-# etc/shadow file to the same directory.  If it's a production system we're
-# building the ISO for, then copy over the etc/shadow-nologin file instead
-# (and remove the SSH setup files from the files we just copied over to the
-# dependencies directory)
-cp -p etc/passwd tmp-build-dir/etc
-if [ $BUNDLE_TYPE != 'prod' ]; then
-  cp -p etc/shadow tmp-build-dir/etc
-  # if a password for the tc user was passed in (using the -t or --tc-passwd flag)
-  # then use it to replace the default password for the tc user in the shadow
-  # password file we're burning into the ISO here (requires that openssl be installed
-  # locally for this to work)
-  if [[ ! -z $TC_PASSWD ]]; then
-    echo "changing password for 'tc' user to $TC_PASSWD"
-    NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
-    # use sed to replace the default password with the new one generated (above)
-    # (but remember, need to escape the replacement string for use with sed first,
-    # which is what the "$(echo ... | sed -e ...)" part of this command does; it
-    # escapes any '\', '/', and '&' characters in the $NEW_PWD_ENTRY string so that
-    # they will be passed as literals during replacement instead of being used as
-    # part of the surrounding sed command)
-    sed -i "s/^\(tc:\)[^\:]*\(.*\)/\1$(echo $NEW_PWD_ENTRY | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')\2/" tmp-build-dir/etc/shadow
-  fi
-else
-  cp -p etc/shadow-nologin tmp-build-dir/etc/shadow
-  rm tmp-build-dir/build_dir/dependencies/ssh-setup-files.tar.gz
-fi
-
 # get the latest util-linux.tcz, then extract the two executables that
 # we need from that file (using the unsquashfs command)
 #
@@ -419,14 +390,59 @@ then
 fi
 unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
 
+echo ""
+echo "************************************************************************"
+echo "All resources downloaded, configuring:"
+
+# Copy over the etc/passwd file to the tmp-build-dir/etc directory.
+# If we're building a production system, development system, also copy over the
+# etc/shadow file to the same directory.  If it's a production system we're
+# building the ISO for, then copy over the etc/shadow-nologin file instead
+# (and remove the SSH setup files from the files we just copied over to the
+# dependencies directory)
+cp -p etc/passwd tmp-build-dir/etc
+if [ $BUNDLE_TYPE != 'prod' ]; then
+  cp -p etc/shadow tmp-build-dir/etc
+  # if a password for the tc user was passed in (using the -t or --tc-passwd flag)
+  # then use it to replace the default password for the tc user in the shadow
+  # password file we're burning into the ISO here (requires that openssl be installed
+  # locally for this to work)
+  #
+  # The default password for the debug and development flavours.  Since this is
+  # a publicly documented default password, there is no greater security
+  # exposure putting it here than manually putting it into the build process.
+  #
+  # The purpose is to allow users who run the dev/debug builds to log in, so in
+  # that regard it is necessary to include the password, and to publicly
+  # document it.
+  #
+  # Without that ability, the debug and dev builds are literally useless, so we
+  # also can't omit the password - at least for now.
+  #
+  # This will set the password to the default, if it wasn't already set.
+  : TC_PASSWD=${TC_PASSWD:=test1234}
+
+  echo " * Changing password for 'tc' user to $TC_PASSWD"
+  NEW_PWD_ENTRY=`echo $TC_PASSWD | openssl passwd -1 -stdin`
+  # use sed to replace the default password with the new one generated (above)
+  # (but remember, need to escape the replacement string for use with sed first,
+  # which is what the "$(echo ... | sed -e ...)" part of this command does; it
+  # escapes any '\', '/', and '&' characters in the $NEW_PWD_ENTRY string so that
+  # they will be passed as literals during replacement instead of being used as
+  # part of the surrounding sed command)
+  sed -i "s/^\(tc:\)[^\:]*\(.*\)/\1$(echo $NEW_PWD_ENTRY | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')\2/" tmp-build-dir/etc/shadow
+else
+  cp -p etc/shadow-nologin tmp-build-dir/etc/shadow
+  rm tmp-build-dir/build_dir/dependencies/ssh-setup-files.tar.gz
+fi
+
 # determine, and store, the git derived ISO file version into the bundle
 gitversion="$(git describe --tags --dirty --always | sed -e 's@-@+@' | sed -e 's/^v//')"
 if test $? -gt 0; then
-    echo "unable to determine the build version with git!"
+    echo " ! Unable to determine the build version with git!"
     exit 1
 fi
-echo ""
-echo "This build is tagged as version [${gitversion}]"
+echo " * this build is tagged as version [${gitversion}]"
 echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
 
 # ensure the copyright and license content is added to the image
@@ -437,7 +453,7 @@ cp COPYING LICENSE tmp-build-dir/build_dir/
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
 cd tmp-build-dir
-echo "creating razor microkernel overlay tarball"
+echo " * creating razor microkernel overlay tarball"
 tar zc${TAR_V}f build_dir/dependencies/razor-microkernel-overlay.tar.gz usr etc opt tmp root
 
 # and create a gzipped tarfile containing the dependencies folder and the set
@@ -457,6 +473,6 @@ if [ ! -d "${TOP_DIR}/build-files" ]; then
     mkdir "${TOP_DIR}/build-files"
 fi
 cd build_dir
-echo "creating build bundle ${bundle_out_file_name}"
+echo " * creating build bundle ${bundle_out_file_name}"
 tar zc${TAR_V}f "${TOP_DIR}/build-files/${bundle_out_file_name}" *
 cd "${TOP_DIR}"
