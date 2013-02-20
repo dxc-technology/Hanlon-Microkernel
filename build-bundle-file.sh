@@ -26,7 +26,6 @@ build an instance of the Razor Microkernel ISO.
 
 OPTIONS:
    -h, --help                 print usage for this command
-   -r, --reuse-prev-dl        reuse the downloads rather than downloading again
    -b, --builtin-list=FILE    file containing extensions to install as builtin
    -m, --mirror-list=FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
@@ -58,7 +57,7 @@ read_config_file()
 }
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hrb:m:pdt:c:v -l help,reuse-prev-dl,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose -- "$@")
+if ! options=$(getopt -o hb:m:pdt:c:v -l help,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -81,7 +80,6 @@ BUNDLE_TYPE_SELECTED=0
 while [ $# -gt 0 ]
 do
   case $1 in
-  -r|--reuse-prev-dl) RE_USE_PREV_DL='yes';;
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -p|--build-prod-image) 
@@ -153,8 +151,6 @@ fi
   MIRROR_LIST="$MK_BUNDLE_MIRROR_LIST"
 [ -z "$TC_PASSWD" -a -n "$MK_BUNDLE_TC_PASSWD" ] && 
   TC_PASSWD="$MK_BUNDLE_TC_PASSWD"
-[ -z "$RE_USE_PREV_DL" -a -n "$MK_BUNDLE_RE_USE_PREV_DL" ] && 
-  RE_USE_PREV_DL="$MK_BUNDLE_RE_USE_PREV_DL"
 [ -z "$BUNDLE_TYPE" -a -n "$MK_BUNDLE_TYPE" ] && 
   BUNDLE_TYPE="$MK_BUNDLE_TYPE"
 [ -z "$TCL_MIRROR_URI" -a -n "$MK_BUNDLE_TCL_MIRROR_URI" ] && 
@@ -170,7 +166,6 @@ fi
 
 # Set to default anything still not specified, for which there is a reasonable
 # default-value
-[ -z "$RE_USE_PREV_DL" ] && RE_USE_PREV_DL='no'
 [ -z "$BUNDLE_TYPE" ] && BUNDLE_TYPE='dev'
 [ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
@@ -204,21 +199,9 @@ elif [[ ! -z $TC_PASSWD ]] && [ $BUNDLE_TYPE = 'prod' ]; then
   printf "     the specified password (${TC_PASSWD}) will be ignored\n"
 fi
 
-# the '-r' or '--reuse-prev-dl' flags were not given, then make sure we're
-# starting with a clean (i.e. empty) build directory
-if [ $RE_USE_PREV_DL = 'no' ]
-then
-  if [ ! -d tmp-build-dir ]; then
-    # make a directory we can use to build our gzipped tarfile
-    mkdir tmp-build-dir
-  else
-    # directory exists, so remove the contents
-    rm -rf tmp-build-dir/*
-  fi
-fi
-
-# create a folder to hold the gzipped tarfile that will contain all of
-# dependencies
+# Make sure we're starting with a clean (i.e. empty) build directory to hold
+# the gzipped tarfile that will contain all of dependencies
+rm -rf tmp-build-dir
 mkdir -p tmp-build-dir/build_dir/dependencies
 
 # copy over the scripts that are needed to actually build the ISO into
@@ -272,14 +255,11 @@ cp rz_mk_gemrc.yaml tmp-build-dir/root/.gemrc
 mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
-  if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$file ]
-  then
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.info
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.list
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.dep
-  fi
 done
 
 # download a set of extensions that will be installed during the Microkernel
@@ -291,34 +271,28 @@ mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
   if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
-    if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/tmp/builtin/optional/$file ]
-    then
       wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
       wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
       wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
-    fi
-    echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
   elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
   then
-    rm tmp-build-dir/tmp/builtin/optional/$file
-    rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
-    rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
+      rm tmp-build-dir/tmp/builtin/optional/$file
+      rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
+      rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
   fi
 done
 
 # download the ruby-gems distribution (will be installed during the boot
 # process prior to starting the Microkernel initialization process)
 file=`echo $RUBY_GEMS_URL | awk -F/ '{print $NF}'`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/opt/$file ]
-then
-  wget $WGET_V -P tmp-build-dir/opt $RUBY_GEMS_URL
-fi
+wget $WGET_V -P tmp-build-dir/opt $RUBY_GEMS_URL
 
 # copy over a couple of initial configuration files that will be included in the
 # /tmp and /etc directories of the Microkernel instance (the first two control the
 # initial behavior of the Razor Microkernel Controller, the third disables automatic
 # login of the tc user when the Microkernel finishes booting)
-  cp -p tmp/first_checkin.yaml tmp-build-dir/tmp
+cp -p tmp/first_checkin.yaml tmp-build-dir/tmp
 if [ $BUNDLE_TYPE = 'debug' ]
 then
   # if we're building a "debug" bundle, then copy over a microkernel configuration
@@ -340,10 +314,7 @@ fi
 
 # get a copy of the current Tiny Core Linux "Core" ISO
 file=`echo $TCL_ISO_URL | awk -F/ '{print $NF}'`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/$file ]
-then
-  wget $WGET_V -P tmp-build-dir/build_dir $TCL_ISO_URL
-fi
+wget $WGET_V -P tmp-build-dir/build_dir $TCL_ISO_URL
 
 # add a soft-link in what will become the /usr/local/sbin directory in the
 # Microkernel ISO (this fixes an issue with where Facter expects to find
@@ -365,10 +336,7 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #         access to the Microkernel from the console)
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/build_dir/dependencies/$file ]
-then
-  wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
-fi
+wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
 
 # get the latest util-linux.tcz, then extract the two executables that
 # we need from that file (using the unsquashfs command)
@@ -384,10 +352,7 @@ fi
 # was felt that we should just install the bits that we need out of that
 # particular TCE...
 file='util-linux.tcz'
-if [ $RE_USE_PREV_DL = 'no' ] || [ ! -f tmp-build-dir/$file ]
-then
-  wget $WGET_V -P tmp-build-dir $TCL_MIRROR_URI/$file
-fi
+wget $WGET_V -P tmp-build-dir $TCL_MIRROR_URI/$file
 unsquashfs -f -d tmp-build-dir tmp-build-dir/util-linux.tcz `cat additional-build-files/util-linux-exec.lst`
 
 echo ""
