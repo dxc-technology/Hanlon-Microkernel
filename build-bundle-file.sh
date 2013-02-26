@@ -170,7 +170,7 @@ fi
 [ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/downloads/puppetlabs/Razor-Microkernel/mk-open-vm-tools.tar.gz'
+[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='http://downloads.puppetlabs.com/razor/open-vm-tools/mk-open-vm-tools.tar.gz'
 
 
 # Save our top level directory; watch out for spaces!
