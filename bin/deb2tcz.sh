@@ -1,16 +1,16 @@
-#!/bin/busybox ash
+#!/bin/sh
 # Original by Jason Williams
 # Enhanced for Arm ports by Robert Shingledecker
 # postinst / TC customization script support by Brian Smith
 # Create tce/tcz from Debian package
 # Usage: $ deb2tcz packagename.deb packaganame.tcz
 
-. /etc/init.d/tc-functions
-useBusybox
-checkroot
+set -x
+set -v
 
 HERE=`pwd`
-PKGDIR=/tmp/deb2tcz.1234
+PKGDIR="$HERE"/tmp/deb2tcz.1234
+TMPDIR="$HERE"/tmp/deb2tcz.tmp
 PKG="$PKGDIR"/pkg
 CFG="$PKGDIR"/cfg
 FILE="$1"
@@ -18,18 +18,13 @@ APPNAME="$2"
 INPUT=${FILE##*.}
 
 [ -d "$PKGDIR" ] || mkdir -p "$PKGDIR"
-
-setupStartupScript() {
-	[ -d "$PKG"/usr/local/tce.installed ] || mkdir -p "$PKG/usr/local/tce.installed/"
-	chmod 775 "$PKG/usr/local/tce.installed/"
-	chown root.staff "$PKG/usr/local/tce.installed/"
-}
+[ -d "${TMPDIR}" ] || mkdir -p "${TMPDIR}"
 
 make_tcz() {
 	mkdir -p "$PKG"
 	mkdir -p "$CFG"
-	DATA_TAR=`ar t "$FILE" data.tar.*`
-	CONFIG_TAR=`ar t "$FILE" control.tar.*`
+	DATA_TAR=`ar t "$FILE" | grep data.tar.*`
+	CONFIG_TAR=`ar t "$FILE" | grep control.tar.*`
 	ar p "$FILE" "$DATA_TAR" > "$PKGDIR"/"$DATA_TAR"
 	ar p "$FILE" "$CONFIG_TAR" > "$PKGDIR"/"$CONFIG_TAR"
 	tar xf "$PKGDIR"/"$DATA_TAR" -C "$PKG"
@@ -51,16 +46,15 @@ make_tcz() {
 	
 	cd "$PKGDIR"
 	
-	read IMPORTMIRROR < /opt/tcemirror                                                                             
-	IMPORTMIRROR="${IMPORTMIRROR%/}/$(getMajorVer).x/importscripts"   	
-	wget -O /tmp/"${APPNAME}.deb2tcz" -cq "$IMPORTMIRROR"/"${APPNAME}.deb2tcz" 2>/dev/null		
-	if [ -f /tmp/"${APPNAME}.deb2tcz" ]
+	IMPORTMIRROR="http://distro.ibiblio.org/tinycorelinux/4.x/importscripts"   	
+	wget -O "${TMPDIR}${APPNAME}.deb2tcz" -cq "$IMPORTMIRROR"/"${APPNAME}.deb2tcz" 2>/dev/null		
+	if [ -f "${TMPDIR}${APPNAME}.deb2tcz" ]
 	then
 		echo Merging Tiny Core custom start script for $APPNAME: "${APPNAME}.deb2tcz"
 		setupStartupScript
-		cat /tmp/"${APPNAME}.deb2tcz" >> "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
+		cat "${TMPDIR}${APPNAME}.deb2tcz" >> "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
 		chmod 755 "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
-		rm /tmp/"${APPNAME}.deb2tcz"
+		rm "${TMPDIR}${APPNAME}.deb2tcz"
 	fi
 	
 	mksquashfs pkg "$HERE"/"$APPNAME" -noappend
@@ -91,3 +85,6 @@ else
 	echo "Something went wrong."
 	exit 1
 fi
+
+set +x
+set +v
