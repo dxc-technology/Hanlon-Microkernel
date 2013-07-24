@@ -5,6 +5,6 @@ gcc_libs.tcz
 bash.tcz
 scsi-3.0.21-tinycore.tcz
 ruby.tcz
-lshw.tcz
+lshw.deb
 libssl-0.9.8.tcz
 firmware-bnx2.tcz
