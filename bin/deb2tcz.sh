@@ -13,9 +13,9 @@ PKGDIR="$HERE"/tmp/deb2tcz.1234
 TMPDIR="$HERE"/tmp/deb2tcz.tmp
 PKG="$PKGDIR"/pkg
 CFG="$PKGDIR"/cfg
-FILE="$1"
-APPNAME="$2"
-INPUT=${FILE##*.}
+DEB_FILE="$1"
+TCZ_FILE="$2"
+INPUT=${DEB_FILE##*.}
 
 [ -d "$PKGDIR" ] || mkdir -p "$PKGDIR"
 [ -d "${TMPDIR}" ] || mkdir -p "${TMPDIR}"
@@ -23,10 +23,10 @@ INPUT=${FILE##*.}
 make_tcz() {
 	mkdir -p "$PKG"
 	mkdir -p "$CFG"
-	DATA_TAR=`ar t "$FILE" | grep data.tar.*`
-	CONFIG_TAR=`ar t "$FILE" | grep control.tar.*`
-	ar p "$FILE" "$DATA_TAR" > "$PKGDIR"/"$DATA_TAR"
-	ar p "$FILE" "$CONFIG_TAR" > "$PKGDIR"/"$CONFIG_TAR"
+	DATA_TAR=`ar t "$DEB_FILE" | grep data.tar.*`
+	CONFIG_TAR=`ar t "$DEB_FILE" | grep control.tar.*`
+	ar p "$DEB_FILE" "$DATA_TAR" > "$PKGDIR"/"$DATA_TAR"
+	ar p "$DEB_FILE" "$CONFIG_TAR" > "$PKGDIR"/"$CONFIG_TAR"
 	tar xf "$PKGDIR"/"$DATA_TAR" -C "$PKG"
 	tar xf "$PKGDIR"/"$CONFIG_TAR" -C "$CFG"
 	[ -d "$PKG"/usr/share/doc ] && rm -r "$PKG"/usr/share/doc
@@ -37,32 +37,32 @@ make_tcz() {
 	find . -type d -empty | xargs rmdir > /dev/null 2>&1
 	if [ -f "$CFG"/postinst ]; then
 		mkdir -p "$PKG/usr/local/postinst"
-		cp "$CFG/postinst" "$PKG/usr/local/postinst/${APPNAME%.tcz}"
-		SCRIPT='/usr/local/postinst/'${APPNAME%.tce}' configure 2>/dev/null'
+		cp "$CFG/postinst" "$PKG/usr/local/postinst/${TCZ_FILE%.tcz}"
+		SCRIPT='/usr/local/postinst/'${TCZ_FILE%.tce}' configure 2>/dev/null'
 		setupStartupScript
-		echo "${SCRIPT}" > "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
-		chmod 755 "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
+		echo "${SCRIPT}" > "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
+		chmod 755 "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
 	fi
 	
 	cd "$PKGDIR"
 	
 	IMPORTMIRROR="http://distro.ibiblio.org/tinycorelinux/4.x/importscripts"   	
-	wget -O "${TMPDIR}${APPNAME}.deb2tcz" -cq "$IMPORTMIRROR"/"${APPNAME}.deb2tcz" 2>/dev/null		
-	if [ -f "${TMPDIR}${APPNAME}.deb2tcz" ]
+	wget -O "${TMPDIR}${TCZ_FILE}.deb2tcz" -cq "$IMPORTMIRROR"/"${TCZ_FILE}.deb2tcz" 2>/dev/null		
+	if [ -f "${TMPDIR}${TCZ_FILE}.deb2tcz" ]
 	then
-		echo Merging Tiny Core custom start script for $APPNAME: "${APPNAME}.deb2tcz"
+		echo Merging Tiny Core custom start script for $TCZ_FILE: "${TCZ_FILE}.deb2tcz"
 		setupStartupScript
-		cat "${TMPDIR}${APPNAME}.deb2tcz" >> "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
-		chmod 755 "$PKG/usr/local/tce.installed/${APPNAME%.tcz}"
-		rm "${TMPDIR}${APPNAME}.deb2tcz"
+		cat "${TMPDIR}${TCZ_FILE}.deb2tcz" >> "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
+		chmod 755 "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
+		rm "${TMPDIR}${TCZ_FILE}.deb2tcz"
 	fi
 	
-	mksquashfs pkg "$HERE"/"$APPNAME" -noappend
 	cd "$HERE"
+	mksquashfs $PKG "$TCZ_FILE" -noappend
 	rm -r "$PKGDIR"
 }
 
-[ -z "$APPNAME" ] && echo "You must specify an extension name." && exit 1
+[ -z "$TCZ_FILE" ] && echo "You must specify an extension name." && exit 1
 
 [ -z "$1" ] && echo "You must specify a file."
 
@@ -71,7 +71,7 @@ if [ "$INPUT" != "deb" ] ; then
 	exit 1
 fi
 
-EXT=${APPNAME##*.}
+EXT=${TCZ_FILE##*.}
 if [ `echo "$EXT" | grep "tcz"` 2>/dev/null ]; then
 	make_tcz 
 else 	
@@ -79,7 +79,7 @@ else
 	exit 1
 fi
 	
-if [ -f "$APPNAME" ]; then
+if [ -f "$TCZ_FILE" ]; then
 	echo "Success."
 else
 	echo "Something went wrong."
