@@ -171,6 +171,8 @@ fi
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 [ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='http://downloads.puppetlabs.com/razor/open-vm-tools/mk-open-vm-tools.tar.gz'
+[ -z "$DEB_PACKAGE_LIST_URL" ] && DEB_PACKAGE_LIST_URL='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
+[ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
 
 
 # Save our top level directory; watch out for spaces!
@@ -250,16 +252,29 @@ cp -p opt/gems/gem.list tmp-build-dir/tmp/gem-mirror/gems/gem.list
 mkdir -p tmp-build-dir/root
 cp rz_mk_gemrc.yaml tmp-build-dir/root/.gemrc
 
+# Download the .deb package list if necessary
+if [ `cat "$MIRROR_LIST" "$BUILTIN_LIST" | grep .deb$` 2>/dev/null ]; then
+  ./bin/download-deb-pkg-list --list-url "$DEB_PACKAGE_LIST_URL" --download-dir "./tmp/" --list-file "./tmp/dpkg-package-list"
+fi
+
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
 mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
+  if [ ${file##*.} != "deb" ]; then
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.info
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.list
     wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.dep
+  else
+    PKGNAME=${file%.*}
+    echo "Installing .deb package for mirroring: $PKGNAME"
+    ./bin/download-deb-pkg --list-file "./tmp/" --mirror-url "$DEB_MIRROR_URL" --output-dir ./tmp/ $PKGNAME
+    ./bin/deb2tcz.sh ./tmp/$PKGNAME.deb tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+
+  fi
 done
 
 # download a set of extensions that will be installed during the Microkernel
@@ -270,16 +285,24 @@ echo "working in ${PWD}"
 mkdir -p tmp-build-dir/tmp/builtin/optional
 rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
-  if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
-      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
-      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
-      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
-      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
-  elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
-  then
-      rm tmp-build-dir/tmp/builtin/optional/$file
-      rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
-      rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
+  if [ ${file##*.} != "deb" ]; then
+    if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
+        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
+        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
+        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
+        echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+    elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
+    then
+        rm tmp-build-dir/tmp/builtin/optional/$file
+        rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
+        rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
+    fi
+  else
+    PKGNAME=${file%.*}
+    echo "Installing .deb package as builtin: $PKGNAME"
+    ./bin/download-deb-pkg --list-file "./tmp/dpkg-package-list" --mirror-url "$DEB_MIRROR_URL" --output-dir ./tmp/ $PKGNAME
+    ./bin/deb2tcz.sh ./tmp/$PKGNAME.deb tmp-build-dir/tmp/builtin/optional/$PKGNAME.tcz
+    echo $PKGNAME.tcz >> tmp-build-dir/tmp/builtin/onboot.lst
   fi
 done
 
