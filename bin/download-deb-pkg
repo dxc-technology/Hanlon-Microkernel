@@ -42,7 +42,7 @@ elif [ -z $DEB_PKG_NAME ]; then
 fi
 
 DEB_OUTPUT_FILE="$OUTPUT_DIR"/"$DEB_PKG_NAME".deb
-DEB_DOWNLOAD_FILE=`grep "^$DEB_PKG_NAME " "$LIST_FILE"|sed "s/^$DEB_PKG_NAME\s//"`
+DEB_DOWNLOAD_FILE=`grep -m 1 "^$DEB_PKG_NAME " "$LIST_FILE"|sed "s/^$DEB_PKG_NAME\s//"`
 
 if [ -z $DEB_DOWNLOAD_FILE ]; then
   printf "\nError; could not find the package '$DEB_PKG_NAME'"
