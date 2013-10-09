@@ -57,7 +57,7 @@ read_config_file()
 }
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hb:m:pdt:c:v -l help,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose -- "$@")
+if ! options=$(getopt -o hb:m:pdt:c:v -l help,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose,dpkg-list: -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -68,6 +68,9 @@ set -- $options
 # Some internal defaults - be quiet by default.
 WGET_V='-nv'
 TAR_V=''
+
+# Explicitly create DEB_PACKAGE_LIST_URL as an array
+DEB_PACKAGE_LIST_URL=()
 
 # loop through the command line arguments, parsing them as we go along
 # (and shifting them off of the list of command line arguments as they,
@@ -120,6 +123,9 @@ do
       printf " and its value? If so, you might not get the password you expect...\n"
     fi;
     shift;;
+  --dpkg-list)
+    DEB_PACKAGE_LIST_URL+=(`echo $2 | tr -d "'"`)
+    shift;;
   -c|--config) CONFIG_FILE=`printf '%s' "$2" | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -h|--help) usage; exit 0;;
   -v|--verbose)
@@ -171,9 +177,8 @@ fi
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 [ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='http://downloads.puppetlabs.com/razor/open-vm-tools/mk-open-vm-tools.tar.gz'
-[ -z "$DEB_PACKAGE_LIST_URL" ] && DEB_PACKAGE_LIST_URL='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
+[ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
-
 
 # Save our top level directory; watch out for spaces!
 TOP_DIR="${PWD}"
@@ -253,8 +258,13 @@ mkdir -p tmp-build-dir/root
 cp rz_mk_gemrc.yaml tmp-build-dir/root/.gemrc
 
 # Download the .deb package list if necessary
-if [ `cat "$MIRROR_LIST" "$BUILTIN_LIST" | grep .deb$` 2>/dev/null ]; then
-  ./bin/download-deb-pkg-list --list-url "$DEB_PACKAGE_LIST_URL" --download-dir "./tmp/" --list-file "./tmp/dpkg-package-list"
+if [ ! -z "`cat "$MIRROR_LIST" "$BUILTIN_LIST" | grep .deb$`" ]; then
+  LIST_ARGS=""
+  for URL in "${DEB_PACKAGE_LIST_URL[@]}"; do
+    echo $URL
+    LIST_ARGS+=" --list-url $URL"
+  done
+  ./bin/download-deb-pkg-list $LIST_ARGS --download-dir "./tmp/" --list-file "./tmp/dpkg-package-list"
 fi
 
 # create a copy of the local TCL Extension mirror that we will be running within
