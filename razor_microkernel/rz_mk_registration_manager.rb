@@ -65,15 +65,20 @@ module RazorMicrokernel
         # The array passed through this "hw_id" key in the JSON hash is constructed by the
         # FactManager.  Currently, it includes a list of all of the network interfaces that
         # have names that look like 'eth[0-9]+', but that may change down the line.
-        json_hash["@hw_id"] = @fact_manager.get_hw_id_array
-        json_hash["@attributes_hash"] = fact_map
-        json_hash["@last_state"] = last_state
+        json_hash["hw_id"] = @fact_manager.get_hw_id_array
+        json_hash["attributes_hash"] = fact_map
+        json_hash["last_state"] = last_state
         json_string = JSON.generate(json_hash)
         # and send that string to the service listening at the "Registration URI"
         # (this will register the node with the server at that URI)
         uri = URI @registration_uri
+        header = {'Content-Type' => 'text/json'}
+        http = Net::HTTP.new(uri.host, uri.port)
         logger.debug "Sending new factMap to '" + uri.to_s + "' => " + json_string
-        response = Net::HTTP.post_form(uri, 'json_hash' => json_string)
+        request = Net::HTTP::Post.new(uri.request_uri, header)
+        request.body = json_string
+        # Send the request
+        response = http.request(request)
         # if we were successful in registering with the server, save the current
         # facts as the previous facts
         case response
