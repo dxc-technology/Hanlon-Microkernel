@@ -20,6 +20,12 @@ INPUT=${DEB_FILE##*.}
 [ -d "$PKGDIR" ] || mkdir -p "$PKGDIR"
 [ -d "${TMPDIR}" ] || mkdir -p "${TMPDIR}"
 
+setupStartupScript() {
+	[ -d "$PKG"/usr/local/tce.installed ] || mkdir -p "$PKG/usr/local/tce.installed/"
+	chmod 775 "$PKG/usr/local/tce.installed/"
+	chown root:root "$PKG/usr/local/tce.installed/"
+}
+
 make_tcz() {
 	mkdir -p "$PKG"
 	mkdir -p "$CFG"
@@ -36,25 +42,26 @@ make_tcz() {
 	cd "$PKG"
 	find . -type d -empty | xargs rmdir > /dev/null 2>&1
 	if [ -f "$CFG"/postinst ]; then
+		TCZ_FILENAME=`basename ${TCZ_FILE%.tcz}`
 		mkdir -p "$PKG/usr/local/postinst"
-		cp "$CFG/postinst" "$PKG/usr/local/postinst/${TCZ_FILE%.tcz}"
-		SCRIPT='/usr/local/postinst/'${TCZ_FILE%.tce}' configure 2>/dev/null'
+		cp "$CFG/postinst" "$PKG/usr/local/postinst/$TCZ_FILENAME"
+		SCRIPT='/usr/local/postinst/'$TCZ_FILENAME' configure 2>/dev/null'
 		setupStartupScript
-		echo "${SCRIPT}" > "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
-		chmod 755 "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
+		echo "${SCRIPT}" > "$PKG/usr/local/tce.installed/$TCZ_FILENAME"
+		chmod 755 "$PKG/usr/local/tce.installed/$TCZ_FILENAME"
 	fi
 	
 	cd "$PKGDIR"
 	
 	IMPORTMIRROR="http://distro.ibiblio.org/tinycorelinux/4.x/importscripts"   	
-	wget -O "${TMPDIR}${TCZ_FILE}.deb2tcz" -cq "$IMPORTMIRROR"/"${TCZ_FILE}.deb2tcz" 2>/dev/null		
+	wget -O "${TMPDIR}${TCZ_FILENAME}.deb2tcz" -cq "$IMPORTMIRROR"/"${TCZ_FILENAME}.deb2tcz" 2>/dev/null		
 	if [ -f "${TMPDIR}${TCZ_FILE}.deb2tcz" ]
 	then
-		echo Merging Tiny Core custom start script for $TCZ_FILE: "${TCZ_FILE}.deb2tcz"
+		echo Merging Tiny Core custom start script for $TCZ_FILE: "${TCZ_FILENAME}.deb2tcz"
 		setupStartupScript
-		cat "${TMPDIR}${TCZ_FILE}.deb2tcz" >> "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
-		chmod 755 "$PKG/usr/local/tce.installed/${TCZ_FILE%.tcz}"
-		rm "${TMPDIR}${TCZ_FILE}.deb2tcz"
+		cat "${TMPDIR}${TCZ_FILENAME}.deb2tcz" >> "$PKG/usr/local/tce.installed/${TCZ_FILENAME%.tcz}"
+		chmod 755 "$PKG/usr/local/tce.installed/${TCZ_FILENAME%.tcz}"
+		rm "${TMPDIR}${TCZ_FILENAME}.deb2tcz"
 	fi
 	
 	cd "$HERE"

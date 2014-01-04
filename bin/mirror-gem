@@ -43,8 +43,14 @@ def mirror_gem(destination, name, version = nil)
   dep = Gem::Dependency.new(name, version)
   all = Gem::Requirement.default != version
 
-  specs_and_sources, errors =
-    Gem::SpecFetcher.fetcher.fetch_with_errors(dep, all, true, false)
+  # Use the Ruby 2.0 RubyGems API if it's available
+  if Gem::SpecFetcher.fetcher.respond_to? :spec_for_dependency
+    specs_and_sources, errors =
+      Gem::SpecFetcher.fetcher.spec_for_dependency(dep, true)
+  else # Default to the 1.x API
+    specs_and_sources, errors =
+      Gem::SpecFetcher.fetcher.fetch_with_errors(dep, all, true, false)
+  end
 
   if platform = Gem.platforms.last
     filtered = specs_and_sources.select { |s,| s.platform == platform }
@@ -57,10 +63,20 @@ def mirror_gem(destination, name, version = nil)
     exit 1
   end
 
+  # If we're using the Ruby 2.0 RubyGems API, call the Gem::Source's
+  # #uri method to get a URI object
+  if source_uri.respond_to? :uri
+    source = source_uri.uri
+  # If we're using the Ruby 1.9 RubyGems API, which returns a string for
+  # the source URI, convert it to a URI object
+  else
+    source = URI.parse(source_uri)
+  end
+
   file   = "#{spec.full_name}.gem"
   output = "#{destination}/#{file}"
   unless File.exists? output
-    remote_path = URI.parse(source_uri) + "gems/#{file}"
+    remote_path = source + "gems/#{file}"
     gem = Gem::RemoteFetcher.fetcher.fetch_path remote_path.to_s
     File.open output, "wb" do |f| f.write gem end
 
