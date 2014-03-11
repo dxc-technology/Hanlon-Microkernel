@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 #
 # This class defines the set of network utilities that are used by the
-# Razor Microkernel Controller script
+# Occam Microkernel Controller script
 #
 #
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzNetworkUtils
 
     # used internally
@@ -134,14 +134,14 @@ module RazorMicrokernel
 
     end
 
-    def discover_rz_server_ip
+    def discover_ocm_server_ip
       discover_by_pxe or discover_by_dns or discover_by_dhcp
     end
 
     def discover_by_pxe
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
-        server_ip = contents.split.map { |x| $1 if x.match(/razor.ip=(.*)/)}.compact
+        server_ip = contents.split.map { |x| $1 if x.match(/occam.ip=(.*)/)}.compact
         if server_ip.size == 1
           return server_ip.join
         else
@@ -155,8 +155,8 @@ module RazorMicrokernel
     def discover_by_dns
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
-        server_name = contents.split.map { |x| $1 if x.match(/razor.server=(.*)/)}.compact
-        server_name = server_name.size == 1 ? server_name.join : 'razor'
+        server_name = contents.split.map { |x| $1 if x.match(/occam.server=(.*)/)}.compact
+        server_name = server_name.size == 1 ? server_name.join : 'occam'
 
         require 'socket'
         return TCPSocket.gethostbyname(server_name)[3..-1].first || false

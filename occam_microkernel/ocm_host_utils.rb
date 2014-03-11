@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 #
 # This class defines the set of host utilities that are used by the
-# Razor Microkernel Controller script
+# Occam Microkernel Controller script
 #
 #
 
 require 'rubygems'
 require 'facter'
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzHostUtils
 
     def initialize
@@ -16,7 +16,7 @@ module RazorMicrokernel
     end
 
     # runs the "hostname" command in order to set the systems hostname
-    # (used by the rz_mk_controller script when setting up the system
+    # (used by the ocm_mk_controller script when setting up the system
     # during the boot process). Also modifies the contents of the
     # /etc/hosts and /etc/hostname file so that the hostname is set
     # consistently there as well

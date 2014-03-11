@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# A simple "wrapper" script that is used to daemonize the rz_mk_control_server
+# A simple "wrapper" script that is used to daemonize the ocm_mk_control_server
 # script (which represents the primary Microkernel Controller)
 #
 #
@@ -16,4 +16,4 @@ options = {
   :log_output => true
 }
 
-Daemons.run('/usr/local/bin/rz_mk_control_server.rb', options)
+Daemons.run('/usr/local/bin/ocm_mk_control_server.rb', options)

@@ -1,104 +1,28 @@
-# The road forward for Razor
+## Project Occam-Microkernel
 
-During it's fairly short lifespan so far, Razor has shown that there
-is considerable demand for a policy-driven provisioning tool based on
-discovery of nodes. The thriving, and growing, community, and the fact
-that other tools are adopting Razor's approach are ample proof of
-that.
+This is part of [Project Occam][occam] - the Microkernel is the in-memory
+Linux instance used to discover the hardware details and initiate
+provisioning operations.
 
-Over the last year, we've also learned a lot about the community's
-needs and how Razor should evolve, and about the limitations of Razor
-that make evolution harder than it needs to be. This knowledge has
-brought us to the conclusion that Razor's community and future
-development are best served by a rewrite of the current code base. The
-rewrite will carry the important and unique features of Razor forward,
-such as node discovery via a Microkernel, provisioning based off
-tagging nodes and policy, and flexibility in controlling the
-provisioning process. It will also change the code base in a way that
-we feel makes Razor more supportable and maintainable.
+You can find more information about Occam in general, as well as ways to get
+help, over at the [Occam project on GitHub][occam].  That includes the
+contributing guide, and the official list of committers to the project.
 
-The rewrite will reach a state where the rewritten Razor is pretty
-much feature-equivalent with the current implementation by the end of
-August (puppetconf, really).
+[occam]: https://github.com/csc/occam
 
-Overview
 
-The cornerstones of the Razor rewrite are:
+## Project Description
 
- * it will be based on widely adopted and well-understood web
-technologies: it will be written entirely in Ruby using Sinatra as the
-web framework, Sequel as the ORM layer, and PostgreSQL as the
-database. Among other things, this makes it possible to use
-associations in the object model, and provide transactional guarantees
-around complex operations.
+This project contains the Ruby scripts/classes that are used to control the Occam Microkernel (and that interact with the Occam server) along with a set of scripts and files that are needed during the Microkernel boot and initialization proces. The files contained in this project are all bundled into the current version of the Occam Microkernel (v0.9.0.1). There are three primary services that are included in this project that are started up during the Microkernel boot process. Those services include:
 
- * tagging will be controlled by a simple query language; this makes
-it possible to assign tags using fairly complicated logical
-expressions using and, or, comparison operators, or even checks
-whether a fact is included in a fixed list (e.g., to associate a tag
-with a fixed list of MAC addresses)
-the current system of models will be greatly simplified, and models
-can be described entirely in metadata, without needing to write Ruby
-code (see below)
+1. The **Occam Microkernel Controller**, which is actually contained in the ocm_mk_control_server.rb file (which is, in turn, started up and controlled using the "Ruby Daemons" interface defined in the ocm_mk_controller.rb file)
+1. The **Occam Microkernel Web Server**, which can be found in the ocm_mk_web_server.rb file and which is used (by the Occam Microkernel Controller) to save configuration changes from the Occam Server to the 'local filesystem' (remember, everything is in memory). During this process of saving the configuration changes, the Microkernel Web Server will actually restart the Occam Microkernel instance (in order to force it to pick up the newly saved Microkernel configuration).
+1. The **Local TCE Mirror**, which is actually contained in the ocm_mk_tce_mirror.rb file and which is used to install a few extensions during the post-boot configuration process.
 
- * RESTful API's to query existing objects; command-oriented API to
-control the provisioning setup; authentication for all the API's
-(except for the server/node communication, which is pretty much
-impossible to secure); separate URL structures for the management and
-node/server API to make it easier to restrict those separately
+If the Occam Microkernel that is being built/used is a development kernel, a fifth service will also be started during the boot process (the **OpenSSH server daemon**). That service is not started in a production system in order to prevent unauthorized access to the underlying hardware through the Occam Microkernel (in fact, the openssh.tcz extension is not even installed on these production systems).
 
- * the Razor-specific microkernel functionality will be broken out
-more clearly from the underlying substrate, making it easier to
-experiment with alternative microkernels
+In addition, this project also includes a number of additional ruby files and configuration files that are used by these services, a list of gems that are installed dynamically each time that the Microkernel boots (under the opt/gems directory), a copy of the 'bootsync.sh' script (under the opt directory in this project), and the 'ocm_mk_init.rb' script itself (which is used by that bootsync.sh script to start the appropriate Ruby-based services during the Microkernel boot process).
 
- * the main microkernel will be based off RHEL/CentOS to provide an
-easy way for users to do hardware discovery with a kernel that is
-known and certified to work on their hardware
+Copies of the ruby scripts that appear at the top-level of this project's directory structure can be found in the /usr/local/bin directory of the Microkernel. In addition, the files that appear in the occam_microkernel subdirectory of this project are all part of the OccamMicrokernel module, and those files are placed in the /usr/local/lib/ruby/1.8 directory in the Microkernel ISO.
 
- * since Razor controls the node during installation, broker handoff
-should be driven off the node, supported by stock broker scripts that
-ship with Razor
-
-Controlling installation
-
-Currently, installation is controlled by models, which consist of a
-state machine, file templates, and some helper code for those
-templates. The same functionality can be provided by a simpler
-approach: the only place where (server-side) state matters during
-installation is in determining how to respond to repeated reboot
-requests from the node - usually, the sequence is 'boot installler on
-the first boot after policy is bound, boot locally afterwards'.
-
-Everything else that happens during installation falls into three categories:
-
-* retrieve a file; the file is the result of interpolating a specific
-template (e.g., kickstart file, post install script etc.)
-* log a message and associate it with the node
-* report node-specific data (really only its IP address) back to the server
-
-All three of these are easily done on the server-side by a standard
-web application.
-
-An installer (i.e., what used to be called a model) then really
-consists of two ingredients: (1) a metadata description that contains
-things like name, os name and version, as well as instructions on how
-to respond to repeated boot requests (2) a number of ERB templates
-that the node can request during the installation process.
-
-This will make adding custom installers very easy, and allow for
-adding them entirely through the API.
-
-Status
-
-We've started a strawman of the reimplementation; most of the work has
-gone into the server side so far. The current state of affairs can be
-found on github:
-
-https://github.com/puppetlabs/razor-server
-https://github.com/puppetlabs/razor-el-mk
-
-We'd love to hear your feedback, and hope to see both lots of
-discussion and patches to continue to make Razor the best provisioning
-tool out there.
-
-David Lutterkert, and Daniel Pittman
+It should be noted that this project also includes a set of scripts that are meant to be used to build a new instance of the Microkernel ISO. Instructions for building a new ISO instance using these scripts can be found in this project's Wiki. There are also a number of extensions to the standard Tiny Core Linux ISO that are bundled into the Occam Microkernel which are not included in this project. These extensions (and the other dependencies that are needed within the Occam Microkernel ISO that are not part of this project) are all downloaded dynamically when the Microkernel ISO is being built. Once again, instructions for building your own (custom) Microkernel ISO can be found in the project's Wiki.

@@ -16,20 +16,20 @@ require 'facter'
 require 'json'
 require 'open-uri'
 require 'singleton'
-require 'razor_microkernel/logging'
-require 'razor_microkernel/rz_mk_configuration_manager'
+require 'occam_microkernel/logging'
+require 'occam_microkernel/ocm_mk_configuration_manager'
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Razor Microkernel Controller)
-RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+# with the other log messages for the Occam Microkernel Controller)
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkKernelModuleManager
     # make this a singleton object (there should only be one in the system)
     include Singleton
-    # and include the RazorMicrokernel::Logging mixin (which enables logging)
-    include RazorMicrokernel::Logging
+    # and include the OccamMicrokernel::Logging mixin (which enables logging)
+    include OccamMicrokernel::Logging
 
     # define a few constants that will be used later on
     PATHSEP = File::SEPARATOR
@@ -40,7 +40,7 @@ module RazorMicrokernel
 
     def load_kernel_modules
       # get a reference to the Configuration Manager instance (a singleton)
-      config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
+      config_manager = (OccamMicrokernel::RzMkConfigurationManager).instance
 
       # if the config file exists and if the kmod_install_list_uri property exists in the configuration,
       # and if that property actually is a URI, then continue

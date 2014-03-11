@@ -1,5 +1,5 @@
 # Gathers hardware-related facts from the underlying system (used by the
-# rz_mk_registration_manager to gather these sorts of facts in order to
+# ocm_mk_registration_manager to gather these sorts of facts in order to
 # supplement the facts gathered using Facter during the node registration
 # process)
 #
@@ -7,20 +7,20 @@
 
 require 'singleton'
 require 'json'
-require 'razor_microkernel/logging'
+require 'occam_microkernel/logging'
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Razor Microkernel Controller)
-RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+# with the other log messages for the Occam Microkernel Controller)
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkHardwareFacter
 
     include Singleton
 
-    # include the RazorMicrokernel::Logging mixin (which enables logging)
-    include RazorMicrokernel::Logging
+    # include the OccamMicrokernel::Logging mixin (which enables logging)
+    include OccamMicrokernel::Logging
 
     # used by the RzMkRegistrationManager class to add facts extracted from a set of
     # "lscpu" and "lshw" system calls to the input "facts_map" (which is assumed to
@@ -29,7 +29,7 @@ module RazorMicrokernel
     def add_facts_to_map!(facts_map, mk_fct_excl_pattern)
       logger.debug("before...#{facts_map.inspect}")
       # check type of virtualization used (if any); must disable 'dmi' for KVM
-      # virtual machines (see Razor issue #297)
+      # virtual machines (see Occam issue #297)
       virtual_type = Facter.virtual
       lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
       begin

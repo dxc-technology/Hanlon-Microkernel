@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# this is rz_mk_control_server.rb
+# this is ocm_mk_control_server.rb
 # it starts up a WEBrick server that can be used to control the Microkernel
 # (commands to the Microkernel are invoked using Servlets running in the
 # WEBrick instance)
@@ -12,8 +12,8 @@ require 'net/http'
 require 'cgi'
 require 'json'
 require 'webrick'
-require 'razor_microkernel/rz_mk_configuration_manager'
-require 'razor_microkernel/logging'
+require 'occam_microkernel/ocm_mk_configuration_manager'
+require 'occam_microkernel/logging'
 
 # include the WEBrick mixin (makes this into a WEBrick server instance)
 include WEBrick
@@ -25,16 +25,16 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
 
   def do_POST(req, res)
     # get a reference to the Configuration Manager instance (a singleton)
-    config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
+    config_manager = (OccamMicrokernel::RzMkConfigurationManager).instance
 
-    # get the Razor URI from the request body; it should be included in
+    # get the Occam URI from the request body; it should be included in
     # the body in the form of a string that looks something like the following:
     #
-    #     "razorURI=<razor_uri_val>"
+    #     "occamURI=<occam_uri_val>"
     #
-    # where the razor_uri_val is a CGI-escaped version of the URI used by the
-    # Razor server.  The "Registration Path" (from the uri_map, above) is added
-    # to this Razor URI value in order to form the "registration_uri"
+    # where the occam_uri_val is a CGI-escaped version of the URI used by the
+    # Occam server.  The "Registration Path" (from the uri_map, above) is added
+    # to this Occam URI value in order to form the "registration_uri"
     json_string = CGI.unescape(req.body)
     logger.debug "in POST; configuration received...#{json_string}"
     # Note: have to truncate the CGI escaped body to get rid of the trailing '='
@@ -51,7 +51,7 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
       config_manager.save_mk_config(config_map)
       logger.level = config_manager.mk_log_level
       logger.info "Config changed, restart the controller..."
-      %x[sudo /usr/local/bin/rz_mk_controller.rb restart]
+      %x[sudo /usr/local/bin/ocm_mk_controller.rb restart]
       return_msg = 'New configuration saved, Microkernel Controller restarted'
       resp.content_type = 'text/plain'
       resp.content_length = return_msg.length
@@ -70,12 +70,12 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
 
 end
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
-RZ_MK_LOG_PATH = "/var/log/rz_mk_web_server.log"
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_web_server.log"
 
-# include the RazorMicrokernel::Logging mixin (which enables logging)
-include RazorMicrokernel::Logging
+# include the OccamMicrokernel::Logging mixin (which enables logging)
+include OccamMicrokernel::Logging
 
 # Now, create an HTTP Server instance (and Daemonize it)
 

@@ -1,25 +1,25 @@
-# Manages the registration process (used by the rz_mk_control_server to
-# register node with the Razor server on request or when facts change)
+# Manages the registration process (used by the ocm_mk_control_server to
+# register node with the Occam server on request or when facts change)
 #
 #
 
 require 'rubygems'
 require 'facter'
 require 'yaml'
-require 'razor_microkernel/rz_mk_fact_manager'
-require 'razor_microkernel/rz_mk_hardware_facter'
-require 'razor_microkernel/logging'
+require 'occam_microkernel/ocm_mk_fact_manager'
+require 'occam_microkernel/ocm_mk_hardware_facter'
+require 'occam_microkernel/logging'
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Razor Microkernel Controller)
-RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+# with the other log messages for the Occam Microkernel Controller)
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkRegistrationManager
 
-    # include the RazorMicrokernel::Logging mixin (which enables logging)
-    include RazorMicrokernel::Logging
+    # include the OccamMicrokernel::Logging mixin (which enables logging)
+    include OccamMicrokernel::Logging
 
     attr_accessor :registration_uri
 
@@ -60,7 +60,7 @@ module RazorMicrokernel
         json_hash = { }
         # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
         # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
-        # containing "hw_id" information to the Razor server and the Razor server uses that
+        # containing "hw_id" information to the Occam server and the Occam server uses that
         # information to construct the UUID that the system will be (or is) mapped to.
         # The array passed through this "hw_id" key in the JSON hash is constructed by the
         # FactManager.  Currently, it includes a list of all of the network interfaces that

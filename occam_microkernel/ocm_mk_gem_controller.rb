@@ -8,7 +8,7 @@
 require 'net/http'
 require 'singleton'
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkGemController
     # make this class a singleton class (only want one)
     include Singleton
