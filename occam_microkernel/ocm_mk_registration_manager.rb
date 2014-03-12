@@ -1,25 +1,25 @@
-# Manages the registration process (used by the rz_mk_control_server to
-# register node with the Razor server on request or when facts change)
+# Manages the registration process (used by the ocm_mk_control_server to
+# register node with the Occam server on request or when facts change)
 #
 #
 
 require 'rubygems'
 require 'facter'
 require 'yaml'
-require 'razor_microkernel/rz_mk_fact_manager'
-require 'razor_microkernel/rz_mk_hardware_facter'
-require 'razor_microkernel/logging'
+require 'occam_microkernel/ocm_mk_fact_manager'
+require 'occam_microkernel/ocm_mk_hardware_facter'
+require 'occam_microkernel/logging'
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Razor Microkernel Controller)
-RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+# with the other log messages for the Occam Microkernel Controller)
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkRegistrationManager
 
-    # include the RazorMicrokernel::Logging mixin (which enables logging)
-    include RazorMicrokernel::Logging
+    # include the OccamMicrokernel::Logging mixin (which enables logging)
+    include OccamMicrokernel::Logging
 
     attr_accessor :registration_uri
 
@@ -60,20 +60,25 @@ module RazorMicrokernel
         json_hash = { }
         # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
         # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
-        # containing "hw_id" information to the Razor server and the Razor server uses that
+        # containing "hw_id" information to the Occam server and the Occam server uses that
         # information to construct the UUID that the system will be (or is) mapped to.
         # The array passed through this "hw_id" key in the JSON hash is constructed by the
         # FactManager.  Currently, it includes a list of all of the network interfaces that
         # have names that look like 'eth[0-9]+', but that may change down the line.
-        json_hash["@hw_id"] = @fact_manager.get_hw_id_array
-        json_hash["@attributes_hash"] = fact_map
-        json_hash["@last_state"] = last_state
+        json_hash["hw_id"] = @fact_manager.get_hw_id_array
+        json_hash["attributes_hash"] = fact_map
+        json_hash["last_state"] = last_state
         json_string = JSON.generate(json_hash)
         # and send that string to the service listening at the "Registration URI"
         # (this will register the node with the server at that URI)
         uri = URI @registration_uri
+        header = {'Content-Type' => 'text/json'}
+        http = Net::HTTP.new(uri.host, uri.port)
         logger.debug "Sending new factMap to '" + uri.to_s + "' => " + json_string
-        response = Net::HTTP.post_form(uri, 'json_hash' => json_string)
+        request = Net::HTTP::Post.new(uri.request_uri, header)
+        request.body = json_string
+        # Send the request
+        response = http.request(request)
         # if we were successful in registering with the server, save the current
         # facts as the previous facts
         case response

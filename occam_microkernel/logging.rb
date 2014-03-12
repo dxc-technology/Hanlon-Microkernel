@@ -1,27 +1,27 @@
 
 require "logger"
-require "razor_microkernel/rz_mk_configuration_manager"
+require "occam_microkernel/ocm_mk_configuration_manager"
 
 LOG_LEVEL = Logger::DEBUG
 LOG_MAX_SIZE = 2048576
 LOG_MAX_FILES = 10
 
-# Module used for all logging. Needs to be included in any Razor Microkernel class that needs logging.
+# Module used for all logging. Needs to be included in any Occam Microkernel class that needs logging.
 # Uses Ruby Logger but overrides and instantiates one for each object that mixes in this module.
 # It auto prefixes each log message with classname and method from which it was called using progname
-module RazorMicrokernel::Logging
+module OccamMicrokernel::Logging
 
   # [Hash] holds the loggers for each instance that includes it
   @loggers = {}
 
   # grab a reference to the configuration manager, use it to determine what level to log at (below)
-  @config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
+  @config_manager = (OccamMicrokernel::RzMkConfigurationManager).instance
 
   # Returns the logger object specific to the instance that called it
   def logger
     classname = self.class.name
     methodname = caller[0][/`([^']*)'/, 1]
-    @logger ||= RazorMicrokernel::Logging.logger_for(classname, methodname)
+    @logger ||= OccamMicrokernel::Logging.logger_for(classname, methodname)
     @logger.progname = "#{classname}\##{methodname}"
     @logger
   end
@@ -30,10 +30,10 @@ module RazorMicrokernel::Logging
   class << self
 
     def get_log_path
-      if !RZ_MK_LOG_PATH
-        "/var/log/rz_mk_common.log"
+      if !OCM_MK_LOG_PATH
+        "/var/log/ocm_mk_common.log"
       end
-      RZ_MK_LOG_PATH
+      OCM_MK_LOG_PATH
     end
 
     def get_log_level

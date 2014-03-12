@@ -49,9 +49,9 @@ cd tmp
 cp -rp ../extract/* .
 
 # unpack the dependency files that were extracted earlier (these files were
-# built from the current contents of the Razor-Microkernel project using the
+# built from the current contents of the Occam-Microkernel project using the
 # build-dependency-files.sh shell script, which is part of that same project)
-for file in mk-open-vm-tools.tar.gz razor-microkernel-overlay.tar.gz ssh-setup-files.tar.gz; do
+for file in mk-open-vm-tools.tar.gz occam-microkernel-overlay.tar.gz ssh-setup-files.tar.gz; do
   # all of these files may not exist for all Microkernels, so only try to unpack
   # the files that do exist
   if [ -r "../dependencies/${file}" ]; then

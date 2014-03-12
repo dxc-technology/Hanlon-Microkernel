@@ -7,7 +7,7 @@ require 'facter'
 require 'facter/util/ip'
 require 'yaml'
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkFactManager
 
     attr_accessor :prev_facts_filename

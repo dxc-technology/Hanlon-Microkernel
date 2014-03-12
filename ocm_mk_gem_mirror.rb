@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # This is the gem server, which needs to be able to start before we've installed
-# any gems. As such, we can't use any razor code here, as it tries to include JSON
+# any gems. As such, we can't use any occam code here, as it tries to include JSON
 
 require 'rubygems'
 require 'yaml'
@@ -13,8 +13,8 @@ require 'webrick/httpstatus'
 # include the WEBrick mixin (makes this into a WEBrick server instance)
 include WEBrick
 
-# Logging - can't use razor logging here, see above
-log_file = File.open "/var/log/rz_mk_gem_mirror.log", 'a+'
+# Logging - can't use occam logging here, see above
+log_file = File.open "/var/log/ocm_mk_gem_mirror.log", 'a+'
 log = WEBrick::Log.new log_file
 
 access_log = [

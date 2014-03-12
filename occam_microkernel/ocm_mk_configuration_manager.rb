@@ -6,7 +6,7 @@
 require 'yaml'
 require 'singleton'
 
-module RazorMicrokernel
+module OccamMicrokernel
   class RzMkConfigurationManager
     # make this class a singleton class (only want one)
     include Singleton
@@ -19,8 +19,8 @@ module RazorMicrokernel
     attr_reader :mk_checkin_skew
     attr_reader :mk_uri
     attr_reader :mk_fact_excl_pattern
-    attr_reader :mk_register_path # : /project_razor/api/node/register
-    attr_reader :mk_checkin_path # checkin: /project_razor/api/node/checkin
+    attr_reader :mk_register_path # : /project_occam/api/v1/node/register
+    attr_reader :mk_checkin_path # checkin: /project_occam/api/v1/node/checkin
     # mk_log_level should be 'Logger::FATAL', 'Logger::ERROR', 'Logger::WARN',
     # 'Logger::INFO', or 'Logger::DEBUG' (default is 'Logger::ERROR')
     attr_reader :mk_log_level

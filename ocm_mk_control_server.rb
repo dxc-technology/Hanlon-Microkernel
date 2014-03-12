@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
-# this is rz_mk_control_server.rb script
+# this is ocm_mk_control_server.rb script
 #
 # it is the Microkernel Controller script, and is started as a daemon process using
-# the associated rz_mk_controller.rb script
+# the associated ocm_mk_controller.rb script
 #
 #
 
@@ -14,12 +14,12 @@ require 'open-uri'
 require 'json'
 require 'yaml'
 require 'facter'
-require 'razor_microkernel/logging'
-require 'razor_microkernel/rz_mk_registration_manager'
-require 'razor_microkernel/rz_mk_fact_manager'
-require 'razor_microkernel/rz_mk_configuration_manager'
-require 'razor_microkernel/rz_mk_kernel_module_manager'
-require 'razor_microkernel/rz_mk_gem_controller'
+require 'occam_microkernel/logging'
+require 'occam_microkernel/ocm_mk_registration_manager'
+require 'occam_microkernel/ocm_mk_fact_manager'
+require 'occam_microkernel/ocm_mk_configuration_manager'
+require 'occam_microkernel/ocm_mk_kernel_module_manager'
+require 'occam_microkernel/ocm_mk_gem_controller'
 
 # load gems in the list available at #{mk_gemlist_uri} from the gem mirror
 # at #{mk_gem_mirror_uri} into the Microkernel (Note; only gems that do not
@@ -28,7 +28,7 @@ require 'razor_microkernel/rz_mk_gem_controller'
 # by this method)
 def load_gems(mk_gem_mirror_uri, mk_gemlist_uri)
   logger.debug("reloading gems from #{mk_gem_mirror_uri} using list at #{mk_gemlist_uri}")
-  gemController = (RazorMicrokernel::RzMkGemController).instance
+  gemController = (OccamMicrokernel::RzMkGemController).instance
   gemController.gemSource = mk_gem_mirror_uri
   gemController.gemListURI = mk_gemlist_uri
   gemController.installListedGems
@@ -58,7 +58,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
   return if !tce_mirror_uri || (tce_mirror_uri =~ URI::regexp).nil?
 
   # modify the /opt/tcemirror file (so that it uses the mirror given in the
-  # configuration we just received from the Razor server)
+  # configuration we just received from the Occam server)
   File.open('/opt/tcemirror', 'w') { |file|
     file.puts tce_mirror_uri
   }
@@ -98,7 +98,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
 
     # and load the kernel modules (if any), first get a reference to the Configuration
     # Manager instance (a singleton)
-    kernel_mod_manager = (RazorMicrokernel::RzMkKernelModuleManager).instance
+    kernel_mod_manager = (OccamMicrokernel::RzMkKernelModuleManager).instance
     # and then load the modules
     kernel_mod_manager.load_kernel_modules
 
@@ -136,19 +136,19 @@ def first_checkin_performed
   }
 end
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
-RZ_MK_LOG_PATH = "/var/log/rz_mk_controller.log"
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
 
-# include the RazorMicrokernel::Logging mixin (which enables logging)
-include RazorMicrokernel::Logging
+# include the OccamMicrokernel::Logging mixin (which enables logging)
+include OccamMicrokernel::Logging
 
 # get a reference to the Configuration Manager instance (a singleton)
-config_manager = (RazorMicrokernel::RzMkConfigurationManager).instance
+config_manager = (OccamMicrokernel::RzMkConfigurationManager).instance
 
 # setup the RzMkFactManager instance (we'll use this later, in our
 # RzMkRegistrationManager constructor)
-fact_manager = RazorMicrokernel::RzMkFactManager.new('/tmp/prev_facts.yaml')
+fact_manager = OccamMicrokernel::RzMkFactManager.new('/tmp/prev_facts.yaml')
 
 # and set the Registration Manager to nil (will update this, below)
 registration_manager = nil
@@ -164,17 +164,17 @@ if config_manager.config_file_exists? then
   # level that the Microkernel should use
   logger.level = config_manager.mk_log_level
 
-  # Next, grab the URI for the Razor Server
-  razor_uri = config_manager.mk_uri
+  # Next, grab the URI for the Occam Server
+  occam_uri = config_manager.mk_uri
 
   # add the "node register" entry from the configuration map to that URI
   # to get the registration URI
-  registration_uri = razor_uri + config_manager.mk_register_path
+  registration_uri = occam_uri + config_manager.mk_register_path
   logger.debug "registration_uri = #{registration_uri}"
 
   # and add the 'node checkin' entry from the configuration map to that URI
   # to get the checkin URI
-  checkin_uri = razor_uri + config_manager.mk_checkin_path
+  checkin_uri = occam_uri + config_manager.mk_checkin_path
   logger.debug "checkin_uri = #{checkin_uri}"
 
   # next, the time (in secs) to sleep between iterations of the main
@@ -185,14 +185,14 @@ if config_manager.config_file_exists? then
   # the main loop (below); a random number between zero and that amount of
   # time will be determined and used to ensure Microkernel instances are
   # offset from each other when it comes to tasks like reporting facts to
-  # the Razor server
+  # the Occam server
   checkin_skew = config_manager.mk_checkin_skew
 
   # this parameter defines which facts (by name) should be excluded from the
   # map that is reported during node registration
   exclude_pattern = config_manager.mk_fact_excl_pattern
   logger.debug "exclude_pattern = #{exclude_pattern}"
-  registration_manager = RazorMicrokernel::RzMkRegistrationManager.new(registration_uri,
+  registration_manager = OccamMicrokernel::RzMkRegistrationManager.new(registration_uri,
                                                                        exclude_pattern, fact_manager)
 
   # "load" the appropriate gems into the Microkernel
@@ -239,7 +239,7 @@ loop do
 
       # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
       # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
-      # containing "hw_id" information to the Razor server and the Razor server uses that
+      # containing "hw_id" information to the Occam server and the Occam server uses that
       # information to construct the UUID that the system will be (or is) mapped to.
       # The array passed through this "hw_id" key in the JSON hash is constructed by the
       # FactManager.  Currently, it includes a list of all of the network interfaces that
@@ -265,7 +265,7 @@ loop do
       # if error code is 0 ()indicating a successful checkin), then process the response
       if response_hash['errcode'] == 0 then
 
-        # get the command from the response hash (this is the action that the Razor
+        # get the command from the response hash (this is the action that the Occam
         # server would like the Microkernel Controller to take in response to the
         # checkin it just performed)
         command = response_hash['response']['command_name']

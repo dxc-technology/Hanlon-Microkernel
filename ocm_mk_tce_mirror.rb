@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# this is rz_mk_control_server.rb
+# this is ocm_mk_control_server.rb
 # it starts up a WEBrick server that can be used to control the Microkernel
 # (commands to the Microkernel are invoked using Servlets running in the
 # WEBrick instance)
@@ -14,7 +14,7 @@ require 'cgi'
 require 'json'
 require 'webrick'
 require 'webrick/httpstatus'
-require 'razor_microkernel/logging'
+require 'occam_microkernel/logging'
 
 # include the WEBrick mixin (makes this into a WEBrick server instance)
 include WEBrick
@@ -53,12 +53,12 @@ class KmodInstallListServlet < HTTPServlet::AbstractServlet
 
 end
 
-# set up a global variable that will be used in the RazorMicrokernel::Logging mixin
+# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
-RZ_MK_LOG_PATH = "/var/log/rz_mk_tce_mirror.log"
+OCM_MK_LOG_PATH = "/var/log/ocm_mk_tce_mirror.log"
 
-# include the RazorMicrokernel::Logging mixin (which enables logging)
-include RazorMicrokernel::Logging
+# include the OccamMicrokernel::Logging mixin (which enables logging)
+include OccamMicrokernel::Logging
 
 # Now, create an HTTP Server instance (and Daemonize it)
 
