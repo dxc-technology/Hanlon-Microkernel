@@ -165,18 +165,17 @@ fi
   TCL_ISO_URL="$MK_BUNDLE_TCL_ISO_URL"
 [ -z "$RUBY_GEMS_URL" -a -n "$MK_BUNDLE_RUBY_GEMS_URL" ] && 
   RUBY_GEMS_URL="$MK_BUNDLE_RUBY_GEMS_URL"
-[ -z "$OPEN_VM_TOOLS_URL" -a -n "$MK_BUNDLE_OPEN_VM_TOOLS_URL" ] && 
-  OPEN_VM_TOOLS_URL="$MK_BUNDLE_OPEN_VM_TOOLS_URL"
 [ -z "$GEM_SERVER_URI" -a -n "$MK_BUNDLE_GEM_SERVER_URI" ] && 
   GEM_SERVER_URI="$MK_BUNDLE_GEM_SERVER_URI"
 
 # Set to default anything still not specified, for which there is a reasonable
 # default-value
 [ -z "$BUNDLE_TYPE" ] && BUNDLE_TYPE='dev'
-[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
-[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
+[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/5.x/x86/tcz'
+[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='https://www.dropbox.com/sh/061p1i6ggjcdcul/emc8W5Ou3S/Core-5.2.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='http://downloads.puppetlabs.com/razor/open-vm-tools/mk-open-vm-tools.tar.gz'
+[ -z "$IPMI_MODS_URL" ] && IPMI_MODS_URL='https://www.dropbox.com/s/96ba5z2iewi3z5r/mk-ipmi-mods.tar.gz'
+[ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://www.dropbox.com/sh/061p1i6ggjcdcul/xVslxVu_TJ/mk-custom-busybox.tar.gz'
 [ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
 
@@ -269,20 +268,20 @@ fi
 
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
-mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+mkdir -p tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
   if [ ${file##*.} != "deb" ]; then
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.info
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.list
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.dep
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.info
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.list
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.dep
   else
     PKGNAME=${file%.*}
     echo "Installing .deb package for mirroring: $PKGNAME"
     ./bin/download-deb-pkg --list-file "./tmp/" --mirror-url "$DEB_MIRROR_URL" --output-dir ./tmp/ $PKGNAME
-    ./bin/deb2tcz.sh ./tmp/$PKGNAME.deb tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+    ./bin/deb2tcz.sh ./tmp/$PKGNAME.deb tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$PKGNAME.tcz
 
   fi
 done
@@ -361,15 +360,16 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #   1. ssh-setup-files.tar.gz -> contains the setup files needed for the
 #         SSH/SSL (used for development access to the Microkernel); if
 #         the '--build-prod-image' flag is set, then this file will be skipped
-#   2. mk-open-vm-tools.tar.gz -> contains the files needed for the
-#         'open_vm_tools.tcz' extension
-#   3. the etc/passwd and etc/shadow files from the Occam-Microkernel project
-#         (note; if this is a production system then the etc/shadow-nologin
-#         file will be copied over instead of the etc/shadow file (to block
-#         access to the Microkernel from the console)
+#   2. mk-ipmi-mods.tar.gz -> contains the kernel modules needed to access
+#         the BMC associated with the node (if any) and report back facts
+#         from the BMC to the Occam server
+#   3. mk-custom-busybox.tar.gz -> contains the custom version of busybox that
+#         supports additional fields in the DHCP response handling process
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
-file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
-wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
+file=`echo $IPMI_MODS_URL | awk -F/ '{print $NF}'`
+wget $WGET_V -P tmp-build-dir/build_dir/dependencies $IPMI_MODS_URL
+file=`echo $PRIV_BUSYBOX_URL | awk -F/ '{print $NF}'`
+wget $WGET_V -P tmp-build-dir/build_dir/dependencies $PRIV_BUSYBOX_URL
 
 # get the latest util-linux.tcz, then extract the two executables that
 # we need from that file (using the unsquashfs command)

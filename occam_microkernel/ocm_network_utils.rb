@@ -166,7 +166,7 @@ module OccamMicrokernel
     end
 
     def discover_by_dhcp
-      udhcp_file = "/tmp/nextServerIP.addr"
+      udhcp_file = "/tmp/occamServerIP.addr"
       begin
         contents = File.open(udhcp_file, 'r') { |f| f.read }
         return contents.strip
