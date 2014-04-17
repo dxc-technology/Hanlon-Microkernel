@@ -17,31 +17,35 @@ case "$1" in
 		/sbin/ifconfig $interface $ip $BROADCAST $NETMASK
 
 		if [ -n "$router" ] ; then
-			echo "deleting routers"
-			while route del default gw 0.0.0.0 dev $interface ; do
-				:
-			done
+                    echo "deleting routers"
+                    while route del default gw 0.0.0.0 dev $interface ; do
+                        :
+                    done
 
-			metric=0
-			for i in $router ; do
-				route add default gw $i dev $interface metric $((metric++))
-			done
-		fi
+                    # if the "$set_def_gw" variable is still set, then add the
+                    # default gateway(s) defined in the DHCP request
+                    if [ -n "$set_def_gw" ] ; then
+                        metric=0
+                        for i in $router ; do
+                            route add default gw $i dev $interface metric $((metric++))
+                        done
+                    fi
+                fi
 
-		echo -n > $RESOLV_CONF
-		[ -n "$domain" ] && echo search $domain >> $RESOLV_CONF
-		for i in $dns ; do
-			echo adding dns $i
-			echo nameserver $i >> $RESOLV_CONF
-		done
+                echo -n > $RESOLV_CONF
+                [ -n "$domain" ] && echo search $domain >> $RESOLV_CONF
+                for i in $dns ; do
+                    echo adding dns $i
+                    echo nameserver $i >> $RESOLV_CONF
+                done
  
-                # get the IP address from the "occam-server" DHCP parameter
+                # get the IP address from the "occam_server" DHCP parameter
                 # (if it's set) or the "next-server" (siaddr) DHCP parameter
-                # (if the "occam-server" parameter is not set but the
-                # "next-server" parameter is set)
-                if [ -n "$occam-server" ] ; then
+                # (if the "occam_server" parameter is not set but the
+                # "next_server" parameter is set)
+                if [ -n "$occam_server" ] ; then
                         # added by tjmcs, 10-Apr-2014
-                        echo $occam-server > /tmp/occamServerIP.addr
+                        echo $occam_server > /tmp/occamServerIP.addr
                 else
                     if [ -n "$siaddr" ] ; then
                         # added by tjmcs, 28-Feb-2012
@@ -50,14 +54,15 @@ case "$1" in
                 fi
  
                 # and extract a couple of other parameters from the DHCP response
-                # if they were set (the "occam-port" and "occam-base-uri" parameters)
-                if [ -n "$occam-port" ] ; then
+                # if they were set (the "occam_port" and "occam_base_uri" parameters)
+                if [ -n "$occam_port" ] ; then
                     # added by tjmcs, 10-Apr-2014
-                    echo $occam-port > /tmp/occamServerPort.addr
+                    echo $occam_port > /tmp/occamServerPort.addr
                 fi
-                if [ -n "$occam-base-uri" ] ; then
-                # added by tjmcs, 10-Apr-2014
-                echo $occam-base-uri > /tmp/occamServerBaseUri.addr
+                if [ -n "$occam_base_uri" ] ; then
+                    # added by tjmcs, 10-Apr-2014
+                    echo $occam_base_uri > /tmp/occamServerBaseUri.addr
+                fi
 		;;
 esac
 

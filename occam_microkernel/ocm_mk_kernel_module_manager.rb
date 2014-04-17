@@ -120,7 +120,7 @@ module OccamMicrokernel
           # if the module is a module from the open_vm_tools.tcz extension, then skip
           # installing it unless we are in a VMware-based virtual environment
           next unless !OPEN_VM_TOOLS_MODS.include?(module_name) ||
-              (Facter.is_virtual && Facter.virtual == 'vmware')
+              (Facter.value('is_virtual') && Facter.value('virtual') == 'vmware')
 
           # if we've gotten this far, then it's safe to just install the module
           logger.debug "Installing module: #{name_plus_path}"

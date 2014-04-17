@@ -30,7 +30,7 @@ module OccamMicrokernel
       logger.debug("before...#{facts_map.inspect}")
       # check type of virtualization used (if any); must disable 'dmi' for KVM
       # virtual machines (see Occam issue #297)
-      virtual_type = Facter.virtual
+      virtual_type = Facter.value('virtual')
       lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
       begin
         # add the facts that result from running the "lscpu" command

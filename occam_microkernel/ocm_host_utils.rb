@@ -12,7 +12,7 @@ module OccamMicrokernel
   class RzHostUtils
 
     def initialize
-      @host_id = 'mk' + Facter.macaddress_eth0.gsub(':','')
+      @host_id = 'mk' + Facter.value('macaddress_eth0').gsub(':','')
     end
 
     # runs the "hostname" command in order to set the systems hostname

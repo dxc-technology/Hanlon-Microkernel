@@ -8,7 +8,7 @@ ruby.tcz
 lshw.deb
 libssl-0.9.8.tcz
 firmware-bnx2.tcz
-ipmitool.deb
-openipmi.deb
-freeipmi.deb
-open-vm-tools.deb
+libgpg-error.tcz
+libgcrypt.tcz
+popt.tcz
+readline.tcz
