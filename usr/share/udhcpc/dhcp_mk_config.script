@@ -44,8 +44,8 @@ case "$1" in
                 # (if the "occam_server" parameter is not set but the
                 # "next_server" parameter is set)
                 if [ -n "$occam_server" ] ; then
-                        # added by tjmcs, 10-Apr-2014
-                        echo $occam_server > /tmp/occamServerIP.addr
+                    # added by tjmcs, 10-Apr-2014
+                    echo $occam_server > /tmp/occamServerIP.addr
                 else
                     if [ -n "$siaddr" ] ; then
                         # added by tjmcs, 28-Feb-2012

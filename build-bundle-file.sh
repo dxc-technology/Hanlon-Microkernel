@@ -177,8 +177,7 @@ fi
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
 [ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://www.dropbox.com/s/e4bgt1hdgtt8vlb/mk-open-vm-tools.tar.gz'
-[ -z "$IPMI_MODS_URL" ] && IPMI_MODS_URL='https://www.dropbox.com/s/96ba5z2iewi3z5r/mk-ipmi-mods.tar.gz'
-[ -z "$IPMI_TOOLS_URL" ] && IPMI_TOOLS_URL='https://www.dropbox.com/s/wi7ihq4cs2tbfh7/mk-ipmi-extensions.tar.gz'
+[ -z "$IPMI_TOOLS_URL" ] && IPMI_TOOLS_URL='https://www.dropbox.com/s/r5chqs4qftqao8y/mk-ipmi-mods-and-tools.tar.gz'
 [ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://www.dropbox.com/s/2b8oonqaz5ksxb4/mk-custom-busybox.tar.gz'
 [ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
@@ -368,18 +367,14 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #         the '--build-prod-image' flag is set, then this file will be skipped
 #   2. mk-open-vm-tools.tar.gz -> contains the files needed for the
 #         'open_vm_tools.tcz' extension
-#   3. mk-ipmi-mods.tar.gz -> contains the kernel modules necessary to
-#         access the BMC associated with a node (if any)
-#   4. mk-ipmi-extensions.tar.gz -> contains the tools needed to access
-#         the BMC associated with the node (if any) and report back facts
-#         from the BMC to the Occam server
+#   4. mk-ipmi-mods-and-tools.tar.gz -> contains the kernel modules and 
+#         tools needed to access the BMC associated with the node (if any)
+#         and report back facts from the BMC to the Occam server
 #   5. mk-custom-busybox.tar.gz -> contains the custom version of busybox that
 #         supports additional fields in the DHCP response handling process
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
 file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
 wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
-file=`echo $IPMI_MODS_URL | awk -F/ '{print $NF}'`
-wget $WGET_V -P tmp-build-dir/build_dir/dependencies $IPMI_MODS_URL
 file=`echo $IPMI_TOOLS_URL | awk -F/ '{print $NF}'`
 wget $WGET_V -P tmp-build-dir/build_dir/dependencies $IPMI_TOOLS_URL
 file=`echo $PRIV_BUSYBOX_URL | awk -F/ '{print $NF}'`
