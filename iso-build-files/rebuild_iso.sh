@@ -19,7 +19,7 @@ case $# in
         echo "USAGE:  `echo $0 | awk -F'/' '{print $(NF)}' -` [VERSION]"
         echo "  where VERSION will override the version number of the ISO file from git"
         echo "  (it will be transformed into a filename that looks like:"
-        echo '        ocm_mk_dev-image_${ISO_VERSION}.iso'
+        echo '        hnl_mk_dev-image_${ISO_VERSION}.iso'
         exit 1
 esac
 
@@ -56,7 +56,7 @@ if ! busybox true; then
     exit 1
 fi
 
-ISO_NAME=ocm_mk_dev-image.${ISO_VERSION}.iso
+ISO_NAME=hnl_mk_dev-image.${ISO_VERSION}.iso
 DIR_NAME="${PWD}"
 set -x
 # build the YAML file in the Microkernel's filesystem that will be used to
@@ -86,12 +86,12 @@ cd ..
 # compress the file and copy it to the correct location for building the ISO
 advdef -z4 core.gz
 cp -p core.gz newiso/boot/
-# build the YAML file needed for use in Occam, place it into the root of the
+# build the YAML file needed for use in Hanlon, place it into the root of the
 # ISO filesystem
 ./build_iso_yaml.rb newiso ${ISO_VERSION} boot/vmlinuz boot/core.gz
 
 # since this is multi-line, easier to build it here
-preparer="Computer Sciences Corporation <csc-occam@googlegroups.com>
+preparer="Computer Sciences Corporation <csc-hanlon@googlegroups.com>
 http://csc.com/solutions/next-generation-provisioning/
 Built on [$(uname -a)]
 Built at [$(date +'%Y-%m-%d %H:%M:%S')]
@@ -102,8 +102,8 @@ Built by [$(whoami)@$(hostname -f)]"
     -no-emul-boot -boot-load-size 4 -boot-info-table            \
     -b boot/isolinux/isolinux.bin                               \
     -c boot/isolinux/boot.cat                                   \
-    -A 'Occam Microkernel' -sysid 'LINUX'                       \
+    -A 'Hanlon Microkernel' -sysid 'LINUX'                       \
     -p "${preparer:0:128}"                                      \
-    -V "Occam MK ${ISO_VERSION:0:22}"                           \
+    -V "Hanlon MK ${ISO_VERSION:0:22}"                           \
     -copyright 'LICENSE'                                        \
     -o "${ISO_NAME}" newiso

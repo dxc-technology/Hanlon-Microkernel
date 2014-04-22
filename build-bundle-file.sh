@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 # Used to build the bundle file needed to build a new version of the
-# Occam Microkernel ISO (from the contents of the Occam Microkernel
+# Hanlon Microkernel ISO (from the contents of the Hanlon Microkernel
 # project and it's dependencies.  The file built by this script can
 # be copied over to another directory (on another machine?) and unpacked.
 # Once it has been unpacked, running the 'build_initial_directories.sh'
 # script in that directory, followed by the 'rebuild_iso.sh' script,
 # will result in a new ISO built from the current state of the this
-# (Occam-Microkernel) project.
+# (Hanlon-Microkernel) project.
 #
 # Note:  the bundle file does not creaate a subdirectory, so a new, clean
 #    directory should be used when unpacking the bundle file to build a
@@ -22,7 +22,7 @@ cat << EOF
 Usage: $0 OPTIONS
 
 This script builds a gzipped tarfile containing all of the files necessary to
-build an instance of the Occam Microkernel ISO.
+build an instance of the Hanlon Microkernel ISO.
 
 OPTIONS:
    -h, --help                 print usage for this command
@@ -221,35 +221,35 @@ mkdir -p tmp-deb
 # the files/tools needed to build the Microkernel ISO)
 cp -p iso-build-files/* tmp-build-dir/build_dir
 if [ $BUNDLE_TYPE = 'prod' ]; then
-  sed -i 's/ISO_NAME=ocm_mk_dev-image/ISO_NAME=ocm_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
+  sed -i 's/ISO_NAME=hnl_mk_dev-image/ISO_NAME=hnl_mk_prod-image/' tmp-build-dir/build_dir/rebuild_iso.sh
 elif [ $BUNDLE_TYPE = 'debug' ]; then
-  sed -i 's/ISO_NAME=ocm_mk_dev-image/ISO_NAME=ocm_mk_debug-image/' tmp-build-dir/build_dir/rebuild_iso.sh
+  sed -i 's/ISO_NAME=hnl_mk_dev-image/ISO_NAME=hnl_mk_debug-image/' tmp-build-dir/build_dir/rebuild_iso.sh
 fi
 
 # create a copy of the modifications to the DHCP client configuration that
-# are needed for the Occam Microkernel Controller to find the appropriate
-# Occam server for it's first checkin
+# are needed for the Hanlon Microkernel Controller to find the appropriate
+# Hanlon server for it's first checkin
 mkdir -p tmp-build-dir/etc/init.d
 cp -p etc/init.d/dhcp.sh tmp-build-dir/etc/init.d
 mkdir -p tmp-build-dir/usr/share/udhcpc
 cp -p usr/share/udhcpc/dhcp_mk_config.script tmp-build-dir/usr/share/udhcpc
 
 # create copies of the files from this project that will be placed
-# into the /usr/local/bin directory in the Occam Microkernel ISO
+# into the /usr/local/bin directory in the Hanlon Microkernel ISO
 mkdir -p tmp-build-dir/usr/local/bin
-cp -p ocm_mk_*.rb tmp-build-dir/usr/local/bin
+cp -p hnl_mk_*.rb tmp-build-dir/usr/local/bin
 
 # create copies of the files from this project that will be placed
-# into the /usr/local/lib/ruby/1.8/occam_microkernel directory in the Occam
+# into the /usr/local/lib/ruby/1.8/hanlon_microkernel directory in the Hanlon
 # Microkernel ISO
-mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/occam_microkernel
-cp -p occam_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/occam_microkernel
+mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/hanlon_microkernel
+cp -p hanlon_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/hanlon_microkernel
 
 # create a copy of the files from this project that will be placed into the
-# /opt directory in the Occam Microkernel ISO; as part of this process will
+# /opt directory in the Hanlon Microkernel ISO; as part of this process will
 # download the latest version of the gems in the 'gem.list' file into the
 # appropriate directory to use in the build process (rather than including
-# fixed versions of those gems as part of the Occam-Microkernel project)
+# fixed versions of those gems as part of the Hanlon-Microkernel project)
 mkdir -p tmp-build-dir/opt
 cp -t tmp-build-dir/opt -p opt/boot*.sh opt/load-scsi-kernel-mods.sh
 chmod +rx tmp-build-dir/opt/boot*.sh tmp-build-dir/opt/load-scsi-kernel-mods.sh
@@ -259,7 +259,7 @@ chmod +rx tmp-build-dir/opt/boot*.sh tmp-build-dir/opt/load-scsi-kernel-mods.sh
 # Add GemRC file to the ISO to use the mirror
 cp -p opt/gems/gem.list tmp-build-dir/tmp/gem-mirror/gems/gem.list
 mkdir -p tmp-build-dir/root
-cp ocm_mk_gemrc.yaml tmp-build-dir/root/.gemrc
+cp hnl_mk_gemrc.yaml tmp-build-dir/root/.gemrc
 
 # Download the .deb package list if necessary
 if [ ! -z "`cat "$MIRROR_LIST" "$BUILTIN_LIST" | grep .deb$`" ]; then
@@ -327,7 +327,7 @@ wget $WGET_V -P tmp-build-dir/opt $RUBY_GEMS_URL
 
 # copy over a couple of initial configuration files that will be included in the
 # /tmp and /etc directories of the Microkernel instance (the first two control the
-# initial behavior of the Occam Microkernel Controller, the third disables automatic
+# initial behavior of the Hanlon Microkernel Controller, the third disables automatic
 # login of the tc user when the Microkernel finishes booting)
 cp -p tmp/first_checkin.yaml tmp-build-dir/tmp
 if [ $BUNDLE_TYPE = 'debug' ]
@@ -369,7 +369,7 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #         'open_vm_tools.tcz' extension
 #   4. mk-ipmi-mods-and-tools.tar.gz -> contains the kernel modules and 
 #         tools needed to access the BMC associated with the node (if any)
-#         and report back facts from the BMC to the Occam server
+#         and report back facts from the BMC to the Hanlon server
 #   5. mk-custom-busybox.tar.gz -> contains the custom version of busybox that
 #         supports additional fields in the DHCP response handling process
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
@@ -453,23 +453,23 @@ echo "ISO_VERSION='${gitversion}'" > tmp-build-dir/build_dir/gitversion.sh
 # ensure the copyright and license content is added to the image
 cp COPYING LICENSE tmp-build-dir/build_dir/
 
-# create a gzipped tarfile containing all of the files from the Occam-Microkernel
+# create a gzipped tarfile containing all of the files from the Hanlon-Microkernel
 # project that we just copied over, along with the files that were downloaded from
 # the network for the gems and TCL extensions; place this gzipped tarfile into
 # a dependencies subdirectory of the build_dir
 cd tmp-build-dir
-echo " * creating occam microkernel overlay tarball"
-tar zc${TAR_V}f build_dir/dependencies/occam-microkernel-overlay.tar.gz usr etc opt tmp root
+echo " * creating hanlon microkernel overlay tarball"
+tar zc${TAR_V}f build_dir/dependencies/hanlon-microkernel-overlay.tar.gz usr etc opt tmp root
 
 # and create a gzipped tarfile containing the dependencies folder and the set
 # of scripts that are used to build the ISO (so that all the user has to do is
 # copy over this one file to a directory somewhere and unpack it and they will
 # be ready to build the ISO
-bundle_out_file_name='occam-microkernel-bundle-dev.tar.gz'
+bundle_out_file_name='hanlon-microkernel-bundle-dev.tar.gz'
 if [ $BUNDLE_TYPE = 'prod' ]; then
-  bundle_out_file_name='occam-microkernel-bundle-prod.tar.gz'
+  bundle_out_file_name='hanlon-microkernel-bundle-prod.tar.gz'
 elif [ $BUNDLE_TYPE = 'debug' ]; then
-  bundle_out_file_name='occam-microkernel-bundle-debug.tar.gz'
+  bundle_out_file_name='hanlon-microkernel-bundle-debug.tar.gz'
 fi
 
 # and, finally, create our bundle file

@@ -39,29 +39,29 @@ case "$1" in
                     echo nameserver $i >> $RESOLV_CONF
                 done
  
-                # get the IP address from the "occam_server" DHCP parameter
+                # get the IP address from the "hanlon_server" DHCP parameter
                 # (if it's set) or the "next-server" (siaddr) DHCP parameter
-                # (if the "occam_server" parameter is not set but the
+                # (if the "hanlon_server" parameter is not set but the
                 # "next_server" parameter is set)
-                if [ -n "$occam_server" ] ; then
+                if [ -n "$hanlon_server" ] ; then
                     # added by tjmcs, 10-Apr-2014
-                    echo $occam_server > /tmp/occamServerIP.addr
+                    echo $hanlon_server > /tmp/hanlonServerIP.addr
                 else
                     if [ -n "$siaddr" ] ; then
                         # added by tjmcs, 28-Feb-2012
-                        echo $siaddr > /tmp/occamServerIP.addr
+                        echo $siaddr > /tmp/hanlonServerIP.addr
                     fi
                 fi
  
                 # and extract a couple of other parameters from the DHCP response
-                # if they were set (the "occam_port" and "occam_base_uri" parameters)
-                if [ -n "$occam_port" ] ; then
+                # if they were set (the "hanlon_port" and "hanlon_base_uri" parameters)
+                if [ -n "$hanlon_port" ] ; then
                     # added by tjmcs, 10-Apr-2014
-                    echo $occam_port > /tmp/occamServerPort.addr
+                    echo $hanlon_port > /tmp/hanlonServerPort.addr
                 fi
-                if [ -n "$occam_base_uri" ] ; then
+                if [ -n "$hanlon_base_uri" ] ; then
                     # added by tjmcs, 10-Apr-2014
-                    echo $occam_base_uri > /tmp/occamServerBaseUri.addr
+                    echo $hanlon_base_uri > /tmp/hanlonServerBaseUri.addr
                 fi
 		;;
 esac

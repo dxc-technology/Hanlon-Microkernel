@@ -16,20 +16,20 @@ require 'facter'
 require 'json'
 require 'open-uri'
 require 'singleton'
-require 'occam_microkernel/logging'
-require 'occam_microkernel/ocm_mk_configuration_manager'
+require 'hanlon_microkernel/logging'
+require 'hanlon_microkernel/hnl_mk_configuration_manager'
 
-# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
+# set up a global variable that will be used in the HanlonMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Occam Microkernel Controller)
-OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
+# with the other log messages for the Hanlon Microkernel Controller)
+HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
-module OccamMicrokernel
+module HanlonMicrokernel
   class RzMkKernelModuleManager
     # make this a singleton object (there should only be one in the system)
     include Singleton
-    # and include the OccamMicrokernel::Logging mixin (which enables logging)
-    include OccamMicrokernel::Logging
+    # and include the HanlonMicrokernel::Logging mixin (which enables logging)
+    include HanlonMicrokernel::Logging
 
     # define a few constants that will be used later on
     PATHSEP = File::SEPARATOR
@@ -40,7 +40,7 @@ module OccamMicrokernel
 
     def load_kernel_modules
       # get a reference to the Configuration Manager instance (a singleton)
-      config_manager = (OccamMicrokernel::RzMkConfigurationManager).instance
+      config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
 
       # if the config file exists and if the kmod_install_list_uri property exists in the configuration,
       # and if that property actually is a URI, then continue

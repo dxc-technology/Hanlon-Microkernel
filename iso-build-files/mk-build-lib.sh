@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Build tool support library for Occam Microkernel
+# Build tool support library for Hanlon Microkernel
 
 # A portable way to find out if a tool exists in the path.
 exists () { (

@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 #
 # This class defines the set of network utilities that are used by the
-# Occam Microkernel Controller script
+# Hanlon Microkernel Controller script
 #
 #
 
-module OccamMicrokernel
+module HanlonMicrokernel
   class RzNetworkUtils
 
     # used internally
@@ -134,14 +134,14 @@ module OccamMicrokernel
 
     end
 
-    def discover_ocm_server_ip
+    def discover_hnl_server_ip
       discover_by_pxe or discover_by_dns or discover_by_dhcp
     end
 
     def discover_by_pxe
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
-        server_ip = contents.split.map { |x| $1 if x.match(/occam.ip=(.*)/)}.compact
+        server_ip = contents.split.map { |x| $1 if x.match(/hanlon.ip=(.*)/)}.compact
         if server_ip.size == 1
           return server_ip.join
         else
@@ -155,8 +155,8 @@ module OccamMicrokernel
     def discover_by_dns
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
-        server_name = contents.split.map { |x| $1 if x.match(/occam.server=(.*)/)}.compact
-        server_name = server_name.size == 1 ? server_name.join : 'occam'
+        server_name = contents.split.map { |x| $1 if x.match(/hanlon.server=(.*)/)}.compact
+        server_name = server_name.size == 1 ? server_name.join : 'hanlon'
 
         require 'socket'
         return TCPSocket.gethostbyname(server_name)[3..-1].first || false
@@ -166,7 +166,7 @@ module OccamMicrokernel
     end
 
     def discover_by_dhcp
-      udhcp_file = "/tmp/occamServerIP.addr"
+      udhcp_file = "/tmp/hanlonServerIP.addr"
       begin
         contents = File.open(udhcp_file, 'r') { |f| f.read }
         return contents.strip

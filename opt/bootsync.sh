@@ -40,5 +40,5 @@ if [ -f /usr/local/etc/init.d/openssh ]
 then
   sudo /usr/local/etc/init.d/openssh start
 fi
-sudo /usr/local/bin/ocm_mk_init.rb
+sudo /usr/local/bin/hnl_mk_init.rb
 /opt/bootlocal.sh &
