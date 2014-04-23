@@ -12,6 +12,8 @@ module HanlonMicrokernel
     NETWORK_MOD_SEL_PATTERN = /^(bnx2)/
     MAX_WAIT_TIME = 2 * 60    # wait for 2 minutes, max
     DEF_ETH_PREFIX = "eth"
+    DEF_HANLON_SERVER_PORT = "8026"
+    DEF_HANLON_BASE_URI = "/hanlon/api"
     SUCCESS = 0
 
     # meant for external use
@@ -135,10 +137,10 @@ module HanlonMicrokernel
     end
 
     def discover_hnl_server_ip
-      discover_by_pxe or discover_by_dns or discover_by_dhcp
+      discover_ip_by_pxe or discover_ip_by_dns or discover_ip_by_dhcp
     end
 
-    def discover_by_pxe
+    def discover_ip_by_pxe
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
         server_ip = contents.split.map { |x| $1 if x.match(/hanlon.ip=(.*)/)}.compact
@@ -152,7 +154,7 @@ module HanlonMicrokernel
       end
     end
 
-    def discover_by_dns
+    def discover_ip_by_dns
       begin
         contents = File.open("/proc/cmdline", 'r') { |f| f.read }
         server_name = contents.split.map { |x| $1 if x.match(/hanlon.server=(.*)/)}.compact
@@ -165,8 +167,36 @@ module HanlonMicrokernel
       end
     end
 
-    def discover_by_dhcp
+    def discover_ip_by_dhcp
       udhcp_file = "/tmp/hanlonServerIP.addr"
+      begin
+        contents = File.open(udhcp_file, 'r') { |f| f.read }
+        return contents.strip
+      rescue
+        return false
+      end
+    end
+
+    def discover_hnl_server_port
+      discover_port_by_dhcp or DEF_HANLON_SERVER_PORT
+    end
+
+    def discover_port_by_dhcp
+      udhcp_file = "/tmp/hanlonServerPort.addr"
+      begin
+        contents = File.open(udhcp_file, 'r') { |f| f.read }
+        return contents.strip
+      rescue
+        return false
+      end
+    end
+
+    def discover_hnl_server_base_uri
+      discover_base_uri_by_dhcp or DEF_HANLON_BASE_URI
+    end
+
+    def discover_base_uri_by_dhcp
+      udhcp_file = "/tmp/hanlonServerBaseUri.addr"
       begin
         contents = File.open(udhcp_file, 'r') { |f| f.read }
         return contents.strip
