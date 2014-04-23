@@ -68,7 +68,7 @@ if nw_is_avail then
   # Discover the IP, Port and Base URI of the Hanlon server
   ip = hnl_nw_util.discover_hnl_server_ip
   port = hnl_nw_util.discover_hnl_server_port
-  base_uri = hnl_nw_util.discover_hnl_server_ip
+  base_uri = hnl_nw_util.discover_hnl_server_base_uri
   puts "Discovered Hanlon Server at: #{ip}:#{port}/#{base_uri}"
   y = YAML.load_file('/tmp/mk_conf.yaml')
   y["mk_uri"] = "http://#{ip}:#{port}"

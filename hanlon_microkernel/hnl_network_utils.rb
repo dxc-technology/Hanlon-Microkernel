@@ -13,7 +13,7 @@ module HanlonMicrokernel
     MAX_WAIT_TIME = 2 * 60    # wait for 2 minutes, max
     DEF_ETH_PREFIX = "eth"
     DEF_HANLON_SERVER_PORT = "8026"
-    DEF_HANLON_BASE_URI = "/hanlon/api"
+    DEF_HANLON_BASE_URI = "/hanlon/api/v1"
     SUCCESS = 0
 
     # meant for external use
