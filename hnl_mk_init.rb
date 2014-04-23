@@ -65,11 +65,15 @@ if nw_is_avail then
   # and proceed with startup of the network-dependent tasks
   puts "Network is available, proceeding..."
 
-  # Discover the IP of the Hanlon server
+  # Discover the IP, Port and Base URI of the Hanlon server
   ip = hnl_nw_util.discover_hnl_server_ip
-  puts "Discovered Hanlon Server at: #{ip}"
+  port = hnl_nw_util.discover_hnl_server_port
+  base_uri = hnl_nw_util.discover_hnl_server_ip
+  puts "Discovered Hanlon Server at: #{ip}:#{port}/#{base_uri}"
   y = YAML.load_file('/tmp/mk_conf.yaml')
-  y["mk_uri"] = "http://#{ip}:8026"
+  y["mk_uri"] = "http://#{ip}:#{port}"
+  y["mk_checkin_path"] = "#{base_uri}/node/checkin"
+  y["mk_register_path"] = "#{base_uri}/node/register"
   File.open('/tmp/mk_conf.yaml', 'w') {|f| f.write(y.to_yaml) }
 
   # first, set the hostname for this host to something unique
