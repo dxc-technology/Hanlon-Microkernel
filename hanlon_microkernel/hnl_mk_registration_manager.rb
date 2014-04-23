@@ -1,25 +1,25 @@
-# Manages the registration process (used by the ocm_mk_control_server to
-# register node with the Occam server on request or when facts change)
+# Manages the registration process (used by the hnl_mk_control_server to
+# register node with the Hanlon server on request or when facts change)
 #
 #
 
 require 'rubygems'
 require 'facter'
 require 'yaml'
-require 'occam_microkernel/ocm_mk_fact_manager'
-require 'occam_microkernel/ocm_mk_hardware_facter'
-require 'occam_microkernel/logging'
+require 'hanlon_microkernel/hnl_mk_fact_manager'
+require 'hanlon_microkernel/hnl_mk_hardware_facter'
+require 'hanlon_microkernel/logging'
 
-# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
+# set up a global variable that will be used in the HanlonMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Occam Microkernel Controller)
-OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
+# with the other log messages for the Hanlon Microkernel Controller)
+HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
-module OccamMicrokernel
+module HanlonMicrokernel
   class RzMkRegistrationManager
 
-    # include the OccamMicrokernel::Logging mixin (which enables logging)
-    include OccamMicrokernel::Logging
+    # include the HanlonMicrokernel::Logging mixin (which enables logging)
+    include HanlonMicrokernel::Logging
 
     attr_accessor :registration_uri
 
@@ -60,7 +60,7 @@ module OccamMicrokernel
         json_hash = { }
         # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
         # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
-        # containing "hw_id" information to the Occam server and the Occam server uses that
+        # containing "hw_id" information to the Hanlon server and the Hanlon server uses that
         # information to construct the UUID that the system will be (or is) mapped to.
         # The array passed through this "hw_id" key in the JSON hash is constructed by the
         # FactManager.  Currently, it includes a list of all of the network interfaces that

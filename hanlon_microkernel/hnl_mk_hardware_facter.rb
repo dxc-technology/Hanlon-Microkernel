@@ -1,5 +1,5 @@
 # Gathers hardware-related facts from the underlying system (used by the
-# ocm_mk_registration_manager to gather these sorts of facts in order to
+# hnl_mk_registration_manager to gather these sorts of facts in order to
 # supplement the facts gathered using Facter during the node registration
 # process)
 #
@@ -7,20 +7,20 @@
 
 require 'singleton'
 require 'json'
-require 'occam_microkernel/logging'
+require 'hanlon_microkernel/logging'
 
-# set up a global variable that will be used in the OccamMicrokernel::Logging mixin
+# set up a global variable that will be used in the HanlonMicrokernel::Logging mixin
 # to determine where to place the log messages from this script (will be combined
-# with the other log messages for the Occam Microkernel Controller)
-OCM_MK_LOG_PATH = "/var/log/ocm_mk_controller.log"
+# with the other log messages for the Hanlon Microkernel Controller)
+HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
-module OccamMicrokernel
+module HanlonMicrokernel
   class RzMkHardwareFacter
 
     include Singleton
 
-    # include the OccamMicrokernel::Logging mixin (which enables logging)
-    include OccamMicrokernel::Logging
+    # include the HanlonMicrokernel::Logging mixin (which enables logging)
+    include HanlonMicrokernel::Logging
 
     # used by the RzMkRegistrationManager class to add facts extracted from a set of
     # "lscpu" and "lshw" system calls to the input "facts_map" (which is assumed to
@@ -29,8 +29,8 @@ module OccamMicrokernel
     def add_facts_to_map!(facts_map, mk_fct_excl_pattern)
       logger.debug("before...#{facts_map.inspect}")
       # check type of virtualization used (if any); must disable 'dmi' for KVM
-      # virtual machines (see Occam issue #297)
-      virtual_type = Facter.virtual
+      # virtual machines (see Hanlon issue #297)
+      virtual_type = Facter.value('virtual')
       lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
       begin
         # add the facts that result from running the "lscpu" command

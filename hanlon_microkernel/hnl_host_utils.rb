@@ -1,22 +1,22 @@
 #!/usr/bin/env ruby
 #
 # This class defines the set of host utilities that are used by the
-# Occam Microkernel Controller script
+# Hanlon Microkernel Controller script
 #
 #
 
 require 'rubygems'
 require 'facter'
 
-module OccamMicrokernel
+module HanlonMicrokernel
   class RzHostUtils
 
     def initialize
-      @host_id = 'mk' + Facter.macaddress_eth0.gsub(':','')
+      @host_id = 'mk' + Facter.value('macaddress_eth0').gsub(':','')
     end
 
     # runs the "hostname" command in order to set the systems hostname
-    # (used by the ocm_mk_controller script when setting up the system
+    # (used by the hnl_mk_controller script when setting up the system
     # during the boot process). Also modifies the contents of the
     # /etc/hosts and /etc/hostname file so that the hostname is set
     # consistently there as well

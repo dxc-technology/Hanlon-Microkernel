@@ -9,8 +9,8 @@ set -x
 set -v
 
 HERE=`pwd`
-PKGDIR="$HERE"/tmp/deb2tcz.1234
-TMPDIR="$HERE"/tmp/deb2tcz.tmp
+PKGDIR="$HERE"/tmp-deb/deb2tcz.1234
+TMPDIR="$HERE"/tmp-deb/deb2tcz.tmp
 PKG="$PKGDIR"/pkg
 CFG="$PKGDIR"/cfg
 DEB_FILE="$1"
