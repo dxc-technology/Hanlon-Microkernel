@@ -23,7 +23,7 @@ require 'hanlon_microkernel/hnl_mk_configuration_manager'
 gemController = (HanlonMicrokernel::RzMkGemController).instance
 mk_conf_filename = HanlonMicrokernel::RzMkConfigurationManager::MK_CONF_FILE
 mk_conf = YAML::load(File.open(mk_conf_filename))
-gemController.gemSource = mk_conf['mk_gem_mirror_uri']
+gemController.gemSource = mk_conf['mk_gem_mirror']
 gemController.gemListURI = mk_conf['mk_gemlist_uri']
 gemController.installListedGems
 

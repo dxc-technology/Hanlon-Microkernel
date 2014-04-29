@@ -22,14 +22,14 @@ require 'hanlon_microkernel/hnl_mk_kernel_module_manager'
 require 'hanlon_microkernel/hnl_mk_gem_controller'
 
 # load gems in the list available at #{mk_gemlist_uri} from the gem mirror
-# at #{mk_gem_mirror_uri} into the Microkernel (Note; only gems that do not
+# at #{mk_gem_mirror} into the Microkernel (Note; only gems that do not
 # exist yet or gems who's latest version available from the stated gem mirror
 # will be installed; existing versions of these gems will not be reinstalled
 # by this method)
-def load_gems(mk_gem_mirror_uri, mk_gemlist_uri)
-  logger.debug("reloading gems from #{mk_gem_mirror_uri} using list at #{mk_gemlist_uri}")
+def load_gems(mk_gem_mirror, mk_gemlist_uri)
+  logger.debug("reloading gems from #{mk_gem_mirror} using list at #{mk_gemlist_uri}")
   gemController = (HanlonMicrokernel::RzMkGemController).instance
-  gemController.gemSource = mk_gem_mirror_uri
+  gemController.gemSource = mk_gem_mirror
   gemController.gemListURI = mk_gemlist_uri
   gemController.installListedGems
 end
@@ -46,7 +46,7 @@ end
 # extensions (those already installed) should be overwritten with new versions
 # from the mirror (defaults to false, which skips the installation of any
 # extensions that are already installed)
-def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = false)
+def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = false)
 
   # get the URI from the config that will return the list of TCL extensions
   # that we should load, if it doesn't exist, then just return (because we
@@ -55,12 +55,12 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
 
   # and get the TCE mirror URI from the config, if it doesn't exist, then
   # we just return (because we don't know where to get the extensions from)
-  return if !tce_mirror_uri || (tce_mirror_uri =~ URI::regexp).nil?
+  return if !tce_mirror || (tce_mirror =~ URI::regexp).nil?
 
   # modify the /opt/tcemirror file (so that it uses the mirror given in the
   # configuration we just received from the Hanlon server)
   File.open('/opt/tcemirror', 'w') { |file|
-    file.puts tce_mirror_uri
+    file.puts tce_mirror
   }
 
   # get a list of the Tiny Core Extensions that are already installed in the
@@ -72,7 +72,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror_uri, force_reinstall = 
   # be obtained from a local 'mirror' containing the appropriate 'tcz' files)
   begin
     # load the list of extensions to install from the URI
-    install_list_uri = URI.parse(tce_install_list_uri)
+    install_list_uri = URI.parse(tce_mirror + tce_install_list_uri)
     tce_install_list = []
     begin
       tce_install_list = JSON::parse(install_list_uri.read)
@@ -196,10 +196,10 @@ if config_manager.config_file_exists? then
                                                                        exclude_pattern, fact_manager)
 
   # "load" the appropriate gems into the Microkernel
-  load_gems(config_manager.mk_gem_mirror_uri, config_manager.mk_gemlist_uri)
+  load_gems(config_manager.mk_gem_mirror, config_manager.mk_gemlist_uri)
 
   # and load the TCL extensions from the configuration file (if any exist)
-  load_tcl_extensions(config_manager.mk_tce_install_list_uri, config_manager.mk_tce_mirror_uri)
+  load_tcl_extensions(config_manager.mk_tce_install_list_uri, config_manager.mk_tce_mirror)
 
 else
 

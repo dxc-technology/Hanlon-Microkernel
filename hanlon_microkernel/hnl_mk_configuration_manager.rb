@@ -12,8 +12,8 @@ module HanlonMicrokernel
     include Singleton
 
     MK_CONF_FILE = '/tmp/mk_conf.yaml'
-    DEF_MK_GEM_MIRROR_URI = "http://localhost:2158/gem-mirror"
-    DEF_MK_GEMLIST_URI = "http://localhost:2158/gem-mirror"
+    DEF_MK_GEM_MIRROR_URI = "http://localhost:2158"
+    DEF_MK_GEMLIST_URI = "/gem-mirror/gems/gem.list"
     
     attr_reader :mk_checkin_interval
     attr_reader :mk_checkin_skew
@@ -25,11 +25,10 @@ module HanlonMicrokernel
     # 'Logger::INFO', or 'Logger::DEBUG' (default is 'Logger::ERROR')
     attr_reader :mk_log_level
     attr_reader :default_mk_log_level
-    attr_reader :mk_tce_mirror_port
-    attr_reader :mk_tce_mirror_uri
+    attr_reader :mk_tce_mirror
     attr_reader :mk_tce_install_list_uri
     attr_reader :mk_kmod_install_list_uri
-    attr_reader :mk_gem_mirror_uri
+    attr_reader :mk_gem_mirror
     attr_reader :mk_gemlist_uri
 
     def initialize
@@ -82,14 +81,13 @@ module HanlonMicrokernel
         else
           @mk_log_level = default_mk_log_level
       end
-      @mk_tce_mirror_port = mk_conf['mk_tce_mirror_port']
-      @mk_tce_mirror_uri = mk_conf['mk_tce_mirror_uri']
+      @mk_tce_mirror = mk_conf['mk_tce_mirror']
       @mk_tce_install_list_uri = mk_conf['mk_tce_install_list_uri']
       @mk_kmod_install_list_uri = mk_conf['mk_kmod_install_list_uri']
-      if mk_conf['mk_gem_mirror_uri']
-        @mk_gem_mirror_uri = mk_conf['mk_gem_mirror_uri']
+      if mk_conf['mk_gem_mirror']
+        @mk_gem_mirror = mk_conf['mk_gem_mirror']
       else
-        @mk_gem_mirror_uri = DEF_MK_GEM_MIRROR_URI
+        @mk_gem_mirror = DEF_MK_GEM_MIRROR_URI
       end
       if mk_conf['mk_gemlist_uri']
         @mk_gemlist_uri = mk_conf['mk_gemlist_uri']

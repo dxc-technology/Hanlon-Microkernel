@@ -1,14 +1,13 @@
 ---
-mk_kmod_install_list_uri: http://localhost:2157/tinycorelinux/kmod-install-list
+mk_kmod_install_list_uri: /tinycorelinux/kmod-install-list
 mk_register_path: /hanlon/api/v1/node/register
-mk_tce_mirror_uri: http://localhost:2157/tinycorelinux
+mk_tce_mirror: http://localhost:2157
 mk_uri: http://HANLON_URI_IP_ADDR:8026
-mk_tce_mirror_port: 2157
 mk_checkin_interval: 60
 mk_checkin_path: /hanlon/api/v1/node/checkin
-mk_tce_install_list_uri: http://localhost:2157/tinycorelinux/tce-install-list
+mk_tce_install_list_uri: /tinycorelinux/tce-install-list
 mk_checkin_skew: 5
 mk_fact_excl_pattern: (^facter.*$)|(^id$)|(^kernel.*$)|(^memoryfree$)|(^operating.*$)|(^osfamily$)|(^path$)|(^ps$)|(^ruby.*$)|(^selinux$)|(^ssh.*$)|(^swap.*$)|(^timezone$)|(^uniqueid$)|(^uptime.*$)|(.*json_str$)
 mk_log_level: Logger::INFO
-mk_gem_mirror_uri: http://localhost:2158/gem-mirror
-mk_gemlist_uri: http://localhost:2158/gem-mirror/gems/gem.list
+mk_gem_mirror: http://localhost:2158/gem-mirror
+mk_gemlist_uri: /gems/gem.list
