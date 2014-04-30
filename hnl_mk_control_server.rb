@@ -48,12 +48,7 @@ end
 # extensions that are already installed)
 def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = false)
 
-  # get the URI from the config that will return the list of TCL extensions
-  # that we should load, if it doesn't exist, then just return (because we
-  # don't have any extensions to load)
-  return if !tce_install_list_uri || (tce_install_list_uri =~ URI::regexp).nil?
-
-  # and get the TCE mirror URI from the config, if it doesn't exist, then
+  # get the TCE mirror URI from the config, if it doesn't exist, then
   # we just return (because we don't know where to get the extensions from)
   return if !tce_mirror || (tce_mirror =~ URI::regexp).nil?
 
@@ -62,6 +57,12 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = fals
   File.open('/opt/tcemirror', 'w') { |file|
     file.puts tce_mirror
   }
+
+  # construct the full URI (including path) that will return the list of TCL
+  # extensions that we should load, if it doesn't exist, then just return
+  # (because we don't have any extensions to load)
+  full_tce_install_list_uri = tce_mirror + tce_install_list_uri
+  return if !full_tce_install_list_uri || (full_tce_install_list_uri =~ URI::regexp).nil?
 
   # get a list of the Tiny Core Extensions that are already installed in the
   # the system; will use this list to determine whether or not an extension
@@ -72,7 +73,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = fals
   # be obtained from a local 'mirror' containing the appropriate 'tcz' files)
   begin
     # load the list of extensions to install from the URI
-    install_list_uri = URI.parse(tce_mirror + tce_install_list_uri)
+    install_list_uri = URI.parse(full_tce_install_list_uri)
     tce_install_list = []
     begin
       tce_install_list = JSON::parse(install_list_uri.read)
