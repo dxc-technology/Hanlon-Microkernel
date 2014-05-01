@@ -44,11 +44,11 @@ module HanlonMicrokernel
 
       # if the config file exists and if the kmod_install_list_uri property exists in the configuration,
       # and if that property actually is a URI, then continue
-      kmod_install_list_uri = config_manager.mk_kmod_install_list_uri
-      if config_manager.config_file_exists? && kmod_install_list_uri && !(kmod_install_list_uri =~ URI::regexp).nil?
+      full_kmod_install_list_uri = config_manager.mk_tce_mirror + config_manager.mk_kmod_install_list_uri
+      if config_manager.config_file_exists? && full_kmod_install_list_uri && !(full_kmod_install_list_uri =~ URI::regexp).nil?
 
         # first, parse the URI and then retrieve the kmod_install_list (an array) from it
-        install_list_uri = URI.parse(kmod_install_list_uri)
+        install_list_uri = URI.parse(full_kmod_install_list_uri)
         kmod_install_list = {}
         begin
           kmod_install_list = JSON::parse(install_list_uri.read)

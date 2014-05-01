@@ -68,7 +68,7 @@ module HanlonMicrokernel
     end
 
     def installListedGems
-      uri = URI(@gemListURI)
+      uri = URI(@gemSource + @gemListURI)
       begin
         response = Net::HTTP.get_response(uri)
         case response

@@ -12,8 +12,9 @@ module HanlonMicrokernel
     include Singleton
 
     MK_CONF_FILE = '/tmp/mk_conf.yaml'
-    DEF_MK_GEM_MIRROR_URI = "http://localhost:2158/gem-mirror"
-    DEF_MK_GEMLIST_URI = "http://localhost:2158/gem-mirror"
+    DEF_MK_GEM_MIRROR_URI = "http://localhost:2158"
+    DEF_MK_GEMLIST_URI = "/gem-mirror/gems/gem.list"
+    DERIVED_CONFIG_KEYS = %w(mk_uri mk_register_path mk_checkin_path)
     
     attr_reader :mk_checkin_interval
     attr_reader :mk_checkin_skew
@@ -25,11 +26,10 @@ module HanlonMicrokernel
     # 'Logger::INFO', or 'Logger::DEBUG' (default is 'Logger::ERROR')
     attr_reader :mk_log_level
     attr_reader :default_mk_log_level
-    attr_reader :mk_tce_mirror_port
-    attr_reader :mk_tce_mirror_uri
+    attr_reader :mk_tce_mirror
     attr_reader :mk_tce_install_list_uri
     attr_reader :mk_kmod_install_list_uri
-    attr_reader :mk_gem_mirror_uri
+    attr_reader :mk_gem_mirror
     attr_reader :mk_gemlist_uri
 
     def initialize
@@ -39,16 +39,20 @@ module HanlonMicrokernel
     def mk_config_has_changed?(new_mk_config_map)
       return true if !File.exists?(MK_CONF_FILE)
       old_mk_config_map = YAML::load(File.open(MK_CONF_FILE, 'r'))
-      return_val = old_mk_config_map != new_mk_config_map
-      return_val
+      # remove the keys from the old config that were derived locally
+      # (they won't be in the configuration received from the server)
+      DERIVED_CONFIG_KEYS.each { |k| old_mk_config_map.delete(k) }
+      old_mk_config_map != new_mk_config_map
     end
 
     def save_mk_config(mk_config_map)
       puts "Saving MK Configuration..."
+      current_mk_conf = YAML::load(File.open(MK_CONF_FILE))
+      new_config_map = current_mk_conf.merge mk_config_map
       File.open(MK_CONF_FILE, 'w') { |file|
-        YAML::dump(mk_config_map, file)
+        YAML::dump(new_config_map, file)
       }
-      set_current_config(mk_config_map)
+      set_current_config(new_config_map)
     end
 
     def config_file_exists?
@@ -82,14 +86,13 @@ module HanlonMicrokernel
         else
           @mk_log_level = default_mk_log_level
       end
-      @mk_tce_mirror_port = mk_conf['mk_tce_mirror_port']
-      @mk_tce_mirror_uri = mk_conf['mk_tce_mirror_uri']
+      @mk_tce_mirror = mk_conf['mk_tce_mirror']
       @mk_tce_install_list_uri = mk_conf['mk_tce_install_list_uri']
       @mk_kmod_install_list_uri = mk_conf['mk_kmod_install_list_uri']
-      if mk_conf['mk_gem_mirror_uri']
-        @mk_gem_mirror_uri = mk_conf['mk_gem_mirror_uri']
+      if mk_conf['mk_gem_mirror']
+        @mk_gem_mirror = mk_conf['mk_gem_mirror']
       else
-        @mk_gem_mirror_uri = DEF_MK_GEM_MIRROR_URI
+        @mk_gem_mirror = DEF_MK_GEM_MIRROR_URI
       end
       if mk_conf['mk_gemlist_uri']
         @mk_gemlist_uri = mk_conf['mk_gemlist_uri']
