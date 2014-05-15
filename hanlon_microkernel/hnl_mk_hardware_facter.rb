@@ -113,6 +113,54 @@ module HanlonMicrokernel
                              "configuration"]
         add_flattened_array_to_facts!(hash_map["network_array"], facts_map,
                                       "mk_hw_nic", fields_to_include)
+
+        # add the facts that result from running the "ipmitool mc info" command
+        ipmitool_mc_info_str = %x[sudo ipmitool bmc info]
+        # assume that if there was a non-zero exit status, it's because there is no IPMI system
+        # in place on this node...skip the rest of the IPMI-related facts
+        if $?.exitstatus == 0
+          hash_map = ipmitool_output_to_hash(ipmitool_mc_info_str, ":")
+          logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
+          key = "mk_ipmitool_json_str"
+          facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
+              mk_fct_excl_pattern.match(key)
+          fields_to_include = ["Device_ID", "Device_Revision", "Firmware_Revision",
+                               "IPMI_Version", "Manufacturer_ID", "Manufacturer_Name",
+                               "Product_ID", "Product_Name", "Device_Available",
+                               "Provides_Device_SDRs"]
+          add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
+          # add the facts that result from running the "ipmitool lan print" command
+          ipmitool_lan_print_str = %x[sudo ipmitool lan print]
+          if $?.exitstatus == 0
+            hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":")
+            logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
+            key = "mk_ipmitool_json_str"
+            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
+                mk_fct_excl_pattern.match(key)
+            fields_to_include = ["IP_Address_Source", "IP_Address",
+                                 "Subnet_Mask", "MAC_Address",
+                                 "SNMP_Community_String", "IP_Header",
+                                 "BMC_ARP_Control", "Gratuitous_ARP_Intrvl",
+                                 "Default_Gateway_IP", "Default_Gateway_MAC",
+                                 "Backup_Gateway_IP", "Backup_Gateway_MAC",
+                                 "802.1q_VLAN_ID", "802.1q_VLAN_ID"]
+            add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
+          end
+          # add the facts that result from running the "ipmitool fru print" command
+          ipmitool_fru_print_str = %x[sudo ipmitool fru print]
+          if $?.exitstatus == 0
+            hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":")
+            logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
+            key = "mk_ipmitool_json_str"
+            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
+                mk_fct_excl_pattern.match(key)
+            fields_to_include = ["Chassis_Type", "Chassis_Part_Number", "Chassis_Serial",
+                                 "Board_Mfg_Date", "Board_Mfg", "Board_Product",
+                                 "Board_Serial", "Board_Part_Number"]
+            add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
+          end
+        end
+
       rescue SystemExit => e
         throw e
       rescue NoMemoryError => e
@@ -234,6 +282,19 @@ module HanlonMicrokernel
         split_hash[key] = val
       }
       split_hash
+    end
+
+    # Takes the output of the ipmitool command and converts it to a Hash of name/value
+    # pairs (where the names are the properties, as Symbols, and the values are either Strings or arrays of
+    # Strings representing the values for those properties)
+    # @param command_output [String] the raw output from ipmitool command
+    # @param delimiter [String] the delimiter that should be used to separate the name/value pairs in the
+    #     raw impitool command output
+    # @return [Hash<String, Array<String>>] a Hash map containing the names of the properties as keys and
+    #     an Array of String values for that properties as the matching Hash map values.
+    def ipmitool_output_to_hash(command_output, delimiter)
+      # for now, just do what we do with the "lscpu" output
+      lscpu_output_to_hash(command_output, delimiter)
     end
 
     # Takes the output of a lshw command and converts it to a Hash of name/value
