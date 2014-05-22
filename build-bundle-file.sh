@@ -176,9 +176,9 @@ fi
 [ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://www.dropbox.com/s/e4bgt1hdgtt8vlb/mk-open-vm-tools.tar.gz'
-[ -z "$IPMI_TOOLS_URL" ] && IPMI_TOOLS_URL='https://www.dropbox.com/s/r5chqs4qftqao8y/mk-ipmi-mods-and-tools.tar.gz'
-[ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://www.dropbox.com/s/2b8oonqaz5ksxb4/mk-custom-busybox.tar.gz'
+[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-open-vm-tools.tar.gz'
+[ -z "$IPMI_TOOLS_URL" ] && IPMI_TOOLS_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-ipmi-mods-and-tools.tar.gz'
+[ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-custom-busybox.tar.gz'
 [ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
 
