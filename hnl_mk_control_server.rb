@@ -238,14 +238,17 @@ loop do
     # if the checkin_uri was defined, then send a "checkin" message to the server
     if checkin_uri
 
-      # Note: as of v0.7.0.0 of the Microkernel, the system is no longer identified using
-      # a Microkernel-defined UUID value.  Instead, the Microkernel reports an array
-      # containing "hw_id" information to the Hanlon server and the Hanlon server uses that
-      # information to construct the UUID that the system will be (or is) mapped to.
-      # The array passed through this "hw_id" key in the JSON hash is constructed by the
-      # FactManager.  Currently, it includes a list of all of the network interfaces that
-      # have names that look like 'eth[0-9]+', but that may change down the line.
-      hw_id = fact_manager.get_hw_id_array
+      # Note: as of v1.1 of the Microkernel, the system is no longer identified using
+      # a Microkernel-defined "hw_id" value.  Instead, the Microkernel reports an array
+      # containing both the "mac_id" information (previously known as the "hw_id") and
+      # a string containing the UUID (from the BIOS) to the Hanlon server and the Hanlon
+      # server saves that information, along with a Hanlon-generated UUID that the system
+      # will be (or is) mapped to.  The string representation of the "mac_id" option in the
+      # checkin URI is constructed by the FactManager.  Currently, it includes a list of all
+      # of the network interfaces that have names that look like 'eth[0-9]+', but that may
+      # change down the line.
+      mac_id = fact_manager.get_mac_id_array
+      uuid = fact_manager.get_uuid
 
       # check to see if this is the first checkin or not (this flag will be true until the
       # node successfully registers for the first time after boot, after that it will be
@@ -253,7 +256,7 @@ loop do
       is_first_checkin = is_first_checkin?
 
       # construct the checkin_uri_string
-      checkin_uri_string = checkin_uri + "?hw_id=#{hw_id}&last_state=#{idle}"
+      checkin_uri_string = checkin_uri + "?uuid=#{uuid}&mac_id=#{mac_id}&last_state=#{idle}"
       checkin_uri_string << "&first_checkin=#{is_first_checkin}" if is_first_checkin
       logger.info "checkin_uri_string = #{checkin_uri_string}"
       uri = URI checkin_uri_string
