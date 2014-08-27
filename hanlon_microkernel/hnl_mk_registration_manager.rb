@@ -65,7 +65,8 @@ module HanlonMicrokernel
         # The array passed through this "hw_id" key in the JSON hash is constructed by the
         # FactManager.  Currently, it includes a list of all of the network interfaces that
         # have names that look like 'eth[0-9]+', but that may change down the line.
-        json_hash["hw_id"] = @fact_manager.get_hw_id_array
+        json_hash["mac_id"] = @fact_manager.get_mac_id_array
+        json_hash["uuid"] = @fact_manager.get_uuid
         json_hash["attributes_hash"] = fact_map
         json_hash["last_state"] = last_state
         json_string = JSON.generate(json_hash)
