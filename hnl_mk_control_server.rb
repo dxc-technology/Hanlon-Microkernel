@@ -299,6 +299,10 @@ loop do
           # reboots the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the reboot happens
           %x[sudo reboot now]
+        elsif command == "poweroff" then
+          # powers off the node, NOW...no sense in logging this since the "filesystem"
+          # is all in memory and will disappear when the poweroff happens
+          %x[sudo poweroff now]
         end
 
         # next, check the configuration that is included in the response...
