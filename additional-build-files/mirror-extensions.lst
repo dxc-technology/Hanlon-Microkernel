@@ -1,7 +1,6 @@
 fuse.tcz
 glib2-dev.tcz
 glib2.tcz
-libdnet.tcz
 libffi-dev.tcz
 libffi.tcz
 ncurses-common.tcz

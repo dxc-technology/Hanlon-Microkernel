@@ -1,6 +1,6 @@
 ---
-- vmblock.ko
-- vmsync.ko
-- vmci.ko
-- vmxnet.ko
-- vmhgfs.ko
+- drivers/misc/vmci.ko
+- drivers/net/vmxnet.ko
+- net/vsock/vsock.ko
+- fs/vmhgfs/vmhgfs.ko
+- fs/vmblock/vmblock.ko

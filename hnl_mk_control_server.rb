@@ -314,12 +314,17 @@ loop do
           # Microkernel Controller so that the new configuration is picked up)
           if config_manager.mk_config_has_changed?(config_map)
             config_map_string = JSON.generate(config_map)
-            logger.debug "Posting config to WEBrick server => #{config_map_string}"
             uri = URI "http://localhost:2156/setMkConfig"
-            res = Net::HTTP.post_form(uri, config_map_string)
+            header = {'Content-Type' => 'text/json'}
+            http = Net::HTTP.new(uri.host, uri.port)
+            logger.debug "Posting config to WEBrick server => #{config_map_string}"
+            request = Net::HTTP::Post.new(uri.request_uri, header)
+            request.body = config_map_string
+            # Send the request
+            response = http.request(request)
             # probably won't ever get here (the reboot from the WEBrick instance will intervene)
             # but, just in case...
-            logger.debug "Response received back => #{res.body}"
+            logger.debug "Response received back => #{response.body}"
           end
         end
 

@@ -32,14 +32,6 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
   done < ${map_filename}
 done
 
-# install the IPMI kernel modules
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/ipmi-kernel-mods.tcz 2>&1 | tee /tmp/ipmi-load.log
-IPMI_MOD_DIR="/lib/modules/`uname -r`/kernel/drivers/char/ipmi"
-for mod in ipmi_msghandler.ko ipmi_si.ko ipmi_devintf.ko ipmi_poweroff.ko ipmi_watchdog.ko; do
-  sudo insmod ${IPMI_MOD_DIR}/$mod 2>&1 | tee -a /tmp/ipmi-load.log
-done
-sudo depmod -a
-
 # and install the IPMI utilities (will need these during the
 # Microkernel Controller initialization process to construct
 # the hardware ID for the node)

@@ -173,19 +173,15 @@ fi
   TCL_ISO_URL="$MK_BUNDLE_TCL_ISO_URL"
 [ -z "$RUBY_GEMS_URL" -a -n "$MK_BUNDLE_RUBY_GEMS_URL" ] && 
   RUBY_GEMS_URL="$MK_BUNDLE_RUBY_GEMS_URL"
-[ -z "$OPEN_VM_TOOLS_URL" -a -n "$MK_BUNDLE_OPEN_VM_TOOLS_URL" ] &&
-  OPEN_VM_TOOLS_URL="$MK_BUNDLE_OPEN_VM_TOOLS_URL"
 [ -z "$GEM_SERVER_URI" -a -n "$MK_BUNDLE_GEM_SERVER_URI" ] && 
   GEM_SERVER_URI="$MK_BUNDLE_GEM_SERVER_URI"
 
 # Set to default anything still not specified, for which there is a reasonable
 # default-value
 [ -z "$BUNDLE_TYPE" ] && BUNDLE_TYPE='dev'
-[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/4.x/x86/tcz'
-[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/4.x/x86/release/Core-current.iso'
+[ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/5.x/x86/tcz'
+[ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/5.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$OPEN_VM_TOOLS_URL" ] && OPEN_VM_TOOLS_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-open-vm-tools.tar.gz'
-[ -z "$IPMI_TOOLS_URL" ] && IPMI_TOOLS_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-ipmi-mods-and-tools.tar.gz'
 [ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-custom-busybox.tar.gz'
 [ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
@@ -248,10 +244,10 @@ mkdir -p tmp-build-dir/usr/local/bin
 cp -p hnl_mk_*.rb tmp-build-dir/usr/local/bin
 
 # create copies of the files from this project that will be placed
-# into the /usr/local/lib/ruby/1.8/hanlon_microkernel directory in the Hanlon
+# into the /usr/local/lib/ruby/2.0.0/hanlon_microkernel directory in the Hanlon
 # Microkernel ISO
-mkdir -p tmp-build-dir/usr/local/lib/ruby/1.8/hanlon_microkernel
-cp -p hanlon_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/1.8/hanlon_microkernel
+mkdir -p tmp-build-dir/usr/local/lib/ruby/2.0.0/hanlon_microkernel
+cp -p hanlon_microkernel/*.rb tmp-build-dir/usr/local/lib/ruby/2.0.0/hanlon_microkernel
 
 # create a copy of the files from this project that will be placed into the
 # /opt directory in the Hanlon Microkernel ISO; as part of this process will
@@ -281,20 +277,20 @@ fi
 
 # create a copy of the local TCL Extension mirror that we will be running within
 # our Microkernel instances
-mkdir -p tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+mkdir -p tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz
 cp -p tmp/tinycorelinux/*.yaml tmp-build-dir/tmp/tinycorelinux
 for file in `cat $MIRROR_LIST`; do
   if [ ${file##*.} != "deb" ]; then
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.info
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.list
-    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz $TCL_MIRROR_URI/$file.dep
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.md5.txt 2> /dev/null
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.info
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.list
+    wget $WGET_V -P tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz $TCL_MIRROR_URI/$file.dep 2> /dev/null
   else
     PKGNAME=${file%.*}
     echo "Installing .deb package for mirroring: $PKGNAME"
     ./bin/download-deb-pkg --list-file "./tmp-deb/" --mirror-url "$DEB_MIRROR_URL" --output-dir ./tmp-deb $PKGNAME
-    ./bin/deb2tcz.sh ./tmp-deb/$PKGNAME.deb tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+    ./bin/deb2tcz.sh ./tmp-deb/$PKGNAME.deb tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$PKGNAME.tcz
 
   fi
 done
@@ -302,22 +298,32 @@ done
 # and add the files listed in the file specified by the ADDTNL_MODS_LIST parameter
 # to the mirror as well
 if [ ! -z ${ADDTNL_MODS_LIST} ]; then
+  # remove the 'map' file associated with each module in the list
+  while read line; do
+    fields=( $line )
+    full_file=${fields[0]}
+    file=${full_file##*/}
+    rm tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/${file}.map 2> /dev/null
+  done < ${ADDTNL_MODS_LIST}
+  # then add the files from the list
   while read line; do
     fields=( $line )
     full_file=${fields[0]}
     file=${full_file##*/}
     if [ ${file##*.} != "deb" ]; then
-      cp -p $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-      cp -p $full_file.md5.txt tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-      cp -p $full_file.dep tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
-      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+      if [ ! -f tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$file ]; then
+        cp -p $full_file tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz
+        cp -p $full_file.md5.txt tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz
+        cp -p $full_file.dep tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz 2> /dev/null
+      fi
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/${file}.map
     else
       PKGNAME=${file%.*}
-      echo "Installing .deb package as builtin: $PKGNAME"
-      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
-      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
-      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+      if [ ! -f tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$PKGNAME.tcz ]; then
+        echo "Installing .deb package as builtin: $PKGNAME"
+        ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$PKGNAME.tcz
+      fi
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/${file}.map
     fi
   done < ${ADDTNL_MODS_LIST}
 fi
@@ -334,12 +340,12 @@ for file in `cat $BUILTIN_LIST`; do
     if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
       wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
       wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
-      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep 2> /dev/null
       echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
     elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
     then
       rm tmp-build-dir/tmp/builtin/optional/$file
-      rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
+      rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt
       rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
     fi
   else
@@ -361,12 +367,12 @@ if [ ! -z ${LOCAL_EXTENTS_LIST} ]; then
     if [ ${file##*.} != "deb" ]; then
       cp -p $full_file tmp-build-dir/tmp/builtin/optional
       cp -p $full_file.md5.txt tmp-build-dir/tmp/builtin/optional
-      cp -p $full_file.dep tmp-build-dir/tmp/builtin/optional
+      cp -p $full_file.dep tmp-build-dir/tmp/builtin/optional 2> /dev/null
       echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
     else
       PKGNAME=${file%.*}
       echo "Installing .deb package as builtin: $PKGNAME"
-      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/5.x/x86/tcz/$PKGNAME.tcz
       echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
     fi
   done < ${LOCAL_EXTENTS_LIST}
@@ -417,18 +423,9 @@ ln -s /usr/local/sbin/dmidecode tmp-build-dir/usr/sbin 2> /dev/null
 #   1. ssh-setup-files.tar.gz -> contains the setup files needed for the
 #         SSH/SSL (used for development access to the Microkernel); if
 #         the '--build-prod-image' flag is set, then this file will be skipped
-#   2. mk-open-vm-tools.tar.gz -> contains the files needed for the
-#         'open_vm_tools.tcz' extension
-#   4. mk-ipmi-mods-and-tools.tar.gz -> contains the kernel modules and 
-#         tools needed to access the BMC associated with the node (if any)
-#         and report back facts from the BMC to the Hanlon server
-#   5. mk-custom-busybox.tar.gz -> contains the custom version of busybox that
+#   2. mk-custom-busybox.tar.gz -> contains the custom version of busybox that
 #         supports additional fields in the DHCP response handling process
 cp -p additional-build-files/*.gz tmp-build-dir/build_dir/dependencies
-file=`echo $OPEN_VM_TOOLS_URL | awk -F/ '{print $NF}'`
-wget $WGET_V -P tmp-build-dir/build_dir/dependencies $OPEN_VM_TOOLS_URL
-file=`echo $IPMI_TOOLS_URL | awk -F/ '{print $NF}'`
-wget $WGET_V -P tmp-build-dir/build_dir/dependencies $IPMI_TOOLS_URL
 file=`echo $PRIV_BUSYBOX_URL | awk -F/ '{print $NF}'`
 wget $WGET_V -P tmp-build-dir/build_dir/dependencies $PRIV_BUSYBOX_URL
 
