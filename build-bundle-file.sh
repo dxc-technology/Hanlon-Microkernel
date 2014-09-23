@@ -88,7 +88,7 @@ do
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -a|--addtnl-kmods) ADDTNL_MODS_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
-  -a|--local-extents) LOCAL_EXTENTS_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
+  -l|--local-extents) LOCAL_EXTENTS_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -p|--build-prod-image)
     if [ $BUNDLE_TYPE_SELECTED -eq 0 ]; then 
       BUNDLE_TYPE='prod'; 
@@ -301,24 +301,26 @@ done
 
 # and add the files listed in the file specified by the ADDTNL_MODS_LIST parameter
 # to the mirror as well
-while read line; do
-  fields=( $line )
-  full_file=${fields[0]}
-  file=${full_file##*/}
-  if [ ${file##*.} != "deb" ]; then
-    cp -p $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-    cp -p $full_file.md5.txt tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-    cp -p $full_file.dep tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
-    rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
-    echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
-  else
-    PKGNAME=${file%.*}
-    echo "Installing .deb package as builtin: $PKGNAME"
-    ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
-    rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
-    echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
-  fi
-done < ${ADDTNL_MODS_LIST}
+if [ ! -z ${ADDTNL_MODS_LIST} ]; then
+  while read line; do
+    fields=( $line )
+    full_file=${fields[0]}
+    file=${full_file##*/}
+    if [ ${file##*.} != "deb" ]; then
+      cp -p $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      cp -p $full_file.md5.txt tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      cp -p $full_file.dep tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+    else
+      PKGNAME=${file%.*}
+      echo "Installing .deb package as builtin: $PKGNAME"
+      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+    fi
+  done < ${ADDTNL_MODS_LIST}
+fi
 
 # download a set of extensions that will be installed during the Microkernel
 # boot process.  These files will be placed into the /tmp/builtin directory in
@@ -351,22 +353,24 @@ done
 
 # and add the files listed in the file specified by the LOCAL_EXTENTS_LIST parameter
 # to the list of extensions installed at boot time as well
-while read line; do
-  fields=( $line )
-  full_file=${fields[0]}
-  file=${full_file##*/}
-  if [ ${file##*.} != "deb" ]; then
-    cp -p $full_file tmp-build-dir/tmp/builtin/optional
-    cp -p $full_file.md5.txt tmp-build-dir/tmp/builtin/optional
-    cp -p $full_file.dep tmp-build-dir/tmp/builtin/optional
-    echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
-  else
-    PKGNAME=${file%.*}
-    echo "Installing .deb package as builtin: $PKGNAME"
-    ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
-    echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
-  fi
-done < ${LOCAL_EXTENTS_LIST}
+if [ ! -z ${LOCAL_EXTENTS_LIST} ]; then
+  while read line; do
+    fields=( $line )
+    full_file=${fields[0]}
+    file=${full_file##*/}
+    if [ ${file##*.} != "deb" ]; then
+      cp -p $full_file tmp-build-dir/tmp/builtin/optional
+      cp -p $full_file.md5.txt tmp-build-dir/tmp/builtin/optional
+      cp -p $full_file.dep tmp-build-dir/tmp/builtin/optional
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+    else
+      PKGNAME=${file%.*}
+      echo "Installing .deb package as builtin: $PKGNAME"
+      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+    fi
+  done < ${LOCAL_EXTENTS_LIST}
+fi
 
 # download the ruby-gems distribution (will be installed during the boot
 # process prior to starting the Microkernel initialization process)
