@@ -27,11 +27,13 @@ build an instance of the Hanlon Microkernel ISO.
 OPTIONS:
    -h, --help                 print usage for this command
    -b, --builtin-list=FILE    file containing extensions to install as builtin
+   -a, --addtnl-kmods=FILE    file containing list of addtnl. kernel mods (TCZs)
+   -l, --local-extents=FILE   file containing list of local extensions (TCZs)
    -m, --mirror-list=FILE     file containing extensions to add to TCE mirror
    -p, --build-prod-image     build a production ISO (no openssh, no passwd)
    -d, --build-debug-image    build a debug ISO (enable automatic console login)
    -t, --tc-passwd=PASSWD     specify a password for the tc user
-   -c, --config=FILE          optional: specify a file containing configuration 
+   -c, --config=FILE          optional: specify a file containing configuration
                                 values; see bundle.cfg.example
    -v, --verbose              be (extremely) verbose about the build process
 
@@ -57,7 +59,7 @@ read_config_file()
 }
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -o hb:m:pdt:c:v -l help,builtin-list:,mirror-list:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose,dpkg-list: -- "$@")
+if ! options=$(getopt -o hb:m:a:l:pdt:c:v -l help,builtin-list:,mirror-list:addtnl-kmods:local-extents:,build-prod-image,build-debug-image,tc-passwd:,config:,verbose,dpkg-list: -- "$@")
 then
     usage
     # something went wrong, getopt will put out an error message for us
@@ -85,7 +87,9 @@ do
   case $1 in
   -b|--builtin-list) BUILTIN_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
   -m|--mirror-list) MIRROR_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
-  -p|--build-prod-image) 
+  -a|--addtnl-kmods) ADDTNL_MODS_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
+  -l|--local-extents) LOCAL_EXTENTS_LIST=`echo $2 | tr -d "'" | sed 's:^[=]\?\(.*\)$:\1:'`; shift;;
+  -p|--build-prod-image)
     if [ $BUNDLE_TYPE_SELECTED -eq 0 ]; then 
       BUNDLE_TYPE='prod'; 
       BUNDLE_TYPE_SELECTED=1
@@ -153,7 +157,11 @@ fi
 # variables, but not over-ridden on the command-line
 [ -z "$BUILTIN_LIST" -a -n "$MK_BUNDLE_BUILTIN_LIST" ] && 
   BUILTIN_LIST="$MK_BUNDLE_BUILTIN_LIST"
-[ -z "$MIRROR_LIST" -a -n "$MK_BUNDLE_MIRROR_LIST" ] && 
+[ -z "ADDTNL_MODS_LIST" -a -n "$MK_BUNDLE_ADDTNL_MODS_LIST" ] &&
+  ADDTNL_MODS_LIST="$MK_BUNDLE_ADDTNL_MODS_LIST"
+[ -z "LOCAL_EXTENTS_LIST" -a -n "$MK_BUNDLE_LOCAL_EXTENTS_LIST" ] &&
+  LOCAL_EXTENTS_LIST="$MK_BUNDLE_LOCAL_EXTENTS_LIST"
+[ -z "$MIRROR_LIST" -a -n "$MK_BUNDLE_MIRROR_LIST" ] &&
   MIRROR_LIST="$MK_BUNDLE_MIRROR_LIST"
 [ -z "$TC_PASSWD" -a -n "$MK_BUNDLE_TC_PASSWD" ] && 
   TC_PASSWD="$MK_BUNDLE_TC_PASSWD"
@@ -291,6 +299,29 @@ for file in `cat $MIRROR_LIST`; do
   fi
 done
 
+# and add the files listed in the file specified by the ADDTNL_MODS_LIST parameter
+# to the mirror as well
+if [ ! -z ${ADDTNL_MODS_LIST} ]; then
+  while read line; do
+    fields=( $line )
+    full_file=${fields[0]}
+    file=${full_file##*/}
+    if [ ${file##*.} != "deb" ]; then
+      cp -p $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      cp -p $full_file.md5.txt tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      cp -p $full_file.dep tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz
+      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+    else
+      PKGNAME=${file%.*}
+      echo "Installing .deb package as builtin: $PKGNAME"
+      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+      rm tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map 2> /dev/null
+      echo "${fields[1]}  ${fields[2]}" >> tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/${file}.map
+    fi
+  done < ${ADDTNL_MODS_LIST}
+fi
+
 # download a set of extensions that will be installed during the Microkernel
 # boot process.  These files will be placed into the /tmp/builtin directory in
 # the Microkernel ISO.  The list of files downloaded (and loaded at boot) are
@@ -301,15 +332,15 @@ rm tmp-build-dir/tmp/builtin/onboot.lst 2> /dev/null
 for file in `cat $BUILTIN_LIST`; do
   if [ ${file##*.} != "deb" ]; then
     if [ $BUNDLE_TYPE != 'prod' ] || [ ! $file = 'openssh.tcz' ]; then
-        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
-        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
-        wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
-        echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.md5.txt
+      wget $WGET_V -P tmp-build-dir/tmp/builtin/optional $TCL_MIRROR_URI/$file.dep
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
     elif [ $BUNDLE_TYPE = 'prod' ] && [ -f tmp-build-dir/tmp/builtin/optional/$file ]
     then
-        rm tmp-build-dir/tmp/builtin/optional/$file
-        rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
-        rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
+      rm tmp-build-dir/tmp/builtin/optional/$file
+      rm tmp-build-dir/tmp/builtin/optional/$file.md5.txt 2> /dev/null
+      rm tmp-build-dir/tmp/builtin/optional/$file.dep 2> /dev/null
     fi
   else
     PKGNAME=${file%.*}
@@ -319,6 +350,27 @@ for file in `cat $BUILTIN_LIST`; do
     echo $PKGNAME.tcz >> tmp-build-dir/tmp/builtin/onboot.lst
   fi
 done
+
+# and add the files listed in the file specified by the LOCAL_EXTENTS_LIST parameter
+# to the list of extensions installed at boot time as well
+if [ ! -z ${LOCAL_EXTENTS_LIST} ]; then
+  while read line; do
+    fields=( $line )
+    full_file=${fields[0]}
+    file=${full_file##*/}
+    if [ ${file##*.} != "deb" ]; then
+      cp -p $full_file tmp-build-dir/tmp/builtin/optional
+      cp -p $full_file.md5.txt tmp-build-dir/tmp/builtin/optional
+      cp -p $full_file.dep tmp-build-dir/tmp/builtin/optional
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+    else
+      PKGNAME=${file%.*}
+      echo "Installing .deb package as builtin: $PKGNAME"
+      ./bin/deb2tcz.sh $full_file tmp-build-dir/tmp/tinycorelinux/4.x/x86/tcz/$PKGNAME.tcz
+      echo $file >> tmp-build-dir/tmp/builtin/onboot.lst
+    fi
+  done < ${LOCAL_EXTENTS_LIST}
+fi
 
 # download the ruby-gems distribution (will be installed during the boot
 # process prior to starting the Microkernel initialization process)
