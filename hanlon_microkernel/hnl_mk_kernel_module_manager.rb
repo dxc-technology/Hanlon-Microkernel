@@ -33,7 +33,7 @@ module HanlonMicrokernel
 
     # define a few constants that will be used later on
     PATHSEP = File::SEPARATOR
-    KERNEL_MODULE_ROOT = "#{PATHSEP}lib#{PATHSEP}modules#{PATHSEP}" +
+    KERNEL_MODULE_ROOT = "#{PATHSEP}usr#{PATHSEP}local#{PATHSEP}lib#{PATHSEP}modules#{PATHSEP}" +
         "#{%x[uname -r].strip}#{PATHSEP}kernel"
     KMOD_GLOB_PATTERN_BASE = "#{KERNEL_MODULE_ROOT}#{PATHSEP}**#{PATHSEP}"
     OPEN_VM_TOOLS_MODS = %W[vmblock vmsync vmci vmxnet vmhgfs]

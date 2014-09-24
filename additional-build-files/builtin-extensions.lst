@@ -5,7 +5,7 @@ openssl-1.0.0.tcz
 dmidecode.tcz
 gcc_libs.tcz
 bash.tcz
-scsi-3.8.10-tinycore.tcz
+scsi-3.8.13-tinycore.tcz
 ncurses.tcz
 ncurses-common.tcz
 libedit.tcz
