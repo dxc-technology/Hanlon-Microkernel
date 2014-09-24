@@ -3,7 +3,7 @@
 # Use bootlocal.sh for system startup commands that can run in the background 
 # and therefore not slow down the boot process.
 
-LCL_TCE_MIRROR_DIR="/tmp/tinycorelinux/4.x/x86/tcz"
+LCL_TCE_MIRROR_DIR="/tmp/tinycorelinux/5.x/x86/tcz"
 # install any kernel modules from the LCL_TCE_MIRROR_DIR and (re)start the
 # module associated with them
 DRIVER_MOD_DIR="/lib/modules/`uname -r`/kernel/drivers"

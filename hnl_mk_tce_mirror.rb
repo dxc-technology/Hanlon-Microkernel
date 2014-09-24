@@ -66,7 +66,7 @@ s = HTTPServer.new(:Port => 2157, :Logger => logger, :ServerType => WEBrick::Dae
 
 # mount our servlets as directories under our HTTP server's URI
 
-s.mount("/tinycorelinux/4.x/x86/tcz", HTTPServlet::FileHandler, "/tmp/tinycorelinux/4.x/x86/tcz")
+s.mount("/tinycorelinux/5.x/x86/tcz", HTTPServlet::FileHandler, "/tmp/tinycorelinux/5.x/x86/tcz")
 s.mount("/tinycorelinux/tce-install-list", TceInstallListServlet)
 s.mount("/tinycorelinux/kmod-install-list", KmodInstallListServlet)
 
