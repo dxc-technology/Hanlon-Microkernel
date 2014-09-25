@@ -6,7 +6,8 @@
 LCL_TCE_MIRROR_DIR="/tmp/tinycorelinux/5.x/x86/tcz"
 # install any kernel modules from the LCL_TCE_MIRROR_DIR and (re)start the
 # module associated with them
-DRIVER_MOD_DIR="/lib/modules/`uname -r`/kernel/drivers"
+DRIVER_MOD_DIR="/usr/local/lib/modules/`uname -r`/kernel/drivers"
+DRIVER_INSMOD_DIR="/lib/modules/`uname -r`/kernel/drivers"
 for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
   ext_filename=${map_filename%.*}
   while read line; do
@@ -19,6 +20,12 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
     # use a 'mount' command to extract the specified kernel module file from
     # the specified extension file
     mkdir /tmp/$kmod_name; mount ${ext_filename} /tmp/$kmod_name -t squashfs -o loop
+    # make sure the target directory exists (if it doesn't, then create it)
+    target_filename="${DRIVER_MOD_DIR}/${kmod_target_filename}"
+    target_path=${target_filename%/*}
+    if [ ! -d ${target_path} ]; then
+      mkdir -p ${target_path}
+    fi
     # if the target is a gzipped kernel object and the file in the extension
     # is not, use gzip to convert it and write it out to the target, else just copy
     # it over to the target
@@ -28,7 +35,12 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
       cp /tmp/${kmod_name}/${kmod_filename} ${DRIVER_MOD_DIR}/${kmod_target_filename}
     fi
     umount /tmp/$kmod_name; rmdir /tmp/$kmod_name
-    modprobe $kmod_name
+    # if the module already exists in the 'standard' modules directory, then overwrite it
+    # with the module that was provided as part of the build
+    if [ -f ${DRIVER_INSMOD_DIR}/${kmod_target_filename} ]; then
+      cp ${DRIVER_MOD_DIR}/${kmod_target_filename} ${DRIVER_INSMOD_DIR}/${kmod_target_filename}
+    fi
+    insmod ${DRIVER_MOD_DIR}/${kmod_target_filename}
   done < ${map_filename}
 done
 
