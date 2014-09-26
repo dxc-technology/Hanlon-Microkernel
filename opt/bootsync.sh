@@ -44,14 +44,6 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
   done < ${map_filename}
 done
 
-# and install the IPMI utilities (will need these during the
-# Microkernel Controller initialization process to construct
-# the hardware ID for the node)
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/freeipmi.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/openipmi.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i /tmp/builtin/optional/readline.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/ipmitool.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-
 # next, install rubygems (from the gzipped tarfile included in the ISO)
 prev_wd=`pwd`
 rubygems_file=`ls /opt/rubygems*.tgz | awk -F/ '{print $NF}'`
