@@ -56,26 +56,7 @@ module HanlonMicrokernel
     end
 
     def get_uuid
-      # loop through output of 'lshw -c system' command
-      %x[sudo lshw -c system].split("/n").each { |line|
-        # check for line that includes the configuration (which has the
-        # uuid value embedded in it)
-        config_line_val = /^[ ]+configuration:\s+(.+)/.match(line)
-        if config_line_val && config_line_val[1]
-          # if got this far, then split the match into elements, each
-          # of which will look like "name=value"; then look for the
-          # element who's 'name' is 'uuid'
-          config_line_val[1].split.each { |elem|
-            uuid_elem_match = /^uuid=(.+)$/.match(elem)
-            if uuid_elem_match
-              # if got this far, we've found a match
-              return uuid_elem_match[1]
-            end
-          }
-        end
-      }
-      # if we got to here, no uuid was found, so return an empty string
-      ''
+      %x[sudo dmidecode -s system-uuid].chomp
     end
 
   end
