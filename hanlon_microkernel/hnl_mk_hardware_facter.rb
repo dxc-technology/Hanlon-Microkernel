@@ -121,9 +121,6 @@ module HanlonMicrokernel
         if $?.exitstatus == 0
           hash_map = ipmitool_output_to_hash(ipmitool_bmc_info_str, ":", :bmc_info)
           logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-          key = "mk_ipmitool_json_str"
-          facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-              mk_fct_excl_pattern.match(key)
           fields_to_include = ["Device_ID", "Device_Revision", "Firmware_Revision",
                                "IPMI_Version", "Manufacturer_ID", "Manufacturer_Name",
                                "Product_ID", "Product_Name", "Device_Available",
@@ -134,9 +131,6 @@ module HanlonMicrokernel
           if $?.exitstatus == 0
             hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":", :lan_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-            key = "mk_ipmitool_json_str"
-            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-                mk_fct_excl_pattern.match(key)
             fields_to_include = ["IP_Address_Source", "IP_Address",
                                  "Subnet_Mask", "MAC_Address",
                                  "SNMP_Community_String", "IP_Header",
@@ -151,9 +145,6 @@ module HanlonMicrokernel
           if $?.exitstatus == 0
             hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":", :fru_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-            key = "mk_ipmitool_json_str"
-            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-                mk_fct_excl_pattern.match(key)
             fields_to_include = ['^fru_\d+_Chassis_Type$', '^fru_\d+_Chassis_Part_Number$', '^fru_\d+_Chassis_Serial$',
                                  '^fru_\d+_Board_Mfg_Date$', '^fru_\d+_Board_Mfg$', '^fru_\d+_Board_Product$',
                                  '^fru_\d+_Board_Serial$', '^fru_\d+_Board_Part_Number$']
