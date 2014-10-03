@@ -182,7 +182,7 @@ fi
 [ -z "$TCL_MIRROR_URI" ] && TCL_MIRROR_URI='http://distro.ibiblio.org/tinycorelinux/5.x/x86/tcz'
 [ -z "$TCL_ISO_URL" ] && TCL_ISO_URL='http://distro.ibiblio.org/tinycorelinux/5.x/x86/release/Core-current.iso'
 [ -z "$RUBY_GEMS_URL" ] && RUBY_GEMS_URL='http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz'
-[ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v1.0/mk-custom-busybox.tar.gz'
+[ -z "$PRIV_BUSYBOX_URL" ] && PRIV_BUSYBOX_URL='https://github.com/csc/Hanlon-Microkernel/releases/download/v2.0.0/mk-custom-busybox.tar.gz'
 [ -z "${DEB_PACKAGE_LIST_URL[*]}" ] && DEB_PACKAGE_LIST_URL[0]='http://distro.ibiblio.org/tinycorelinux/5.x/x86/debian_wheezy_main_i386_Packages.gz'
 [ -z "$DEB_MIRROR_URL" ] && DEB_MIRROR_URL='ftp://ftp.us.debian.org/debian'
 
