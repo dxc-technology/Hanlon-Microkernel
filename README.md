@@ -1,4 +1,4 @@
-## Project Hanlon-Microkernel (v1.2.0)
+## Project Hanlon-Microkernel (v2.0.0)
 
 This is part of [Project Hanlon][hanlon] - the Microkernel is the in-memory
 Linux instance used to discover the hardware details and initiate
