@@ -118,7 +118,7 @@ module HanlonMicrokernel
         ipmitool_bmc_info_str = %x[sudo ipmitool bmc info 2> /dev/null]
         # assume that if there was a non-zero exit status, it's because there is no IPMI system
         # in place on this node...skip the rest of the IPMI-related facts
-        if $?.exitstatus == 0
+        unless $?.exitstatus != 0 && ipmitool_bmc_info_str.empty?
           hash_map = ipmitool_output_to_hash(ipmitool_bmc_info_str, ":", :bmc_info)
           logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
           fields_to_include = ["Device_ID", "Device_Revision", "Firmware_Revision",
@@ -128,7 +128,7 @@ module HanlonMicrokernel
           add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
           # add the facts that result from running the "ipmitool lan print" command
           ipmitool_lan_print_str = %x[sudo ipmitool lan print 2> /dev/null]
-          if $?.exitstatus == 0
+          unless $?.exitstatus != 0 && ipmitool_lan_print_str.empty?
             hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":", :lan_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
             fields_to_include = ["IP_Address_Source", "IP_Address",
@@ -142,7 +142,7 @@ module HanlonMicrokernel
           end
           # add the facts that result from running the "ipmitool fru print" command
           ipmitool_fru_print_str = %x[sudo ipmitool fru print 2> /dev/null]
-          if $?.exitstatus == 0
+          unless $?.exitstatus != 0 && ipmitool_fru_print_str.empty?
             hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":", :fru_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
             fields_to_include = ['^fru_\d+_Chassis_Type$', '^fru_\d+_Chassis_Part_Number$', '^fru_\d+_Chassis_Serial$',
