@@ -1,4 +1,4 @@
-# this is the RzMkKernelModuleManager class
+# this is the HnlMkKernelModuleManager class
 #
 # it manages the process of loading the appropriate kernel modules when the
 # Microkernel boots.  It uses the facts gathered by Facter to determine what sort
@@ -25,7 +25,7 @@ require 'hanlon_microkernel/hnl_mk_configuration_manager'
 HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
 module HanlonMicrokernel
-  class RzMkKernelModuleManager
+  class HnlMkKernelModuleManager
     # make this a singleton object (there should only be one in the system)
     include Singleton
     # and include the HanlonMicrokernel::Logging mixin (which enables logging)
@@ -33,14 +33,14 @@ module HanlonMicrokernel
 
     # define a few constants that will be used later on
     PATHSEP = File::SEPARATOR
-    KERNEL_MODULE_ROOT = "#{PATHSEP}lib#{PATHSEP}modules#{PATHSEP}" +
+    KERNEL_MODULE_ROOT = "#{PATHSEP}usr#{PATHSEP}local#{PATHSEP}lib#{PATHSEP}modules#{PATHSEP}" +
         "#{%x[uname -r].strip}#{PATHSEP}kernel"
     KMOD_GLOB_PATTERN_BASE = "#{KERNEL_MODULE_ROOT}#{PATHSEP}**#{PATHSEP}"
     OPEN_VM_TOOLS_MODS = %W[vmblock vmsync vmci vmxnet vmhgfs]
 
     def load_kernel_modules
       # get a reference to the Configuration Manager instance (a singleton)
-      config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
+      config_manager = (HanlonMicrokernel::HnlMkConfigurationManager).instance
 
       # if the config file exists and if the kmod_install_list_uri property exists in the configuration,
       # and if that property actually is a URI, then continue

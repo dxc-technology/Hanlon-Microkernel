@@ -15,14 +15,14 @@ require 'hanlon_microkernel/logging'
 HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
 module HanlonMicrokernel
-  class RzMkHardwareFacter
+  class HnlMkHardwareFacter
 
     include Singleton
 
     # include the HanlonMicrokernel::Logging mixin (which enables logging)
     include HanlonMicrokernel::Logging
 
-    # used by the RzMkRegistrationManager class to add facts extracted from a set of
+    # used by the HnlMkRegistrationManager class to add facts extracted from a set of
     # "lscpu" and "lshw" system calls to the input "facts_map" (which is assumed to
     # be a hash_map)
     # @param [Hash] facts_map
@@ -48,7 +48,7 @@ module HanlonMicrokernel
 
         # and add the facts that result from running a few "lshw" commands...first,
         # add the bus information
-        lshw_c_bus_str = %x[sudo #{lshw_cmd} -c bus]
+        lshw_c_bus_str = %x[sudo #{lshw_cmd} -c bus 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_bus")
         # and add a set of facts from this bus information as top-level facts in the
@@ -57,7 +57,7 @@ module HanlonMicrokernel
         add_flattened_hash_to_facts!(hash_map["core"], facts_map, "mk_hw_bus", fields_to_include)
 
         # next, the memory information (including firmware, system memory, and caches)
-        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory]
+        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_mem", /cache_array/)
         # and add a set of facts from this memory information as top-level facts in the
@@ -71,7 +71,7 @@ module HanlonMicrokernel
                                      "mk_hw_mem", fields_to_include)
 
         # next, the disk information (number of disks, sizes, etc.)
-        lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk]
+        lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_disk")
         # and add a set of facts from the array of disk information as top-level facts in the
@@ -89,7 +89,7 @@ module HanlonMicrokernel
         add_flattened_array_to_facts!(disk_array, facts_map, "mk_hw_disk", fields_to_include) if disk_array
 
         # next, the processor information
-        lshw_c_processor_str = %x[sudo #{lshw_cmd} -c processor]
+        lshw_c_processor_str = %x[sudo #{lshw_cmd} -c processor 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_proc")
         # and add a set of facts from the array of processor information as top-level facts in the
@@ -102,7 +102,7 @@ module HanlonMicrokernel
                                       "mk_hw_cpu", fields_to_include)
 
         # and finally, the network information
-        lshw_c_network_str = %x[sudo #{lshw_cmd} -c network]
+        lshw_c_network_str = %x[sudo #{lshw_cmd} -c network 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_nw")
         # and add a set of facts from the array of network information as top-level facts in the
@@ -115,49 +115,40 @@ module HanlonMicrokernel
                                       "mk_hw_nic", fields_to_include)
 
         # add the facts that result from running the "ipmitool mc info" command
-        ipmitool_mc_info_str = %x[sudo ipmitool bmc info]
+        ipmitool_bmc_info_str = %x[sudo ipmitool bmc info 2> /dev/null]
         # assume that if there was a non-zero exit status, it's because there is no IPMI system
         # in place on this node...skip the rest of the IPMI-related facts
-        if $?.exitstatus == 0
-          hash_map = ipmitool_output_to_hash(ipmitool_mc_info_str, ":")
+        unless $?.exitstatus != 0 && ipmitool_bmc_info_str.empty?
+          hash_map = ipmitool_output_to_hash(ipmitool_bmc_info_str, ":", :bmc_info)
           logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-          key = "mk_ipmitool_json_str"
-          facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-              mk_fct_excl_pattern.match(key)
           fields_to_include = ["Device_ID", "Device_Revision", "Firmware_Revision",
                                "IPMI_Version", "Manufacturer_ID", "Manufacturer_Name",
                                "Product_ID", "Product_Name", "Device_Available",
                                "Provides_Device_SDRs"]
           add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
           # add the facts that result from running the "ipmitool lan print" command
-          ipmitool_lan_print_str = %x[sudo ipmitool lan print]
-          if $?.exitstatus == 0
-            hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":")
+          ipmitool_lan_print_str = %x[sudo ipmitool lan print 2> /dev/null]
+          unless $?.exitstatus != 0 && ipmitool_lan_print_str.empty?
+            hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":", :lan_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-            key = "mk_ipmitool_json_str"
-            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-                mk_fct_excl_pattern.match(key)
             fields_to_include = ["IP_Address_Source", "IP_Address",
                                  "Subnet_Mask", "MAC_Address",
                                  "SNMP_Community_String", "IP_Header",
                                  "BMC_ARP_Control", "Gratuitous_ARP_Intrvl",
                                  "Default_Gateway_IP", "Default_Gateway_MAC",
                                  "Backup_Gateway_IP", "Backup_Gateway_MAC",
-                                 "802.1q_VLAN_ID", "802.1q_VLAN_ID"]
+                                 "8021q_VLAN_ID", "8021q_VLAN_Priority"]
             add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
           end
           # add the facts that result from running the "ipmitool fru print" command
-          ipmitool_fru_print_str = %x[sudo ipmitool fru print]
-          if $?.exitstatus == 0
-            hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":")
+          ipmitool_fru_print_str = %x[sudo ipmitool fru print 2> /dev/null]
+          unless $?.exitstatus != 0 && ipmitool_fru_print_str.empty?
+            hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":", :fru_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
-            key = "mk_ipmitool_json_str"
-            facts_map[key.to_sym] = JSON.generate(hash_map) unless mk_fct_excl_pattern &&
-                mk_fct_excl_pattern.match(key)
-            fields_to_include = ["Chassis_Type", "Chassis_Part_Number", "Chassis_Serial",
-                                 "Board_Mfg_Date", "Board_Mfg", "Board_Product",
-                                 "Board_Serial", "Board_Part_Number"]
-            add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
+            fields_to_include = ['^fru_\d+_Chassis_Type$', '^fru_\d+_Chassis_Part_Number$', '^fru_\d+_Chassis_Serial$',
+                                 '^fru_\d+_Board_Mfg_Date$', '^fru_\d+_Board_Mfg$', '^fru_\d+_Board_Product$',
+                                 '^fru_\d+_Board_Serial$', '^fru_\d+_Board_Part_Number$']
+            add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include, :like)
           end
         end
 
@@ -195,7 +186,7 @@ module HanlonMicrokernel
     # result in that key/value pair not being added the facts_map; this field is used
     # to block entire sets of facts from being added to the facts_map
     def add_hash_to_facts!(hash_map, facts_map, mk_fact_excl_pattern, prefix,
-        field_exclude_pattern = nil)
+                           field_exclude_pattern = nil)
       return unless hash_map
       hash_map.each {|key, value|
         key = prefix + '_' + key
@@ -220,14 +211,23 @@ module HanlonMicrokernel
     # to the facts_map are unique
     # @param [Array] fields_to_include  An array containing the list of keys for which a
     # corresponding key/value pair from the hash_map should be added to the facts_map
-    def add_flattened_hash_to_facts!(hash_map, facts_map, prefix, fields_to_include)
-      fields_to_include.each { |key|
-        next unless hash_map
-        if hash_map.key?(key)
+    def add_flattened_hash_to_facts!(hash_map, facts_map, prefix, fields_to_include,
+                                     match_style = :equals)
+      if match_style.equal?(:like)
+        hash_map.keys.each { |key|
+          next unless fields_to_include.select { |field_key| /#{field_key}/.match(key) }
           new_key = prefix + '_' + key
           facts_map[new_key.to_sym] = hash_map[key]
-        end
-      }
+        }
+      elsif match_style.equal?(:equals)
+        fields_to_include.each { |key|
+          next unless hash_map
+          if hash_map.key?(key)
+            new_key = prefix + '_' + key
+            facts_map[new_key.to_sym] = hash_map[key]
+          end
+        }
+      end
     end
 
     # used by the add_facts_to_map! method (above) to flatten out an array of hash map
@@ -272,29 +272,195 @@ module HanlonMicrokernel
       index = 0
       array.each { |entry|
         (index += 1; next) if entry.strip.length == 0
-        # parse that entry to obtain the key, first by splitting on the delimiter, then
-        # by replacing characters that could be problematic in a key value with other
+        # first, split the entry using the delimiter, breaking the string into an array
+        # of at most two strings
+        split_entry = entry.split(/\s*#{delimiter}\s?/, 2)
+        # then replace any characters that could be problematic in a key value with other
         # characters
-        key = entry.split(/\s*#{delimiter}\s?/)[0].strip.gsub(/\s+/," ").gsub(' ','_').gsub('.','').gsub(/^#/,"number")
-        # next, split the entry on the delimiter again, this time to determine the value that goes
-        # with the key that we just constructed
-        val = entry.split(/\s*#{delimiter}\s?/,2)[1].strip
+        key = split_entry[0].strip.gsub(/\s+/, " ").gsub(/[\ \/\\]/, '_').gsub('.', '').gsub(/^#/, "number")
+        # and, finally, determine the value that goes with the key that we just constructed
+        val = ( split_entry[1] ? split_entry[1].strip : "" )
         split_hash[key] = val
       }
       split_hash
     end
 
     # Takes the output of the ipmitool command and converts it to a Hash of name/value
-    # pairs (where the names are the properties, as Symbols, and the values are either Strings or arrays of
-    # Strings representing the values for those properties)
+    # pairs (where the names are the properties, as Symbols, and the values are either
+    # Strings or arrays of Strings representing the values for those properties).
+    #
+    # Note that the formats that need to be supported by this function vary widely depending
+    # on the ipmitool command we are parsing output for.  As such, we will actually use a case
+    # statement in this method to call the appropriate parsing function (based on the 'command'
+    # value), then massage the results that are returned into a format that can be used elsewhere
+    #
     # @param command_output [String] the raw output from ipmitool command
     # @param delimiter [String] the delimiter that should be used to separate the name/value pairs in the
     #     raw impitool command output
     # @return [Hash<String, Array<String>>] a Hash map containing the names of the properties as keys and
     #     an Array of String values for that properties as the matching Hash map values.
-    def ipmitool_output_to_hash(command_output, delimiter)
-      # for now, just do what we do with the "lscpu" output
-      lscpu_output_to_hash(command_output, delimiter)
+    def ipmitool_output_to_hash(command_output, delimiter, command)
+      if command.equal?(:bmc_info)
+        parse_bmc_info(command_output, delimiter)
+      elsif command.equal?(:lan_print)
+        parse_lan_print(command_output, delimiter)
+      elsif command.equal?(:fru_print)
+        parse_fru_print(command_output, delimiter)
+      else
+        lscpu_output_to_hash(command_output, delimiter).select { |k, v| !k.empty? && !v.empty?}
+      end
+    end
+
+    # examples from some of the commands include the following formats:
+    #
+    # Device ID                 : 32
+    #     ...
+    # Additional Device Support :
+    #    Sensor Device
+    #    SDR Repository Device
+    #     ...
+    #
+    # (Note, in this example the lines that appear underneath the 'Additional Device Support :'
+    # line are all values for the 'Additional Device Support' property)
+    def parse_bmc_info(command_output, delimiter)
+      array = command_output.split("\n")
+      split_hash = Hash.new
+      delimiter = "\\#{delimiter}"
+      current_key = ""
+      array.each { |entry|
+        next if entry.strip.length == 0
+        # each entry can be either a name-value line or a name
+        # line followed by a number of value lines followed by another
+        # name or name-value line, so parse accordingly (collapsing the
+        # value lines into an array that is referred to using the value
+        # from the preceeding name line as a key)
+        if !/\s*#{delimiter}\s?/.match(entry)
+          # if here, we're in a 'value line', so add this to the array
+          # value referenced by the current_key in the hash we're returning
+          split_hash[current_key] << entry.strip
+        else
+          # if here, we're parsing either a 'name/value' line or a 'name' line; in either
+          # case the first thing we'll do is split the entry using the delimiter, breaking
+          # the string into an array of at most two strings
+          split_entry = entry.split(/\s*#{delimiter}\s?/, 2)
+          # then we'll replace any characters that could be problematic in a key value with
+          # other characters
+          key = split_entry[0].strip.gsub(/\s+/, " ").gsub(/[\ \/\\]/, '_').gsub('.', '').gsub(/^#/, "number")
+          if split_entry.size == 2 && !(split_entry[1].empty?)
+            # if there are two entries, then it's a name-value line, so just save the value
+            # (the stripped second part of our parsed line) under (the first part) in our hash map
+            split_hash[key] = split_entry[1].strip
+          else
+            # if there is only one entry, then this is a 'name' line; in that case, we'll save
+            # this 'key' as the 'current_key' value, add an empty array to the map and continue
+            # our parsing
+            current_key = key
+            split_hash[key] = []
+          end
+        end
+      }
+      split_hash
+    end
+
+    # a slightly more complicated is in the 'lan print' output:
+    #
+    # Auth Type Support       : NONE MD2 MD5 PASSWORD
+    # Auth Type Enable        : Callback : MD2 MD5
+    #                         : User     : MD2 MD5
+    #                         : Operator : MD2 MD5
+    #                             ...
+    #
+    # in this example, the value of the 'Auth Type Enable' field is actually a hash map, where the
+    # value on this line (and the subsequent lines) should be used to construct that map.
+    def parse_lan_print(command_output, delimiter)
+      array = command_output.split("\n")
+      split_hash = Hash.new
+      delimiter = "\\#{delimiter}"
+      current_key = ""
+      array.each { |entry|
+        next if entry.strip.length == 0
+        # each entry can be either a name-value line or a number of
+        # value lines that should be appended to the value added from the
+        # most recent name-value line
+        split_entry = entry.split(/\s*#{delimiter}\s?/, 2)
+        val = split_entry[1].strip
+        if !split_entry[0].empty?
+          # replace any characters that could be problematic in a key value with
+          # other characters
+          key = split_entry[0].strip.gsub(/\s+/, " ").gsub(/[\ \/\\]/, '_').gsub('.', '').gsub(/^#/, "number")
+          # it's a name-value line, so just save this key as the 'current_key' and save the value
+          # (the stripped second part of our parsed line) under (the first part) in our hash map
+          current_key = key
+          if /\s*#{delimiter}\s?/.match(val)
+            tmp_map = {}
+            split_val = val.split(/\s*#{delimiter}\s?/, 2)
+            tmp_map[split_val[0].strip] = split_val[1].strip
+            split_hash[key] = tmp_map
+          else
+            split_hash[key] = val
+          end
+        else
+          # if there is only one entry, then this is a 'value' line; in that case, we'll save
+          # this 'value' under the 'current_key' value (appending it to the value that might
+          # be there)
+          if split_hash[current_key].is_a?(Array)
+            split_hash[current_key] << val
+          elsif split_hash[current_key].is_a?(Hash)
+            if /\s*#{delimiter}\s?/.match(val)
+              tmp_map = split_hash[current_key]
+              split_val = val.split(/\s*#{delimiter}\s?/, 2)
+              tmp_map[split_val[0].strip] = split_val[1].strip
+              split_hash[current_key] = tmp_map
+            end
+          else
+            split_hash[current_key] = [split_hash[current_key], val]
+          end
+        end
+      }
+      split_hash
+    end
+
+    # Finally, things get extremely complicated when we look at the output of the 'fru print'
+    # command:
+    #
+    # FRU Device Description : Builtin FRU Device (ID 0)
+    #  Board Mfg Date        : Fri Jun 20 07:10:00 2014
+    #  Board Mfg             : DELL
+    #  Board Product         : PowerEdge R720
+    #  Board Serial          : CN7016346J01AM
+    #  Board Part Number     : 0X3D66A07
+    #  Product Manufacturer  : DELL
+    #  Product Name          : WIN-QB9K8RM13CA
+    #  Product Version       : 01
+    #  Product Serial        : CRCGY12
+    #  Product Asset Tag     : AH847011
+    #
+    # FRU Device Description : iDRAC7
+    #  Board Mfg Date        : Fri Jun 20 07:10:00 2014
+    #  Board Mfg             : DELL
+    #  Board Product         : PowerEdge R720
+    #     ...
+    #
+    # Note that in the output of this command the output is actually an array of hash maps, where
+    # each block represents one FRU entry.
+    def parse_fru_print(command_output, delimiter)
+      array = command_output.split("\n")
+      split_hash = Hash.new
+      delimiter = "\\#{delimiter}"
+      index = 0
+      array.each { |entry|
+        (index += 1; next) if entry.strip.length == 0
+        # first, split the entry using the delimiter, breaking the string into an array
+        # of at most two strings
+        split_entry = entry.split(/\s*#{delimiter}\s?/, 2)
+        # then replace any characters that could be problematic in a key value with other
+        # characters
+        key = split_entry[0].strip.gsub(/\s+/, " ").gsub(/[\ \/\\]/, '_').gsub('.', '').gsub(/^#/, "number")
+        # and, finally, determine the value that goes with the key that we just constructed
+        val = ( split_entry[1] ? split_entry[1].strip : "" )
+        split_hash["fru_#{index}_" + key] = val
+      }
+      split_hash
     end
 
     # Takes the output of a lshw command and converts it to a Hash of name/value

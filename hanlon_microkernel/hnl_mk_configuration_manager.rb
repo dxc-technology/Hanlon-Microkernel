@@ -7,7 +7,7 @@ require 'yaml'
 require 'singleton'
 
 module HanlonMicrokernel
-  class RzMkConfigurationManager
+  class HnlMkConfigurationManager
     # make this class a singleton class (only want one)
     include Singleton
 

@@ -25,7 +25,7 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
 
   def do_POST(req, res)
     # get a reference to the Configuration Manager instance (a singleton)
-    config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
+    config_manager = (HanlonMicrokernel::HnlMkConfigurationManager).instance
 
     # get the Hanlon URI from the request body; it should be included in
     # the body in the form of a string that looks something like the following:
@@ -35,12 +35,12 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
     # where the hanlon_uri_val is a CGI-escaped version of the URI used by the
     # Hanlon server.  The "Registration Path" (from the uri_map, above) is added
     # to this Hanlon URI value in order to form the "registration_uri"
-    json_string = CGI.unescape(req.body)
-    logger.debug "in POST; configuration received...#{json_string}"
+    json_string = CGI.unescapeHTML(req.body)
+    logger.debug "in POST; configuration received...#{json_string.inspect}"
     # Note: have to truncate the CGI escaped body to get rid of the trailing '='
     # character (have no idea where this comes from, but it's part of the body in
     # a "post_form" request)
-    config_map = JSON.parse(json_string[0..-2])
+    config_map = JSON.parse(json_string)
     # create a new HTTP Response
     config = WEBrick::Config::HTTP
     resp = WEBrick::HTTPResponse.new(config)

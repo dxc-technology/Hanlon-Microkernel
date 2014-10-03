@@ -16,7 +16,7 @@ require 'hanlon_microkernel/logging'
 HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
 module HanlonMicrokernel
-  class RzMkRegistrationManager
+  class HnlMkRegistrationManager
 
     # include the HanlonMicrokernel::Logging mixin (which enables logging)
     include HanlonMicrokernel::Logging
@@ -27,7 +27,7 @@ module HanlonMicrokernel
       @registration_uri = registration_uri
       @exclude_pattern = exclude_pattern
       @fact_manager = fact_manager
-      @hardware_facter = RzMkHardwareFacter.instance
+      @hardware_facter = HnlMkHardwareFacter.instance
     end
 
     def register_node(last_state)

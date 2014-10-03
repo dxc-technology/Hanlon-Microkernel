@@ -3,10 +3,11 @@
 # Use bootlocal.sh for system startup commands that can run in the background 
 # and therefore not slow down the boot process.
 
-LCL_TCE_MIRROR_DIR="/tmp/tinycorelinux/4.x/x86/tcz"
+LCL_TCE_MIRROR_DIR="/tmp/tinycorelinux/5.x/x86/tcz"
 # install any kernel modules from the LCL_TCE_MIRROR_DIR and (re)start the
 # module associated with them
-DRIVER_MOD_DIR="/lib/modules/`uname -r`/kernel/drivers"
+DRIVER_MOD_DIR="/usr/local/lib/modules/`uname -r`/kernel/drivers"
+DRIVER_INSMOD_DIR="/lib/modules/`uname -r`/kernel/drivers"
 for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
   ext_filename=${map_filename%.*}
   while read line; do
@@ -19,6 +20,12 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
     # use a 'mount' command to extract the specified kernel module file from
     # the specified extension file
     mkdir /tmp/$kmod_name; mount ${ext_filename} /tmp/$kmod_name -t squashfs -o loop
+    # make sure the target directory exists (if it doesn't, then create it)
+    target_filename="${DRIVER_MOD_DIR}/${kmod_target_filename}"
+    target_path=${target_filename%/*}
+    if [ ! -d ${target_path} ]; then
+      mkdir -p ${target_path}
+    fi
     # if the target is a gzipped kernel object and the file in the extension
     # is not, use gzip to convert it and write it out to the target, else just copy
     # it over to the target
@@ -28,25 +35,14 @@ for map_filename in `ls ${LCL_TCE_MIRROR_DIR}/*.map`; do
       cp /tmp/${kmod_name}/${kmod_filename} ${DRIVER_MOD_DIR}/${kmod_target_filename}
     fi
     umount /tmp/$kmod_name; rmdir /tmp/$kmod_name
-    modprobe $kmod_name
+    # if the module already exists in the 'standard' modules directory, then overwrite it
+    # with the module that was provided as part of the build
+    if [ -f ${DRIVER_INSMOD_DIR}/${kmod_target_filename} ]; then
+      cp ${DRIVER_MOD_DIR}/${kmod_target_filename} ${DRIVER_INSMOD_DIR}/${kmod_target_filename}
+    fi
+    insmod ${DRIVER_MOD_DIR}/${kmod_target_filename}
   done < ${map_filename}
 done
-
-# install the IPMI kernel modules
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/ipmi-kernel-mods.tcz 2>&1 | tee /tmp/ipmi-load.log
-IPMI_MOD_DIR="/lib/modules/`uname -r`/kernel/drivers/char/ipmi"
-for mod in ipmi_msghandler.ko ipmi_si.ko ipmi_devintf.ko ipmi_poweroff.ko ipmi_watchdog.ko; do
-  sudo insmod ${IPMI_MOD_DIR}/$mod 2>&1 | tee -a /tmp/ipmi-load.log
-done
-sudo depmod -a
-
-# and install the IPMI utilities (will need these during the
-# Microkernel Controller initialization process to construct
-# the hardware ID for the node)
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/freeipmi.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/openipmi.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i /tmp/builtin/optional/readline.tcz 2>&1 | tee -a /tmp/ipmi-load.log
-sudo -u tc tce-load -i ${LCL_TCE_MIRROR_DIR}/ipmitool.tcz 2>&1 | tee -a /tmp/ipmi-load.log
 
 # next, install rubygems (from the gzipped tarfile included in the ISO)
 prev_wd=`pwd`
