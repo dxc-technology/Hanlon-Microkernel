@@ -9,7 +9,7 @@ require 'net/http'
 require 'singleton'
 
 module HanlonMicrokernel
-  class RzMkGemController
+  class HnlMkGemController
     # make this class a singleton class (only want one)
     include Singleton
 

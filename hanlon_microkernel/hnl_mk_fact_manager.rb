@@ -8,7 +8,7 @@ require 'facter/util/ip'
 require 'yaml'
 
 module HanlonMicrokernel
-  class RzMkFactManager
+  class HnlMkFactManager
 
     attr_accessor :prev_facts_filename
     attr_reader :last_saved_timestamp

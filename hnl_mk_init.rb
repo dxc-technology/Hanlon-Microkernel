@@ -15,13 +15,13 @@ require 'hanlon_microkernel/hnl_mk_configuration_manager'
 
 # First, install the gems that we'll need later on.  Note: if the parameters
 # needed to find an external mirror are not specified, we'll take advantage
-# of the default values for the two input arguments to the RzMkGemController
+# of the default values for the two input arguments to the HnlMkGemController
 # constructor here (since we use the "http://localhost:2158/gem-mirror" URI
 # for our local gem mirror and the "gem.list" file, which contains the list
 # of gems to install from that mirror, is in the "gems/gem.list" file under
 # that local mirror URI)
-gemController = (HanlonMicrokernel::RzMkGemController).instance
-mk_conf_filename = HanlonMicrokernel::RzMkConfigurationManager::MK_CONF_FILE
+gemController = (HanlonMicrokernel::HnlMkGemController).instance
+mk_conf_filename = HanlonMicrokernel::HnlMkConfigurationManager::MK_CONF_FILE
 mk_conf = YAML::load(File.open(mk_conf_filename))
 gemController.gemSource = mk_conf['mk_gem_mirror']
 gemController.gemListURI = mk_conf['mk_gemlist_uri']

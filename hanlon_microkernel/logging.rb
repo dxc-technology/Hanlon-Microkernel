@@ -15,7 +15,7 @@ module HanlonMicrokernel::Logging
   @loggers = {}
 
   # grab a reference to the configuration manager, use it to determine what level to log at (below)
-  @config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
+  @config_manager = (HanlonMicrokernel::HnlMkConfigurationManager).instance
 
   # Returns the logger object specific to the instance that called it
   def logger

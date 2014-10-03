@@ -25,7 +25,7 @@ class MKConfigServlet < HTTPServlet::AbstractServlet
 
   def do_POST(req, res)
     # get a reference to the Configuration Manager instance (a singleton)
-    config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
+    config_manager = (HanlonMicrokernel::HnlMkConfigurationManager).instance
 
     # get the Hanlon URI from the request body; it should be included in
     # the body in the form of a string that looks something like the following:

@@ -28,7 +28,7 @@ require 'hanlon_microkernel/hnl_mk_gem_controller'
 # by this method)
 def load_gems(mk_gem_mirror, mk_gemlist_uri)
   logger.debug("reloading gems from #{mk_gem_mirror} using list at #{mk_gemlist_uri}")
-  gemController = (HanlonMicrokernel::RzMkGemController).instance
+  gemController = (HanlonMicrokernel::HnlMkGemController).instance
   gemController.gemSource = mk_gem_mirror
   gemController.gemListURI = mk_gemlist_uri
   gemController.installListedGems
@@ -99,7 +99,7 @@ def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = fals
 
     # and load the kernel modules (if any), first get a reference to the Configuration
     # Manager instance (a singleton)
-    kernel_mod_manager = (HanlonMicrokernel::RzMkKernelModuleManager).instance
+    kernel_mod_manager = (HanlonMicrokernel::HnlMkKernelModuleManager).instance
     # and then load the modules
     kernel_mod_manager.load_kernel_modules
 
@@ -145,11 +145,11 @@ HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 include HanlonMicrokernel::Logging
 
 # get a reference to the Configuration Manager instance (a singleton)
-config_manager = (HanlonMicrokernel::RzMkConfigurationManager).instance
+config_manager = (HanlonMicrokernel::HnlMkConfigurationManager).instance
 
-# setup the RzMkFactManager instance (we'll use this later, in our
-# RzMkRegistrationManager constructor)
-fact_manager = HanlonMicrokernel::RzMkFactManager.new('/tmp/prev_facts.yaml')
+# setup the HnlMkFactManager instance (we'll use this later, in our
+# HnlMkRegistrationManager constructor)
+fact_manager = HanlonMicrokernel::HnlMkFactManager.new('/tmp/prev_facts.yaml')
 
 # and set the Registration Manager to nil (will update this, below)
 registration_manager = nil
@@ -193,7 +193,7 @@ if config_manager.config_file_exists? then
   # map that is reported during node registration
   exclude_pattern = config_manager.mk_fact_excl_pattern
   logger.debug "exclude_pattern = #{exclude_pattern}"
-  registration_manager = HanlonMicrokernel::RzMkRegistrationManager.new(registration_uri,
+  registration_manager = HanlonMicrokernel::HnlMkRegistrationManager.new(registration_uri,
                                                                        exclude_pattern, fact_manager)
 
   # "load" the appropriate gems into the Microkernel

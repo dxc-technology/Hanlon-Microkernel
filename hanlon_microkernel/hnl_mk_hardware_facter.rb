@@ -15,14 +15,14 @@ require 'hanlon_microkernel/logging'
 HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
 
 module HanlonMicrokernel
-  class RzMkHardwareFacter
+  class HnlMkHardwareFacter
 
     include Singleton
 
     # include the HanlonMicrokernel::Logging mixin (which enables logging)
     include HanlonMicrokernel::Logging
 
-    # used by the RzMkRegistrationManager class to add facts extracted from a set of
+    # used by the HnlMkRegistrationManager class to add facts extracted from a set of
     # "lscpu" and "lshw" system calls to the input "facts_map" (which is assumed to
     # be a hash_map)
     # @param [Hash] facts_map
@@ -48,7 +48,7 @@ module HanlonMicrokernel
 
         # and add the facts that result from running a few "lshw" commands...first,
         # add the bus information
-        lshw_c_bus_str = %x[sudo #{lshw_cmd} -c bus]
+        lshw_c_bus_str = %x[sudo #{lshw_cmd} -c bus 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_bus_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_bus")
         # and add a set of facts from this bus information as top-level facts in the
@@ -57,7 +57,7 @@ module HanlonMicrokernel
         add_flattened_hash_to_facts!(hash_map["core"], facts_map, "mk_hw_bus", fields_to_include)
 
         # next, the memory information (including firmware, system memory, and caches)
-        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory]
+        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_mem", /cache_array/)
         # and add a set of facts from this memory information as top-level facts in the
@@ -71,7 +71,7 @@ module HanlonMicrokernel
                                      "mk_hw_mem", fields_to_include)
 
         # next, the disk information (number of disks, sizes, etc.)
-        lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk]
+        lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_disk_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_disk")
         # and add a set of facts from the array of disk information as top-level facts in the
@@ -89,7 +89,7 @@ module HanlonMicrokernel
         add_flattened_array_to_facts!(disk_array, facts_map, "mk_hw_disk", fields_to_include) if disk_array
 
         # next, the processor information
-        lshw_c_processor_str = %x[sudo #{lshw_cmd} -c processor]
+        lshw_c_processor_str = %x[sudo #{lshw_cmd} -c processor 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_processor_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_proc")
         # and add a set of facts from the array of processor information as top-level facts in the
@@ -102,7 +102,7 @@ module HanlonMicrokernel
                                       "mk_hw_cpu", fields_to_include)
 
         # and finally, the network information
-        lshw_c_network_str = %x[sudo #{lshw_cmd} -c network]
+        lshw_c_network_str = %x[sudo #{lshw_cmd} -c network 2> /dev/null]
         hash_map = lshw_output_to_hash(lshw_c_network_str, ":")
         add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_nw")
         # and add a set of facts from the array of network information as top-level facts in the
@@ -115,7 +115,7 @@ module HanlonMicrokernel
                                       "mk_hw_nic", fields_to_include)
 
         # add the facts that result from running the "ipmitool mc info" command
-        ipmitool_bmc_info_str = %x[sudo ipmitool bmc info]
+        ipmitool_bmc_info_str = %x[sudo ipmitool bmc info 2> /dev/null]
         # assume that if there was a non-zero exit status, it's because there is no IPMI system
         # in place on this node...skip the rest of the IPMI-related facts
         if $?.exitstatus == 0
@@ -127,7 +127,7 @@ module HanlonMicrokernel
                                "Provides_Device_SDRs"]
           add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
           # add the facts that result from running the "ipmitool lan print" command
-          ipmitool_lan_print_str = %x[sudo ipmitool lan print]
+          ipmitool_lan_print_str = %x[sudo ipmitool lan print 2> /dev/null]
           if $?.exitstatus == 0
             hash_map = ipmitool_output_to_hash(ipmitool_lan_print_str, ":", :lan_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
@@ -141,7 +141,7 @@ module HanlonMicrokernel
             add_flattened_hash_to_facts!(hash_map, facts_map, "mk_ipmi", fields_to_include)
           end
           # add the facts that result from running the "ipmitool fru print" command
-          ipmitool_fru_print_str = %x[sudo ipmitool fru print]
+          ipmitool_fru_print_str = %x[sudo ipmitool fru print 2> /dev/null]
           if $?.exitstatus == 0
             hash_map = ipmitool_output_to_hash(ipmitool_fru_print_str, ":", :fru_print)
             logger.debug("after ipmitool_output_to_hash...#{hash_map.inspect}")
