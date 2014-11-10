@@ -38,12 +38,12 @@ case "$1" in
         # get the IP address from the "hanlon_server" DHCP parameter
         # (if it's set) or the "next-server" (siaddr) DHCP parameter
         # (if the "hanlon_server" parameter is not set but the
-        # "next_server" parameter is set)
+        # "next_server" parameter is set and hanlonServerIP isn't already set)
         if [ -n "$hanlon_server" ] ; then
             # added by tjmcs, 10-Apr-2014
             echo $hanlon_server > /tmp/hanlonServerIP.addr
         else
-            if [ -n "$siaddr" ] ; then
+            if [ -n "$siaddr" -a ! -f /tmp/hanlonServerIP.addr ] ; then
                 # added by tjmcs, 28-Feb-2012
                 echo $siaddr > /tmp/hanlonServerIP.addr
             fi
