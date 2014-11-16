@@ -1,0 +1,6 @@
+extra-driver-files/be2net.tcz               be2net.ko           net/ethernet/emulex/benet/be2net.ko.gz
+extra-driver-files/ipmi-kernel-mods.tcz     ipmi_msghandler.ko  char/ipmi/ipmi_msghandler.ko.gz
+extra-driver-files/ipmi-kernel-mods.tcz     ipmi_si.ko          char/ipmi/ipmi_si.ko.gz
+extra-driver-files/ipmi-kernel-mods.tcz     ipmi_devintf.ko     char/ipmi/ipmi_devintf.ko.gz
+extra-driver-files/ipmi-kernel-mods.tcz     ipmi_poweroff.ko    char/ipmi/ipmi_poweroff.ko.gz
+extra-driver-files/ipmi-kernel-mods.tcz     ipmi_watchdog.ko    char/ipmi/ipmi_watchdog.ko.gz
