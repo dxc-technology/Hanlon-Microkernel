@@ -56,7 +56,11 @@ module HanlonMicrokernel
     end
 
     def get_uuid
-      %x[sudo dmidecode -s system-uuid].chomp
+      # we've seen multi-line output from dmidecode on some systems,
+      # so parse the result of the `sudo dmidecode -s system-uuid`
+      # command and assume the last line is the UUID
+      cmd_output = %x[sudo dmidecode -s system-uuid].chomp
+      cmd_output.split("\n")[-1]
     end
 
   end
