@@ -84,7 +84,7 @@ cd tmp
 find | cpio -o -H newc | gzip -9 > ../core.gz
 cd ..
 # compress the file and copy it to the correct location for building the ISO
-advdef -z4 core.gz
+advdef -z2 core.gz
 cp -p core.gz newiso/boot/
 # build the YAML file needed for use in Hanlon, place it into the root of the
 # ISO filesystem
