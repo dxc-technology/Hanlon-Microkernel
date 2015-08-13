@@ -1,3 +1,6 @@
+firmware-intel_e100.tcz
+firmware-broadcom_bcm43xx.tcz
+firmware.tcz
 firmware-broadcom_bnx2.tcz
 firmware-broadcom_bnx2x.tcz
 openssh.tcz
