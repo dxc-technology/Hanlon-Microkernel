@@ -1,0 +1,18 @@
+[Unit]
+Description=HanlonMicrokernel
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+KillMode=none
+ExecStartPre=-/usr/bin/docker rmi new_mk_image
+ExecStartPre=/usr/bin/docker load -i /home/core/coreos-files/new_mk_image_save.tar 
+ExecStart=/usr/bin/docker run --privileged=true --name=hnl_mk -v /proc:/host-proc:ro -v /dev:/host-dev:ro -v /sys:/host-sys:ro --net host -t new_mk_image /bin/bash
+ExecStop=/usr/bin/docker stop hnl_mk
+ExecStopPost=/usr/bin/docker kill hnl_mk
+ExecStopPost=/usr/bin/docker rm hnl_mk
+ExecStopPost=/usr/bin/docker rmi new_mk_image
+
+[X-Fleet]
+X-Conflicts=hnl.service
