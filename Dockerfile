@@ -5,7 +5,7 @@ ENV REPOSITORY_URL="https://github.com/tjmcs/Hanlon-Microkernel" \
 
 # Install any dependencies needed
 RUN apk update && \
-    apk add bash dmidecode ruby open-lldp util-linux open-vm-tools git && \
+    apk add bash dmidecode ruby ruby-irb open-lldp util-linux open-vm-tools sudo git && \
     apk add lshw ipmitool --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted && \
     echo "install: --no-rdoc --no-ri" > /etc/gemrc && \
     gem install facter json_pure daemons && \

@@ -55,12 +55,22 @@ module HanlonMicrokernel
       mac_id_array.join('_').gsub(/:/,'')
     end
 
-    def get_uuid
+    def get_uuid_broken
       # we've seen multi-line output from dmidecode on some systems,
       # so parse the result of the `sudo dmidecode -s system-uuid`
       # command and assume the last line is the UUID
       cmd_output = %x[sudo dmidecode -s system-uuid].chomp
       cmd_output.split("\n")[-1]
+    end
+
+    def get_uuid
+      # switched from using the output of a dmidecode command (above)
+      # to using the output of a lshw command to determine the SMBIOS
+      # UUID for a node (since the output of a 'dmidecode -s system-uuid'
+      # command has been found not to be the same as the SMBIOS UUID value
+      # returned by the {uuid} directive in an iPXE boot script on
+      # some systems...i.e. on some VMware virtual machines)
+      %x[sudo lshw | grep -i uuid].split.select { |x| /^UUID/.match(x.upcase) }[0].split('=')[-1]
     end
 
   end
