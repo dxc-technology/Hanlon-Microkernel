@@ -5,6 +5,10 @@
 #
 #
 
+# first, add in the directory we will unpack the Hanlon Microkernel
+# support classes into in our Microkernel container
+$LOAD_PATH.unshift('/usr/lib/ruby/gems/2.2.0/gems')
+
 require 'yaml'
 require 'hanlon_microkernel/hnl_network_utils'
 require 'hanlon_microkernel/hnl_mk_gem_controller'
@@ -23,27 +27,27 @@ require 'hanlon_microkernel/hnl_mk_configuration_manager'
 gemController = (HanlonMicrokernel::HnlMkGemController).instance
 mk_conf_filename = HanlonMicrokernel::HnlMkConfigurationManager::MK_CONF_FILE
 mk_conf = YAML::load(File.open(mk_conf_filename))
-gemController.gemSource = mk_conf['mk_gem_mirror']
-gemController.gemListURI = mk_conf['mk_gemlist_uri']
-gemController.installListedGems
+# gemController.gemSource = mk_conf['mk_gem_mirror']
+# gemController.gemListURI = mk_conf['mk_gemlist_uri']
+# gemController.installListedGems
 
 # Now that we've installed the facter gem, need do do a bit more work
 # first, determine where the facter gem's library is at
 
 require 'rubygems'
 require 'facter'
-facter_root= Gem.loaded_specs['facter'].full_gem_path
-facter_lib = File.join(facter_root, 'lib')
-gem_root = facter_root.split(File::SEPARATOR)[0...-2].join(File::SEPARATOR)
+# facter_root= Gem.loaded_specs['facter'].full_gem_path
+# facter_lib = File.join(facter_root, 'lib')
+# gem_root = facter_root.split(File::SEPARATOR)[0...-2].join(File::SEPARATOR)
 
 # Next, if the facter command that it contains isn't already available in the
 # /usr/local/bin directory then we need construct a link to the executable in
 # the #{gem_root}/bin subdirectory...
 
-if !File.exists?("/usr/local/bin/facter") then
-  facter_exec = File.join(File.join(gem_root,"bin"),"facter")
-  %x[sudo ln -s #{facter_exec} /usr/local/bin/facter]
-end
+# if !File.exists?("/usr/local/bin/facter") then
+#   facter_exec = File.join(File.join(gem_root,"bin"),"facter")
+#   %x[sudo ln -s #{facter_exec} /usr/local/bin/facter]
+# end
 
 # now that the gems are installed, can require the RzHostUtils class
 # (which depends on the 'facter' gem)

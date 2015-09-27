@@ -22,8 +22,8 @@ module HanlonMicrokernel
     # consistently there as well
     def set_host_name
       %x[sudo hostname #{@host_id}]
-      %x[sudo sed -i 's/127.0.0.1 box/127.0.0.1 #{@host_id}/' /etc/hosts]
-      %x[sudo sed -i 's/box/#{@host_id}/' /etc/hostname]
+      # %x[sudo sed -i 's/127.0.0.1 box/127.0.0.1 #{@host_id}/' /etc/hosts]
+      # %x[sudo sed -i 's/box/#{@host_id}/' /etc/hostname]
     end
 
   end
