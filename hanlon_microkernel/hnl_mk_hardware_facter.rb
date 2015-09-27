@@ -5,6 +5,10 @@
 #
 #
 
+# add the gem directory to the LOAD_PATH
+gem_dir = %x[ls -d /usr/lib/ruby/gems/*/gems].strip
+$LOAD_PATH.unshift(gem_dir)
+
 require 'singleton'
 require 'json'
 require 'hanlon_microkernel/logging'

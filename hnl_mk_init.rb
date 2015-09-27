@@ -5,55 +5,22 @@
 #
 #
 
-# first, add in the directory we will unpack the Hanlon Microkernel
-# support classes into in our Microkernel container
-$LOAD_PATH.unshift('/usr/lib/ruby/gems/2.2.0/gems')
+# add the gem directory to the LOAD_PATH
+gem_dir = %x[ls -d /usr/lib/ruby/gems/*/gems].strip
+$LOAD_PATH.unshift(gem_dir)
 
 require 'yaml'
 require 'hanlon_microkernel/hnl_network_utils'
-require 'hanlon_microkernel/hnl_mk_gem_controller'
 require 'hanlon_microkernel/hnl_mk_configuration_manager'
-
-# Start the Gem mirror so we can install from it
-%x[sudo /usr/local/bin/hnl_mk_gem_mirror.rb 2>&1 > /tmp/hnl_mk_gem_mirror.out]
-
-# First, install the gems that we'll need later on.  Note: if the parameters
-# needed to find an external mirror are not specified, we'll take advantage
-# of the default values for the two input arguments to the HnlMkGemController
-# constructor here (since we use the "http://localhost:2158/gem-mirror" URI
-# for our local gem mirror and the "gem.list" file, which contains the list
-# of gems to install from that mirror, is in the "gems/gem.list" file under
-# that local mirror URI)
-gemController = (HanlonMicrokernel::HnlMkGemController).instance
-mk_conf_filename = HanlonMicrokernel::HnlMkConfigurationManager::MK_CONF_FILE
-mk_conf = YAML::load(File.open(mk_conf_filename))
-# gemController.gemSource = mk_conf['mk_gem_mirror']
-# gemController.gemListURI = mk_conf['mk_gemlist_uri']
-# gemController.installListedGems
 
 # Now that we've installed the facter gem, need do do a bit more work
 # first, determine where the facter gem's library is at
 
 require 'rubygems'
 require 'facter'
-# facter_root= Gem.loaded_specs['facter'].full_gem_path
-# facter_lib = File.join(facter_root, 'lib')
-# gem_root = facter_root.split(File::SEPARATOR)[0...-2].join(File::SEPARATOR)
-
-# Next, if the facter command that it contains isn't already available in the
-# /usr/local/bin directory then we need construct a link to the executable in
-# the #{gem_root}/bin subdirectory...
-
-# if !File.exists?("/usr/local/bin/facter") then
-#   facter_exec = File.join(File.join(gem_root,"bin"),"facter")
-#   %x[sudo ln -s #{facter_exec} /usr/local/bin/facter]
-# end
-
-# now that the gems are installed, can require the RzHostUtils class
-# (which depends on the 'facter' gem)
 require 'hanlon_microkernel/hnl_host_utils'
 
-# Then, wait for the network to start
+# Wait for the network to start
 nw_is_avail = false
 hnl_nw_util = HanlonMicrokernel::RzNetworkUtils.new
 error_cond = hnl_nw_util.wait_until_nw_avail
@@ -88,7 +55,6 @@ if nw_is_avail then
 
   # next, start the hnl_mk_web_server, hnl_mk_tce_mirror and hnl_mk_controller scripts
   %x[sudo /usr/local/bin/hnl_mk_web_server.rb 2>&1 > /tmp/hnl_web_server.out]
-  %x[sudo /usr/local/bin/hnl_mk_tce_mirror.rb 2>&1 > /tmp/hnl_mk_tce_mirror.out]
   %x[sudo /usr/local/bin/hnl_mk_controller.rb start]
 
   # finally, print out the Microkernel version number (which should be in the
