@@ -31,7 +31,7 @@ module HanlonMicrokernel
     # of a copy of the file in '/tmp' filesystem instead
     def sed_in_place(filename, expr, flags = '')
       basename = File.basename(filename)
-      %x[sudo cp #{filename} /tmp; sudo sed #{flags} '#{expr}' /tmp/#{basename} > /etc/#{basename}; sudo rm /tmp/#{basename}]
+      %x[sudo cp #{filename} /tmp; sudo sed #{flags} '#{expr}' /tmp/#{basename} > #{filename}; sudo rm /tmp/#{basename}]
     end
 
   end

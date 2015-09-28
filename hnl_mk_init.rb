@@ -12,10 +12,6 @@ $LOAD_PATH.unshift(gem_dir)
 require 'yaml'
 require 'hanlon_microkernel/hnl_network_utils'
 require 'hanlon_microkernel/hnl_mk_configuration_manager'
-
-# Now that we've installed the facter gem, need do do a bit more work
-# first, determine where the facter gem's library is at
-
 require 'rubygems'
 require 'facter'
 require 'hanlon_microkernel/hnl_host_utils'
