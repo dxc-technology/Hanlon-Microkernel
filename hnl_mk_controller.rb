@@ -5,9 +5,10 @@
 #
 #
 
-# add the gem directory to the LOAD_PATH
-gem_dir = %x[ls -d /usr/lib/ruby/gems/*/gems].strip
-$LOAD_PATH.unshift(gem_dir)
+# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
+# (this is where the hanlon_microkernel module files are placed by
+# our Dockerfile)
+$LOAD_PATH.unshift('/usr/local/lib/ruby')
 
 require 'rubygems'
 require 'daemons'
