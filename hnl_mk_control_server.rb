@@ -47,6 +47,27 @@ def first_checkin_performed
   }
 end
 
+def reboot_node
+  reset_node(:reboot)
+end
+
+def poweroff_node
+  reset_node(:poweroff)
+end
+
+def reset_node(mode)
+  if mode == :reboot
+    last_state = 'b'
+  elsif mode == :poweroff
+    last_state = 'o'
+  else
+    # unrecognized state, so return with node
+    # unchanged
+    return
+  end
+  %x[sudo echo 'u' > /proc/sysrq-trigger; sleep 2; sudo echo #{last_state} > /proc/sysrq-trigger]
+end
+
 # set up a global variable that will be used in the HanlonMicrokernel::Logging mixin
 # to determine where to place the log messages from this script
 HNL_MK_LOG_PATH = "/var/log/hnl_mk_controller.log"
@@ -202,11 +223,13 @@ loop do
         elsif command == "reboot" then
           # reboots the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the reboot happens
-          %x[sudo reboot now]
+          # %x[sudo reboot now]
+          reboot_node
         elsif command == "poweroff" then
           # powers off the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the poweroff happens
-          %x[sudo poweroff now]
+          # %x[sudo poweroff now]
+          poweroff_node
         end
 
         # next, check the configuration that is included in the response...
