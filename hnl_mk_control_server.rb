@@ -24,6 +24,11 @@ require 'hanlon_microkernel/hnl_mk_registration_manager'
 require 'hanlon_microkernel/hnl_mk_fact_manager'
 require 'hanlon_microkernel/hnl_mk_configuration_manager'
 
+# If an entry doesn't exist in the /etc/hosts file for the 'localhost',
+# then add one that resolves to '127.0.0.1' (if the entry already exists,
+# then the /etc/hosts file will remain unchanged)
+%x[grep localhost /etc/hosts 2>&1 > /dev/null || sudo echo '127.0.0.1 localhost' >> /etc/hosts]
+
 # file used to track whether or not a node has already checked in
 # at least once (the first time through, this file will contain
 # a true value, after that the value in this file will be false)

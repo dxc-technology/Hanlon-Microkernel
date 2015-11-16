@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 #
-# Used during the boot process to initialize the Microkernel (install gems
-# and start up the critical services)
+# Used during the boot process to initialize the Microkernel
+# (start up the critical services)
 #
 #
 
@@ -50,7 +50,7 @@ if nw_is_avail then
   hnl_host_util = HanlonMicrokernel::RzHostUtils.new
   hnl_host_util.set_host_name
 
-  # next, start the hnl_mk_web_server, hnl_mk_tce_mirror and hnl_mk_controller scripts
+  # next, start the hnl_mk_web_server and hnl_mk_controller scripts
   %x[sudo /usr/local/bin/hnl_mk_web_server.rb 2>&1 > /tmp/hnl_web_server.out]
   %x[sudo /usr/local/bin/hnl_mk_controller.rb start]
 
