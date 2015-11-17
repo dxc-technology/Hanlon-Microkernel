@@ -186,6 +186,11 @@ loop do
         # then trigger appropriate action based on the command in the response
         if command == "acknowledge" then
           logger.debug "Received #{command} from #{checkin_uri_string}"
+          # if this is the first checkin, then we've rebooted a node quickly enough that
+          # it wasn't removed from the node table; in that case we should remove
+          # the first checkin flag the first time through this loop (since re-registration
+          # will never be required)
+          first_checkin_performed if is_first_checkin
         elsif registration_manager && command == "register" then
           logger.debug "Register command received, registering the node"
           response = registration_manager.register_node(idle)
