@@ -1,8 +1,0 @@
-gem: --no-ri --no-rdoc
-:verbose: true
-:benchmark: false
-:backtrace: false
-:bulk_threshold: 1000
-:update_sources: true
-:sources: 
-- http://localhost:2158/gem-mirror/

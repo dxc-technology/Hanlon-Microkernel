@@ -5,6 +5,11 @@
 #
 #
 
+# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
+# (this is where the hanlon_microkernel module files are placed by
+# our Dockerfile)
+$LOAD_PATH.unshift('/usr/local/lib/ruby')
+
 require 'singleton'
 require 'json'
 require 'hanlon_microkernel/logging'
@@ -69,6 +74,11 @@ module HanlonMicrokernel
         fields_to_include = ["description", "physical_id", "slot", "size"]
         add_flattened_hash_to_facts!(hash_map["memory"], facts_map,
                                      "mk_hw_mem", fields_to_include)
+        # grab the same meta-data from the slots that aren't empty from the "bank_array"
+        # field of our hash_map
+        non_empty_slot_info = hash_map["bank_array"].select{ |slot_entry| slot_entry['size'] }
+        add_flattened_array_to_facts!(non_empty_slot_info, facts_map,
+                                     "mk_hw_mem_slot", fields_to_include)
 
         # next, the disk information (number of disks, sizes, etc.)
         lshw_c_disk_str = %x[sudo #{lshw_cmd} -c disk 2> /dev/null]

@@ -7,6 +7,11 @@
 #
 #
 
+# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
+# (this is where the hanlon_microkernel module files are placed by
+# our Dockerfile)
+$LOAD_PATH.unshift('/usr/local/lib/ruby')
+
 require 'rubygems'
 #require 'logger'
 require 'net/http'
@@ -18,101 +23,11 @@ require 'hanlon_microkernel/logging'
 require 'hanlon_microkernel/hnl_mk_registration_manager'
 require 'hanlon_microkernel/hnl_mk_fact_manager'
 require 'hanlon_microkernel/hnl_mk_configuration_manager'
-require 'hanlon_microkernel/hnl_mk_kernel_module_manager'
-require 'hanlon_microkernel/hnl_mk_gem_controller'
 
-# load gems in the list available at #{mk_gemlist_uri} from the gem mirror
-# at #{mk_gem_mirror} into the Microkernel (Note; only gems that do not
-# exist yet or gems who's latest version available from the stated gem mirror
-# will be installed; existing versions of these gems will not be reinstalled
-# by this method)
-def load_gems(mk_gem_mirror, mk_gemlist_uri)
-  logger.debug("reloading gems from #{mk_gem_mirror} using list at #{mk_gemlist_uri}")
-  gemController = (HanlonMicrokernel::HnlMkGemController).instance
-  gemController.gemSource = mk_gem_mirror
-  gemController.gemListURI = mk_gemlist_uri
-  gemController.installListedGems
-end
-
-# this method is used to load a list of Tiny Core Linux extensions
-# as the Microkernel Controller is starting up (or restarting).
-# It loads the extensions listed in the YAML file at the tcl_ext_list_uri
-# from the mirror at the tcl_ext_mirror_uri)
-# @param [URI] tcl_ext_list_uri  a URI that points to a YAML file containing
-# the array of extensions that should be loaded (by name; eg. bash.tcz)
-# @param [URI] tcl_ext_mirror_uri  a URI that points to the location of a
-# mirror containing the extensions to install
-# @param [Object] force_reinstall  a flag indicating whether or not existing
-# extensions (those already installed) should be overwritten with new versions
-# from the mirror (defaults to false, which skips the installation of any
-# extensions that are already installed)
-def load_tcl_extensions(tce_install_list_uri, tce_mirror, force_reinstall = false)
-
-  # get the TCE mirror URI from the config, if it doesn't exist, then
-  # we just return (because we don't know where to get the extensions from)
-  return if !tce_mirror || (tce_mirror =~ URI::regexp).nil?
-
-  # modify the /opt/tcemirror file (so that it uses the mirror given in the
-  # configuration we just received from the Hanlon server)
-  File.open('/opt/tcemirror', 'w') { |file|
-    file.puts tce_mirror
-  }
-
-  # construct the full URI (including path) that will return the list of TCL
-  # extensions that we should load, if it doesn't exist, then just return
-  # (because we don't have any extensions to load)
-  full_tce_install_list_uri = tce_mirror + tce_install_list_uri
-  return if !full_tce_install_list_uri || (full_tce_install_list_uri =~ URI::regexp).nil?
-
-  # get a list of the Tiny Core Extensions that are already installed in the
-  # the system; will use this list to determine whether or not an extension
-  # should be loaded (we won't load an extension that is already installed)
-  installed_extensions = %x[tce-status -i].split("\n")
-
-  # get the list of 'TCL Extensions' that should be installed (these will)
-  # be obtained from a local 'mirror' containing the appropriate 'tcz' files)
-  begin
-    # load the list of extensions to install from the URI
-    install_list_uri = URI.parse(full_tce_install_list_uri)
-    tce_install_list = []
-    begin
-      tce_install_list = JSON::parse(install_list_uri.read)
-      logger.debug("received a TCE install list of '#{tce_install_list.inspect}'")
-    rescue SystemExit => e
-      throw e
-    rescue NoMemoryError => e
-      throw e
-    rescue Exception => e
-      logger.debug("error while reading from '#{install_list_uri}' => #{e.message}")
-      return
-    end
-    logger.debug("TCE install list: '#{tce_install_list.inspect}'")
-
-    # for each extension on that list, load that extension (using the 'tce-load' command)
-    has_kernel_modules = false
-    tce_install_list.each { |extension|
-      # if it's in the list of installed extensions, then skip it
-      next if !force_reinstall && installed_extensions.include?(extension.gsub(/.tcz$/,''))
-      logger.debug "loading #{extension}"
-      t = %x[sudo -u tc tce-load -iw #{extension}]
-    }
-
-    # and load the kernel modules (if any), first get a reference to the Configuration
-    # Manager instance (a singleton)
-    kernel_mod_manager = (HanlonMicrokernel::HnlMkKernelModuleManager).instance
-    # and then load the modules
-    kernel_mod_manager.load_kernel_modules
-
-  rescue SystemExit => e
-    throw e
-  rescue NoMemoryError => e
-    throw e
-  rescue Exception => e
-    logger.error e.message
-    e.backtrace.each { |line| logger.debug line }
-  end
-
-end
+# If an entry doesn't exist in the /etc/hosts file for the 'localhost',
+# then add one that resolves to '127.0.0.1' (if the entry already exists,
+# then the /etc/hosts file will remain unchanged)
+%x[grep localhost /etc/hosts 2>&1 > /dev/null || sudo echo '127.0.0.1 localhost' >> /etc/hosts]
 
 # file used to track whether or not a node has already checked in
 # at least once (the first time through, this file will contain
@@ -161,6 +76,9 @@ if config_manager.config_file_exists? then
   # configuration to setup the Microkernel Controller
   config_manager.load_current_config
 
+  # show URI setup in the initial Microkernel configuration by the cloud-config
+  logger.info "Discovered Hanlon Server at: #{config_manager.mk_uri}"
+
   # now, load a few items from the configuration manager, first the log
   # level that the Microkernel should use
   logger.level = config_manager.mk_log_level
@@ -195,12 +113,6 @@ if config_manager.config_file_exists? then
   logger.debug "exclude_pattern = #{exclude_pattern}"
   registration_manager = HanlonMicrokernel::HnlMkRegistrationManager.new(registration_uri,
                                                                        exclude_pattern, fact_manager)
-
-  # "load" the appropriate gems into the Microkernel
-  load_gems(config_manager.mk_gem_mirror, config_manager.mk_gemlist_uri)
-
-  # and load the TCL extensions from the configuration file (if any exist)
-  load_tcl_extensions(config_manager.mk_tce_install_list_uri, config_manager.mk_tce_mirror)
 
 else
 
@@ -277,6 +189,11 @@ loop do
         # then trigger appropriate action based on the command in the response
         if command == "acknowledge" then
           logger.debug "Received #{command} from #{checkin_uri_string}"
+          # if this is the first checkin, then we've rebooted a node quickly enough that
+          # it wasn't removed from the node table; in that case we should remove
+          # the first checkin flag the first time through this loop (since re-registration
+          # will never be required)
+          first_checkin_performed if is_first_checkin
         elsif registration_manager && command == "register" then
           logger.debug "Register command received, registering the node"
           response = registration_manager.register_node(idle)
@@ -298,11 +215,11 @@ loop do
         elsif command == "reboot" then
           # reboots the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the reboot happens
-          %x[sudo reboot now]
+          %x[echo reboot > /tmp/cmd-channels/node-state-channel]
         elsif command == "poweroff" then
           # powers off the node, NOW...no sense in logging this since the "filesystem"
           # is all in memory and will disappear when the poweroff happens
-          %x[sudo poweroff now]
+          %x[echo poweroff > /tmp/cmd-channels/node-state-channel]
         end
 
         # next, check the configuration that is included in the response...

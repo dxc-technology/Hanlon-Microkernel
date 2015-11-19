@@ -22,8 +22,16 @@ module HanlonMicrokernel
     # consistently there as well
     def set_host_name
       %x[sudo hostname #{@host_id}]
-      %x[sudo sed -i 's/127.0.0.1 box/127.0.0.1 #{@host_id}/' /etc/hosts]
-      %x[sudo sed -i 's/box/#{@host_id}/' /etc/hostname]
+      sed_in_place('/etc/hostname', "s/rancher/#{@host_id}/")
+      sed_in_place('/etc/hosts', "s/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost #{@host_id}/", '-r')
+    end
+
+    # replacement for 'sed -i' command on a file in our Microkernel container
+    # since that command fails in an overlay filesystem; instead will make use
+    # of a copy of the file in '/tmp' filesystem instead
+    def sed_in_place(filename, expr, flags = '')
+      basename = File.basename(filename)
+      %x[sudo cp #{filename} /tmp; sudo sed #{flags} '#{expr}' /tmp/#{basename} > #{filename}; sudo rm /tmp/#{basename}]
     end
 
   end

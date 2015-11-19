@@ -7,6 +7,11 @@
 #
 #
 
+# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
+# (this is where the hanlon_microkernel module files are placed by
+# our Dockerfile)
+$LOAD_PATH.unshift('/usr/local/lib/ruby')
+
 require 'rubygems'
 require 'net/http'
 require 'cgi'

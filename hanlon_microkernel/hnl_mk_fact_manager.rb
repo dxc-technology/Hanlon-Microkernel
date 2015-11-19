@@ -59,8 +59,29 @@ module HanlonMicrokernel
       # we've seen multi-line output from dmidecode on some systems,
       # so parse the result of the `sudo dmidecode -s system-uuid`
       # command and assume the last line is the UUID
-      cmd_output = %x[sudo dmidecode -s system-uuid].chomp
-      cmd_output.split("\n")[-1]
+      # cmd_output = %x[sudo dmidecode -s system-uuid].chomp
+      # cmd_output.split("\n")[-1]
+
+      # switched from using the output of a dmidecode command (above)
+      # to using the output of a lshw command to determine the SMBIOS
+      # UUID for a node (since the output of a 'dmidecode -s system-uuid'
+      # command has been found not to be the same as the SMBIOS UUID value
+      # returned by the {uuid} directive in an iPXE boot script on
+      # some systems...i.e. on some VMware virtual machines)
+      # %x[lshw -c system | grep 'configuration:'].split.select { |x| /^UUID/.match(x.upcase) }[0].split('=')[-1]
+
+      # first, try to retrieve the SMBIOS UUID from the command line used to boot the
+      # Microkernel instance
+      cmdline_val = %x[cat /proc/cmdline].split.select{ |val| /^smbios_uuid=/.match(val) }
+      if cmdline_val.size == 1
+        uuid_val = cmdline_val[0].split('=')[1]
+        return uuid_val if uuid_val
+      end
+
+      # if that doesn't work for some reason, then try to retrieve the same
+      # value directly from the source used by both lshw and dmidecode
+      %x[cat /sys/class/dmi/id/product_uuid].strip
+
     end
 
   end
