@@ -4,7 +4,7 @@ Recently, we have made significant changes to the Hanlon Microkernel project.
 Previous versions of the Hanlon Microkernel project included a set of scripts
 that could be used to build a customized Hanlon Microkernel ISO that was used
 by Hanlon for node discovery. Starting with version 3.0.0, the Microkernel
-itself has been converted a customized ISO (that was based on Tiny Core
+itself has been converted from a customized ISO (that was based on Tiny Core
 Linux's standard ISO) to a Docker image that, when combined with a RancherOS
 ISO, performs the same tasks. The instructions in this document are meant to
 aid those who are interested in building their own Hanlon Microkernel images.

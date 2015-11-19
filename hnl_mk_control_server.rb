@@ -76,6 +76,9 @@ if config_manager.config_file_exists? then
   # configuration to setup the Microkernel Controller
   config_manager.load_current_config
 
+  # show URI setup in the initial Microkernel configuration by the cloud-config
+  logger.info "Discovered Hanlon Server at: #{config_manager.mk_uri}"
+
   # now, load a few items from the configuration manager, first the log
   # level that the Microkernel should use
   logger.level = config_manager.mk_log_level

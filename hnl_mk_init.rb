@@ -12,7 +12,6 @@ $LOAD_PATH.unshift('/usr/local/lib/ruby')
 
 require 'yaml'
 require 'hanlon_microkernel/hnl_network_utils'
-require 'hanlon_microkernel/hnl_mk_configuration_manager'
 require 'rubygems'
 require 'facter'
 require 'hanlon_microkernel/hnl_host_utils'
@@ -32,17 +31,6 @@ if nw_is_avail then
 
   # and proceed with startup of the network-dependent tasks
   puts "Network is available, proceeding..."
-
-  # Discover the IP, Port and Base URI of the Hanlon server
-  ip = hnl_nw_util.discover_hnl_server_ip
-  port = hnl_nw_util.discover_hnl_server_port
-  base_uri = hnl_nw_util.discover_hnl_server_base_uri
-  puts "Discovered Hanlon Server at: #{ip}:#{port}/#{base_uri}"
-  y = YAML.load_file('/tmp/mk_conf.yaml')
-  y["mk_uri"] = "http://#{ip}:#{port}"
-  y["mk_checkin_path"] = "#{base_uri}/node/checkin"
-  y["mk_register_path"] = "#{base_uri}/node/register"
-  File.open('/tmp/mk_conf.yaml', 'w') {|f| f.write(y.to_yaml) }
 
   # first, set the hostname for this host to something unique
   # (waited until now because didn't want to have eth0 not
