@@ -20,4 +20,4 @@ This project contains the Ruby scripts/classes that are used to control the Hanl
 
 In addition, this project also includes a number of additional ruby files and configuration files that are used by these services, and the 'hnl_mk_init.rb' script itself (which is used to start the appropriate Ruby-based services during the Microkernel boot process).
 
-It should be noted that this project also includes a a Dockerfile that is used to build a new instance of the Microkernel container. Instructions for building your own (custom) Microkernel container can be found in the project's Wiki.
+It should be noted that this project also includes a Dockerfile that is used to build a new instance of the Microkernel container. Instructions for building your own (custom) Microkernel container can be found in the project's Wiki.
