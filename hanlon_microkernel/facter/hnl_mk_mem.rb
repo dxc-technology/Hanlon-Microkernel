@@ -112,25 +112,28 @@ lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
 # process the results from lshw -c memory
 memory = def_to_hash(lshw_c_memory_str)
 
-# Create the facts for the firmware info
-%w{description vendor physical_id version date size capabilities capacity}.each do |fact|
-  Facter.add("mk_hw_fw_#{fact}") do
-    setcode { memory['firmware'][fact] }
+begin
+  # Create the facts for the firmware info
+  %w{description vendor physical_id version date size capabilities capacity}.each do |fact|
+    Facter.add("mk_hw_fw_#{fact}") do
+      setcode { memory['firmware'][fact] }
+    end
   end
-end
 
-# Create the facts for the memory info
-%w{description physical_id slot size }.each do |fact|
-  Facter.add("mk_hw_mem_#{fact}") do
-    setcode { memory['memory'][fact] }
+  # Create the facts for the memory info
+  %w{description physical_id slot size }.each do |fact|
+    Facter.add("mk_hw_mem_#{fact}") do
+      setcode { memory['memory'][fact] }
+    end
   end
-end
 
-slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
-Facter.add("mk_hw_mem_slot_info") do
-  setcode { slot_info }
+  slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
+  Facter.add("mk_hw_mem_slot_info") do
+    setcode { slot_info }
+  end
+rescue Exception => e
+  puts "Exception: #{e}"
 end
-
 
 #        # next, the memory information (including firmware, system memory, and caches)
 #        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
