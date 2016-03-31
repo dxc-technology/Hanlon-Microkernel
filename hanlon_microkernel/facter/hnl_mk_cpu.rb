@@ -1,7 +1,6 @@
-# Gathers hardware-related facts from the underlying system (used by the
-# hnl_mk_registration_manager to gather these sorts of facts in order to
-# supplement the facts gathered using Facter during the node registration
-# process)
+# Gathers hardware-related facts from the underlying system pertaining
+# to the processors. Information gathered here is exposed directly as 
+# Facter facts for the purpose of node registration. 
 #
 #
 
@@ -13,28 +12,22 @@ $LOAD_PATH.unshift('/usr/local/lib/ruby')
 require 'facter'
 
 
-
 virtual_type = Facter.value('virtual')
 lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
 lshw_c_cpu_str = %x[sudo #{lshw_cmd} -c cpu 2> /dev/null]
 
-# build the results into a Hash
-results = {}
+# process the results from lshw -c cpu
 lshw_c_cpu_str.split(/\s\s\*-/).each do |definition|
   unless definition.empty?
     lines = definition.split(/\n/)
-    item = lines.shift.tr(':', '')
+    # section title is on the first line
+    cpu = lines.shift.tr(':', '')
+    # Create a hash of attributes for each section (i.e. cpu)
     attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
-    results[item] = attribs
-  end
-end
-
-
-
-results.keys.each do |cpu|
-  results[cpu].each_pair do |k, v|
-    Facter.add("mk_hw_#{cpu}_#{k}") do
-      setcode { v }
+    attribs.each_pair do |attrib, val|
+      Facter.add("mk_hw_#{cpu}_#{attrib}") do
+        setcode { val }
+      end
     end
   end
 end
@@ -47,10 +40,9 @@ facts_to_report = %w{Architecture BogoMIPS Byte_Order CPU_MHz CPU_family CPU_op-
 %x[lscpu].split(/\n/).each do |line|
   line =~ /^([^:]+):\s*(.*)\s*$/
   if $1
-    key = $1
+    # map out chars that should not be part of the key
+    key = $1.tr(' ', '_').tr('()', '')
     val = $2
-    key.tr!(' ', '_')
-    key.tr!('()', '')
     if facts_to_report.include? key
       Facter.add("mk_hw_lscpu_#{key}") do
         setcode { val }
