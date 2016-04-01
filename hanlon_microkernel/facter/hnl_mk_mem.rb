@@ -116,8 +116,9 @@ begin
   # Create the facts for the firmware info
   %w{description vendor physical_id version date size capabilities capacity}.each do |fact|
     if memory['firmware'].has_key? fact
+      val = memory['firmware'][fact]
       Facter.add("mk_hw_fw_#{fact}") do
-        setcode { memory['firmware'][fact] }
+        setcode { val }
       end
     end
   end
@@ -125,8 +126,9 @@ begin
   # Create the facts for the memory info
   %w{description physical_id slot size }.each do |fact|
     if memory['memory'].has_key? fact
+      val = memory['memory'][fact]
       Facter.add("mk_hw_mem_#{fact}") do
-        setcode { memory['memory'][fact] }
+        setcode { val }
       end
     end
   end
