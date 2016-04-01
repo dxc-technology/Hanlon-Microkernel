@@ -115,15 +115,19 @@ memory = def_to_hash(lshw_c_memory_str)
 begin
   # Create the facts for the firmware info
   %w{description vendor physical_id version date size capabilities capacity}.each do |fact|
-    Facter.add("mk_hw_fw_#{fact}") do
-      setcode { memory['firmware'][fact] }
+    if memory['firmware'].has_key? fact
+      Facter.add("mk_hw_fw_#{fact}") do
+        setcode { memory['firmware'][fact] }
+      end
     end
   end
 
   # Create the facts for the memory info
   %w{description physical_id slot size }.each do |fact|
-    Facter.add("mk_hw_mem_#{fact}") do
-      setcode { memory['memory'][fact] }
+    if memory['memory'].has_key? fact
+      Facter.add("mk_hw_mem_#{fact}") do
+        setcode { memory['memory'][fact] }
+      end
     end
   end
 
