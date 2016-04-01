@@ -24,7 +24,7 @@ lshw_c_bus_str.split(/\s\s\*-/).each do |definition|
   unless definition.empty?
     lines = definition.split(/\n/)
     item = lines.shift.tr(':', '')
-    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; [$1, $2] } ]
+    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
     results[item] = attribs
   end
 end
@@ -32,8 +32,10 @@ end
 
 # report out the core values
 %w{description product vendor version serial physical_id}.each do |fact|
-  Facter.add("mk_hw_bus_#{fact}") do
-    setcode { results['core'][fact] }
+  if results['core'].has_key? fact
+    Facter.add("mk_hw_bus_#{fact}") do
+      setcode { results['core'][fact] }
+    end
   end
 end
 
