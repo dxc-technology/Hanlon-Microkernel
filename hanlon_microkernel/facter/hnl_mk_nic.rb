@@ -17,11 +17,13 @@ lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lsh
 lshw_c_network_str = %x[sudo #{lshw_cmd} -c network 2> /dev/null]
 
 # process the results from lshw -c network
+nics = 0
 lshw_c_network_str.split(/\s\s\*-/).each do |definition|
   unless definition.empty?
     lines = definition.split(/\n/)
     # section title is on the first line
     network = lines.shift.tr(':', '')
+    nics += 1
     # Create a hash of attributes for each section (i.e. cpu)
     attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
     attribs.each_pair do |attrib, val|
@@ -30,4 +32,9 @@ lshw_c_network_str.split(/\s\s\*-/).each do |definition|
       end
     end
   end
+end
+
+# report on the number NICs found
+Facter.add("mk_hw_nic_count") do
+  setcode { nics }
 end

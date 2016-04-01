@@ -17,11 +17,13 @@ lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lsh
 lshw_c_cpu_str = %x[sudo #{lshw_cmd} -c cpu 2> /dev/null]
 
 # process the results from lshw -c cpu
+cpus = 0
 lshw_c_cpu_str.split(/\s\s\*-/).each do |definition|
   unless definition.empty?
     lines = definition.split(/\n/)
     # section title is on the first line
     cpu = lines.shift.tr(':', '')
+    cpus += 1
     # Create a hash of attributes for each section (i.e. cpu)
     attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
     attribs.each_pair do |attrib, val|
@@ -32,6 +34,10 @@ lshw_c_cpu_str.split(/\s\s\*-/).each do |definition|
   end
 end
 
+# report on the number of CPUs
+Facter.add("mk_hw_cpu_count") do
+  setcode { cpus }
+end
 
 # process the results from lscpu
 facts_to_report = %w{Architecture BogoMIPS Byte_Order CPU_MHz CPU_family CPU_op-modes 
