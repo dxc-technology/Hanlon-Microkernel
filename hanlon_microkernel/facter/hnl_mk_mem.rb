@@ -200,7 +200,8 @@ else
   end
 end
 
-slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
-Facter.add("mk_hw_mem_slot_info") do
-  setcode { slot_info }
-end
+# slot info is going to need a bunch of work
+#slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
+#Facter.add("mk_hw_mem_slot_info") do
+#  setcode { slot_info }
+#end
