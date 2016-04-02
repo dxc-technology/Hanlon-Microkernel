@@ -34,7 +34,7 @@ end
 %w{description product vendor version serial physical_id}.each do |fact|
   if results['core'].has_key? fact
     val = results['core'][fact]
-    Facter.add("mk_hw_bus_core_#{fact}") do
+    Facter.add("mk_hw_bus_#{fact}") do
       setcode { val }
     end
   end

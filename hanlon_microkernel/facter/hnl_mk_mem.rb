@@ -104,6 +104,51 @@ def def_to_hash(definition, delimiter=':')
 end
 
 
+def calculate_bytes(label)
+  label =~ /^(\d+)([a-zA-Z])/
+  size = $1.to_i
+  unit = $2.upcase
+  case unit
+  when 'T'
+    size * (1024 ** 4)
+  when 'G'
+    size * 1073741824
+  when 'M'
+    size * 1048576
+  when 'K'
+    size * 1024
+  end
+end
+
+
+# now "right size" the memory -- starting at MB
+def pretty_memory_size(bytes)
+  case bytes
+  when 0..1052266988     # 0 - a bit over 980MB
+    size = bytes / 1048576
+    if size < 1
+      "#{size.round(2)}MB"
+    else
+      "#{size.round}MB"
+    end
+  when 1052266988..(1024 ** 4 - 5368709120)   # 980MB - (1TB - 5GB)
+    size = bytes / 1073741824
+    if size < 1
+      "#{size.round(2)}GB"
+    else
+      "#{size.round}GB"
+    end
+  else
+    size = bytes / (1024 ** 4)
+    if size < 1
+      "1TB"
+    else
+      "#{size.round}TB"
+    end
+  end
+end
+
+
 
 virtual_type = Facter.value('virtual')
 lshw_cmd =  (virtual_type && virtual_type == 'kvm') ? 'lshw -disable dmi' : 'lshw'
@@ -112,19 +157,20 @@ lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
 # process the results from lshw -c memory
 memory = def_to_hash(lshw_c_memory_str)
 
-begin
-  # Create the facts for the firmware info
-  %w{description vendor physical_id version date size capabilities capacity}.each do |fact|
-    if memory['firmware'].has_key? fact
-      val = memory['firmware'][fact]
-      Facter.add("mk_hw_fw_#{fact}") do
-        setcode { val }
-      end
+# Create the facts for the firmware info
+%w{description vendor physical_id version date size capabilities capacity}.each do |fact|
+  if memory['firmware'].has_key? fact
+    val = memory['firmware'][fact]
+    Facter.add("mk_hw_fw_#{fact}") do
+      setcode { val }
     end
   end
+end
 
-  # Create the facts for the memory info
-  %w{description physical_id slot size }.each do |fact|
+# Create the facts for the memory info
+if memory.has_key? 'memory'
+  # not all systems define top level memory summary
+  %w{description physical_id slot}.each do |fact|
     if memory['memory'].has_key? fact
       val = memory['memory'][fact]
       Facter.add("mk_hw_mem_#{fact}") do
@@ -132,32 +178,29 @@ begin
       end
     end
   end
-
-  slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
-  Facter.add("mk_hw_mem_slot_info") do
-    setcode { slot_info }
-  end
-rescue Exception => e
-  puts "Exception: #{e}"
 end
 
-#        # next, the memory information (including firmware, system memory, and caches)
-#        lshw_c_memory_str = %x[sudo #{lshw_cmd} -c memory 2> /dev/null]
-#        hash_map = lshw_output_to_hash(lshw_c_memory_str, ":")
-#        add_hash_to_facts!(hash_map, facts_map, mk_fct_excl_pattern, "mk_hw_mem", /cache_array/)
-#        # and add a set of facts from this memory information as top-level facts in the
-#        # facts_map so that we can use them later to tag nodes
-#        fields_to_include = ["description", "vendor", "physical_id", "version",
-#                             "date", "size", "capabilities", "capacity"]
-#        add_flattened_hash_to_facts!(hash_map["firmware"], facts_map,
-#                                     "mk_hw_fw", fields_to_include)
-#        fields_to_include = ["description", "physical_id", "slot", "size"]
-#        add_flattened_hash_to_facts!(hash_map["memory"], facts_map,
-#                                     "mk_hw_mem", fields_to_include)
-#        # grab the same meta-data from the slots that aren't empty from the "bank_array"
-#        # field of our hash_map
-#        non_empty_slot_info = hash_map["bank_array"].select{ |slot_entry| slot_entry['size'] }
-#        add_flattened_array_to_facts!(non_empty_slot_info, facts_map,
-#                                     "mk_hw_mem_slot", fields_to_include)
+# Create a special fact for memory size
+if memory.has_key? 'memory' and memory['memory'].has_key? 'size'
+  val = memory['memory']['size']
+else
+  # without size specified, we need to add all the banks together
+  bytes = 0
+  memory['memory_array'].each do |procmem|
+    procmem.has_key? 'bank_array' and procmem['bank_array'].each do |bank|
+      if bank.has_key? 'size'
+        bytes += calculate_bytes(bank['size'])
+      end
+    end
+  end
+      
+  # finally... create the fact
+  Facter.add("mk_hw_mem_size") do
+    setcode { pretty_memory_size(bytes) }
+  end
+end
 
-
+slot_info = memory['memory']['bank_array'].select {|entry| entry['size']}
+Facter.add("mk_hw_mem_slot_info") do
+  setcode { slot_info }
+end
