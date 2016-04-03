@@ -23,12 +23,14 @@ lshw_c_cpu_str.split(/\s\s\*-/).each do |definition|
     lines = definition.split(/\n/)
     # section title is on the first line
     cpu = lines.shift.tr(':', '')
-    cpus += 1
-    # Create a hash of attributes for each section (i.e. cpu)
-    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
-    attribs.each_pair do |attrib, val|
-      Facter.add("mk_hw_#{cpu}_#{attrib}") do
-        setcode { val }
+    unless cpu =~ /disabled/i
+      cpus += 1
+      # Create a hash of attributes for each section (i.e. cpu)
+      attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
+      attribs.each_pair do |attrib, val|
+        Facter.add("mk_hw_#{cpu}_#{attrib}") do
+          setcode { val }
+        end
       end
     end
   end
