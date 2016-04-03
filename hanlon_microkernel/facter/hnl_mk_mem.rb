@@ -193,11 +193,11 @@ else
       end
     end
   end
-      
-  # finally... create the fact
-  Facter.add("mk_hw_mem_size") do
-    setcode { pretty_memory_size(bytes) }
-  end
+  val = pretty_memory_size(bytes)
+end
+# finally... create the fact
+Facter.add("mk_hw_mem_size") do
+  setcode { val }
 end
 
 # slot info is going to need a bunch of work
