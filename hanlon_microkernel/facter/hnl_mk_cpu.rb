@@ -44,7 +44,9 @@ end
 # process the results from lscpu
 facts_to_report = %w{Architecture BogoMIPS Byte_Order CPU_MHz CPU_family CPU_op-modes 
                      L1d_cache L1i_cache L2_cache L3_cache Model Stepping Vendor_ID 
-                     Virtualization}
+                     Virtualization Virtualization_type Hypervisor_vendor
+                     Threads_per_core Cores_per_socket Sockets
+                     NUMA_nodes}
 %x[lscpu].split(/\n/).each do |line|
   line =~ /^([^:]+):\s*(.*)\s*$/
   if $1
@@ -59,3 +61,8 @@ facts_to_report = %w{Architecture BogoMIPS Byte_Order CPU_MHz CPU_family CPU_op-
   end
 end
 
+# report on the number of cores available
+Facter.add("mk_hw_core_count") do
+  setcode { Facter.value('mk_hw_lscpu_cores_per_socket').to_i * 
+            Facter.value('mk_hw_lscpu_sockets').to_i }
+end
