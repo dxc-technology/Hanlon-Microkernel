@@ -1,14 +1,7 @@
-# Gathers hardware-related facts from the underlying system (used by the
-# hnl_mk_registration_manager to gather these sorts of facts in order to
-# supplement the facts gathered using Facter during the node registration
-# process)
+# Gathers hardware-related facts from the underlying system pertaining
+# to the system buses. Information gathered here is exposed directly as 
+# Facter facts for the purpose of node registration. 
 #
-#
-
-# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
-# (this is where the hanlon_microkernel module files are placed by
-# our Dockerfile)
-$LOAD_PATH.unshift('/usr/local/lib/ruby')
 
 require 'facter'
 

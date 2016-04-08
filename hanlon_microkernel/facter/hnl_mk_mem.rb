@@ -2,12 +2,6 @@
 # to the system memory. Information gathered here is exposed directly as 
 # Facter facts for the purpose of node registration. 
 #
-#
-
-# add the '/usr/local/lib/ruby' directory to the LOAD_PATH
-# (this is where the hanlon_microkernel module files are placed by
-# our Dockerfile)
-$LOAD_PATH.unshift('/usr/local/lib/ruby')
 
 require 'facter'
 
