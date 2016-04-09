@@ -87,8 +87,14 @@ def def_to_hash(definition, delimiter=':')
     else
       # no sub-definitions, just process the attributes
       result.merge! Hash[ 
-          definition.split(/\n/).collect do |l| 
-            l =~ /^\s*([^#{delimiter}]+)#{delimiter}\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] 
+          definition.split(/\n/).collect do |l|
+            begin
+              l =~ /^\s*([^#{delimiter}]+)#{delimiter}\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v]
+            rescue NoMethodError
+              if Facter.debugging?
+                puts "Error: (memory class) unable to parse #{l}"
+              end
+            end
           end 
       ]
     end

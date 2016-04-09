@@ -17,7 +17,15 @@ lshw_c_bus_str.split(/\s\s\*-/).each do |definition|
   unless definition.empty?
     lines = definition.split(/\n/)
     item = lines.shift.tr(':', '')
-    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
+    attribs = Hash[ lines.collect do |l|
+      begin
+        l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v]
+      rescue NoMethodError
+        if Facter.debugging?
+          puts "Error: (bus class) unable to parse #{l}"
+        end
+      end
+    end ]
     results[item] = attribs
   end
 end

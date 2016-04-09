@@ -19,7 +19,15 @@ lshw_c_volume_str.split(/\s\s\*-/).each do |definition|
     volume = lines.shift.tr(':', '') and vols += 1
 
     # Create a hash of attributes for each section (i.e. cpu)
-    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
+    attribs = Hash[ lines.collect do |l| 
+      begin
+        l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] 
+      rescue NoMethodError
+        if Facter.debugging?
+          puts "Error: (volume class) unable to parse #{l}"
+        end
+      end
+    end ]
     attribs.each_pair do |attrib, val|
       Facter.add("mk_hw_#{volume}_#{attrib}") do
         setcode { val }

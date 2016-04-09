@@ -19,7 +19,14 @@ lshw_c_network_str.split(/\s\s\*-/).each do |definition|
     network = lines.shift.tr(':', '')
     nics += 1
     # Create a hash of attributes for each section (i.e. cpu)
-    attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
+    attribs = Hash[ lines.collect do |l| 
+      begin
+        l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v]
+      rescue NoMethodError
+        if Facter.debugging?
+          puts "Error: (network class) unable to parse #{l}"
+        end
+      end ]
     attribs.each_pair do |attrib, val|
       Facter.add("mk_hw_#{network}_#{attrib}") do
         setcode { val }

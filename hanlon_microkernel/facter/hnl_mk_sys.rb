@@ -21,7 +21,9 @@ lshw_c_system_str.split(/\s\s\*-/).each do |definition|
       begin
         l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] 
       rescue NoMethodError
-        puts "Error: (system class) unable to parse %{l}"
+        if Facter.debugging?
+          puts "Error: (system class) unable to parse #{l}"
+        end
       end
     end ]
     attribs.each_pair do |attrib, val|

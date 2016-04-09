@@ -20,7 +20,15 @@ lshw_c_cpu_str.split(/\s\s\*-/).each do |definition|
     unless cpu =~ /disabled/i
       cpus += 1
       # Create a hash of attributes for each section (i.e. cpu)
-      attribs = Hash[ lines.collect { |l| l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] } ]
+      attribs = Hash[ lines.collect do |l|
+        begin
+          l =~ /^\s*([^:]+):\s+(.*)\s*$/; v=$2; [$1.gsub(/\s/, '_'), v] 
+        rescue NoMethodError
+          if Facter.debugging?
+            puts "Error: (cpu class) unable to parse #{l}"
+          end
+        end
+      end ]
       attribs.each_pair do |attrib, val|
         Facter.add("mk_hw_#{cpu}_#{attrib}") do
           setcode { val }
