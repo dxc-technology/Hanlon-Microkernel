@@ -26,7 +26,8 @@ lshw_c_network_str.split(/\s\s\*-/).each do |definition|
         if Facter.debugging?
           puts "Error: (network class) unable to parse #{l}"
         end
-      end ]
+      end
+    end ]
     attribs.each_pair do |attrib, val|
       Facter.add("mk_hw_#{network}_#{attrib}") do
         setcode { val }
