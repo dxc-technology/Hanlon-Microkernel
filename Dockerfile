@@ -9,12 +9,13 @@ RUN apk update && \
     echo "install: --no-rdoc --no-ri" > /etc/gemrc && \
     gem install json_pure daemons && \
     gem install facter -v ${FACTER_VERSION} && \
-    mkdir -p /etc/facter/facts.d && \
     find /usr/lib/ruby/gems/2.2.0/gems/facter-${FACTER_VERSION} -type f -exec sed -i 's:/proc/:/host-proc/:g' {} + && \
     find /usr/lib/ruby/gems/2.2.0/gems/facter-${FACTER_VERSION} -type f -exec sed -i 's:/dev/:/host-dev/:g' {} + && \
     find /usr/lib/ruby/gems/2.2.0/gems/facter-${FACTER_VERSION} -type f -exec sed -i 's:/host-dev/null:/dev/null:g' {} + && \
     find /usr/lib/ruby/gems/2.2.0/gems/facter-${FACTER_VERSION} -type f -exec sed -i 's:/sys/:/host-sys/:g' {} +
 ADD hnl_mk*.rb /usr/local/bin/
 ADD hanlon_microkernel/*.rb /usr/local/lib/ruby/hanlon_microkernel/
-ADD hanlon_microkernel/facter/*.rb /usr/local/lib/site_ruby/facter/
+ADD entrypoint.sh /
+ADD README.md /
 
+ENTRYPOINT ['/entrypoint.sh']
