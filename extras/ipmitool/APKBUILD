@@ -1,0 +1,32 @@
+# Contributor:
+# Maintainer:
+pkgname=ipmitool
+pkgver=1.8.17
+pkgrel=0
+pkgdesc="IPMItool provides a simple command-line interface to IPMI-enabled devices."
+url="https://sourceforge.net/projects/ipmitool"
+arch="all"
+license="BSD"
+depends=""
+depends_dev="libc-dev make automake autoconf libtool"
+makedepends="$depends_dev"
+install=""
+subpackages=""
+source="http://downloads.sourceforge.net/$pkgname/$pkgname-$pkgver.tar.bz2"
+
+builddir="$srcdir/$pkgname-$pkgver"
+build() {
+        cd "$builddir"
+        LDFLAGS='-static' ./configure --prefix=/usr
+        make || return 1
+}
+
+package() {
+        cd "$builddir"
+        make DESTDIR="$pkgdir" install || return 1
+        rm -rf $pkgdir/usr/share/doc $pkgdir/usr/share/man
+}
+
+md5sums="f7408aa2b40333db0413d4aab6bbe978  ipmitool-1.8.17.tar.bz2"
+sha256sums="97fa20efd9c87111455b174858544becae7fcc03a3cb7bf5c19b09065c842d02  ipmitool-1.8.17.tar.bz2"
+sha512sums="b1fa95247c8b496ae1a4c01da032514849330297f2e28209ff211a7e61ed8226ef96fd330a7b79ff8b8bf04aef3cab06ec6765a985e5b51915dda28fb9f3c826  ipmitool-1.8.17.tar.bz2"
