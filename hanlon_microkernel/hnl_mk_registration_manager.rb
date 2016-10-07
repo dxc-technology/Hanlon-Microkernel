@@ -7,7 +7,6 @@ require 'rubygems'
 require 'facter'
 require 'yaml'
 require 'hanlon_microkernel/hnl_mk_fact_manager'
-require 'hanlon_microkernel/hnl_mk_hardware_facter'
 require 'hanlon_microkernel/logging'
 
 # set up a global variable that will be used in the HanlonMicrokernel::Logging mixin
@@ -27,7 +26,6 @@ module HanlonMicrokernel
       @registration_uri = registration_uri
       @exclude_pattern = exclude_pattern
       @fact_manager = fact_manager
-      @hardware_facter = HnlMkHardwareFacter.instance
     end
 
     def register_node(last_state)
@@ -49,7 +47,6 @@ module HanlonMicrokernel
       Facter.each { |name, value|
         fact_map[name.to_sym] = value if !@exclude_pattern || !(name =~ @exclude_pattern)
       }
-      @hardware_facter.add_facts_to_map!(fact_map, @exclude_pattern)
       # if "only_if_changed" input argument (above) is false or current facts
       # are different from the last set of facts that were saved, then register
       # this node
