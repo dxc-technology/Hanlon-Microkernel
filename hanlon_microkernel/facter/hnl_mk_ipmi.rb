@@ -67,7 +67,8 @@ if Facter.value('virtual') == 'physical'
 end
 
 attributes.each_pair do |fact,value|
-  Facter.add(fact) do
+  # facts are not allowed to have periods in them
+  Facter.add(fact.tr('.', '_') ) do
     setcode { value }
   end
 end
