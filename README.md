@@ -21,3 +21,15 @@ This project contains the Ruby scripts/classes that are used to control the Hanl
 In addition, this project also includes a number of additional ruby files and configuration files that are used by these services, and the 'hnl_mk_init.rb' script itself (which is used to start the appropriate Ruby-based services during the Microkernel boot process).
 
 It should be noted that this project also includes a Dockerfile that is used to build a new instance of the Microkernel container. Instructions for building your own (custom) Microkernel container can be found in the project's Wiki.
+
+
+
+## Patches
+
+This project seems a little bit out of date so there were a couple of problems with building it that was fixed:
+
+* Certificates for gems out of date, disabled verification for now
+* ipmitool has fallen out of alpine distro, used https://github.com/urzds/ipmitool-docker to build the pkg/ipmitool.tgz file
+* Source repro for lshw changed from testing to community (presumably due to the same circumstances as for ipmitool)
+* Gems install version changed to 2.3.0
+
